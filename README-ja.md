@@ -61,6 +61,14 @@ claude --plugin-dir /path/to/rust-skills
 
 この方法は skills のみをインストールし、hooks は含まれません。skills を手動で呼び出す必要があります。
 
+**オプション A：npx を使用（推奨）**
+
+```bash
+npx add-skill ZhangHanDong/rust-skills
+```
+
+**オプション B：手動インストール**
+
 ```bash
 # クローンして skills をコピー
 git clone https://github.com/ZhangHanDong/rust-skills.git

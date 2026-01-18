@@ -61,6 +61,14 @@ claude --plugin-dir /path/to/rust-skills
 
 This method only installs skills without hooks. You need to manually invoke skills.
 
+**Option A: Using npx (Recommended)**
+
+```bash
+npx add-skill ZhangHanDong/rust-skills
+```
+
+**Option B: Manual Installation**
+
 ```bash
 # Clone and copy skills
 git clone https://github.com/ZhangHanDong/rust-skills.git
