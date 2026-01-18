@@ -49,6 +49,30 @@ AI (Rust Skills 使用):
 
 この方法は **hooks を含むすべての機能**を有効にし、メタ認知を自動的にトリガーします。
 
+**オプション A：グローバルインストール（推奨）**
+
+`~/.claude/settings.json` に追加：
+
+```json
+{
+  "extraKnownMarketplaces": {
+    "rust-skills": {
+      "source": {
+        "source": "directory",
+        "path": "/path/to/rust-skills"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "rust-skills@rust-skills": true
+  }
+}
+```
+
+その後、フラグなしで `claude` を実行するだけです。
+
+**オプション B：セッションごと**
+
 ```bash
 # リポジトリをクローン
 git clone https://github.com/ZhangHanDong/rust-skills.git
@@ -67,15 +91,27 @@ claude --plugin-dir /path/to/rust-skills
 npx add-skill ZhangHanDong/rust-skills
 ```
 
+> ⚠️ **重要**：npx は skills のみをコピーします。バックグラウンドエージェント（rust-learner、rust-daily）を使用する場合は、agents も手動でコピーする必要があります - オプション B を参照。
+
 **オプション B：手動インストール**
 
 ```bash
-# クローンして skills をコピー
+# リポジトリをクローン
 git clone https://github.com/ZhangHanDong/rust-skills.git
+
+# skills をコピー
 cp -r rust-skills/skills/* ~/.claude/skills/
+
+# agents をコピー（rust-learner、rust-daily、/docs、/crate-info コマンドに必須）
+mkdir -p ~/.claude/agents
+cp -r rust-skills/agents/* ~/.claude/agents/
 ```
 
 > ⚠️ **注意**：hooks がない場合、メタ認知は自動的にトリガーされません。`/rust-router` または特定の skills を手動で呼び出す必要があります。
+
+**なぜ agents のコピーが必要？**
+
+`rust-learner` や `rust-daily` などの skills は、相対パス（`../../agents/*.md`）でエージェントファイルを参照しています。agents を `~/.claude/agents/` にコピーしないと、これらの skills は "file not found" エラーになります。
 
 ### 機能比較
 
@@ -84,7 +120,7 @@ cp -r rust-skills/skills/* ~/.claude/skills/
 | すべての Skills | ✅ | ✅ |
 | 自動メタ認知トリガー | ✅ | ❌ |
 | Hook ルーティング | ✅ | ❌ |
-| バックグラウンドエージェント | ✅ | ✅ |
+| バックグラウンドエージェント | ✅ | ✅（agents コピー必須） |
 
 ### 権限設定
 

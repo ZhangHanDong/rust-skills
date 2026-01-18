@@ -49,6 +49,30 @@ AI (使用 Rust Skills):
 
 此方式启用**所有功能，包括 hooks**，自动触发元认知流程。
 
+**选项 A：全局安装（推荐）**
+
+在 `~/.claude/settings.json` 中添加：
+
+```json
+{
+  "extraKnownMarketplaces": {
+    "rust-skills": {
+      "source": {
+        "source": "directory",
+        "path": "/path/to/rust-skills"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "rust-skills@rust-skills": true
+  }
+}
+```
+
+然后直接运行 `claude`，无需任何参数。
+
+**选项 B：单次会话**
+
 ```bash
 # 克隆仓库
 git clone https://github.com/ZhangHanDong/rust-skills.git
@@ -67,15 +91,27 @@ claude --plugin-dir /path/to/rust-skills
 npx add-skill ZhangHanDong/rust-skills
 ```
 
+> ⚠️ **重要**：npx 仅复制 skills。如需使用后台 agents（rust-learner、rust-daily），还需手动复制 agents - 参见选项 B。
+
 **选项 B：手动安装**
 
 ```bash
-# 克隆并复制 skills
+# 克隆仓库
 git clone https://github.com/ZhangHanDong/rust-skills.git
+
+# 复制 skills
 cp -r rust-skills/skills/* ~/.claude/skills/
+
+# 复制 agents（rust-learner、rust-daily、/docs、/crate-info 命令必需）
+mkdir -p ~/.claude/agents
+cp -r rust-skills/agents/* ~/.claude/agents/
 ```
 
 > ⚠️ **注意**：没有 hooks，元认知不会自动触发。需要手动调用 `/rust-router` 或特定 skills。
+
+**为什么需要复制 agents？**
+
+`rust-learner` 和 `rust-daily` 等 skills 通过相对路径（`../../agents/*.md`）引用 agent 文件。如果不将 agents 复制到 `~/.claude/agents/`，这些 skills 会报 "file not found" 错误。
 
 ### 功能对比
 
@@ -84,7 +120,7 @@ cp -r rust-skills/skills/* ~/.claude/skills/
 | 所有 Skills | ✅ | ✅ |
 | 自动触发元认知 | ✅ | ❌ |
 | Hook 路由 | ✅ | ❌ |
-| 后台 Agents | ✅ | ✅ |
+| 后台 Agents | ✅ | ✅（需复制 agents） |
 
 ### 权限配置
 

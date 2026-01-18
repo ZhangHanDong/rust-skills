@@ -49,6 +49,30 @@ AI (with Rust Skills):
 
 This method enables **all features including hooks** for automatic meta-cognition triggering.
 
+**Option A: Global Installation (Recommended)**
+
+Add to your `~/.claude/settings.json`:
+
+```json
+{
+  "extraKnownMarketplaces": {
+    "rust-skills": {
+      "source": {
+        "source": "directory",
+        "path": "/path/to/rust-skills"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "rust-skills@rust-skills": true
+  }
+}
+```
+
+Then just run `claude` - no flags needed.
+
+**Option B: Per-Session**
+
 ```bash
 # Clone the repository
 git clone https://github.com/ZhangHanDong/rust-skills.git
@@ -67,15 +91,27 @@ This method only installs skills without hooks. You need to manually invoke skil
 npx add-skill ZhangHanDong/rust-skills
 ```
 
+> ⚠️ **Important**: npx only copies skills. For background agents (rust-learner, rust-daily), also copy agents manually - see Option B.
+
 **Option B: Manual Installation**
 
 ```bash
-# Clone and copy skills
+# Clone repository
 git clone https://github.com/ZhangHanDong/rust-skills.git
+
+# Copy skills
 cp -r rust-skills/skills/* ~/.claude/skills/
+
+# Copy agents (REQUIRED for rust-learner, rust-daily, /docs, /crate-info commands)
+mkdir -p ~/.claude/agents
+cp -r rust-skills/agents/* ~/.claude/agents/
 ```
 
 > ⚠️ **Note**: Without hooks, meta-cognition won't trigger automatically. You must manually call `/rust-router` or specific skills.
+
+**Why copy agents?**
+
+Skills like `rust-learner` and `rust-daily` reference agent files via relative paths (`../../agents/*.md`). Without copying agents to `~/.claude/agents/`, these skills will fail with "file not found" errors.
 
 ### Feature Comparison
 
@@ -84,7 +120,7 @@ cp -r rust-skills/skills/* ~/.claude/skills/
 | All Skills | ✅ | ✅ |
 | Auto meta-cognition trigger | ✅ | ❌ |
 | Hook-based routing | ✅ | ❌ |
-| Background agents | ✅ | ✅ |
+| Background agents | ✅ | ✅ (requires agent copy) |
 
 ### Permission Configuration
 
