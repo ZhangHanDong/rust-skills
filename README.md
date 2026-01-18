@@ -88,7 +88,7 @@ This method only installs skills without hooks. You need to manually invoke skil
 **Option A: Using npx (Recommended)**
 
 ```bash
-npx add-skill ZhangHanDong/rust-skills
+npx skills add ZhangHanDong/rust-skills
 ```
 
 > ⚠️ **Important**: npx only copies skills. For background agents (rust-learner, rust-daily), also copy agents manually - see Option B.
