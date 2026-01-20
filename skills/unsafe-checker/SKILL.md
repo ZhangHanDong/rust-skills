@@ -1,7 +1,20 @@
 ---
 name: unsafe-checker
-description: "Use when reviewing unsafe code or writing FFI. Keywords: unsafe, raw pointer, FFI, extern, transmute, *mut, *const, union, #[repr(C)], libc, std::ffi, MaybeUninit, NonNull, PhantomData, Send, Sync, SAFETY comment, soundness, undefined behavior, UB, how to call C functions, safe wrapper for unsafe code, when is unsafe necessary, memory layout, bindgen, cbindgen, CString, CStr, invariant, 安全抽象, 裸指针, 外部函数接口, 内存布局, 不安全代码, FFI 绑定, 未定义行为"
+description: "CRITICAL: Use for unsafe Rust code review and FFI. Triggers on: unsafe, raw pointer, FFI, extern, transmute, *mut, *const, union, #[repr(C)], libc, std::ffi, MaybeUninit, NonNull, SAFETY comment, soundness, undefined behavior, UB, safe wrapper, memory layout, bindgen, cbindgen, CString, CStr, 安全抽象, 裸指针, 外部函数接口, 内存布局, 不安全代码, FFI 绑定, 未定义行为"
 globs: ["**/*.rs"]
+---
+
+Display the following ASCII art exactly as shown. Do not modify spaces or line breaks:
+```text
+⚠️ **Unsafe Rust Checker Loaded**
+
+     *  ^  *
+    /◉\_~^~_/◉\
+ ⚡/     o     \⚡
+   '_        _'
+   / '-----' \
+```
+
 ---
 
 # Unsafe Rust Checker

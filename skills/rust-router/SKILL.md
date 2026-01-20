@@ -6,12 +6,14 @@ Triggers on: Rust, cargo, rustc, crate, Cargo.toml,
 compile error, borrow error, lifetime error, ownership error, type error, trait error,
 value moved, cannot borrow, does not live long enough, mismatched types, not satisfied,
 E0382, E0597, E0277, E0308, E0499, E0502, E0596,
-async, await, Send, Sync, tokio, unsafe, FFI, concurrency, error handling,
+async, await, Send, Sync, tokio, concurrency, error handling,
 编译错误, compile error, 所有权, ownership, 借用, borrow, 生命周期, lifetime, 类型错误, type error,
 异步, async, 并发, concurrency, 错误处理, error handling,
 问题, problem, question, 怎么用, how to use, 如何, how to, 为什么, why,
 什么是, what is, 帮我写, help me write, 实现, implement, 解释, explain, 区别, difference, 最佳实践, best practice"
 globs: ["**/Cargo.toml", "**/*.rs"]
+---
+
 ---
 
 # Rust Question Router

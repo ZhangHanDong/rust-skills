@@ -1,19 +1,48 @@
 ---
-description: Sync dynamic skills for Cargo.toml dependencies
-argument-hint: [--force] [crate_names...]
+description: Sync dynamic skills for Cargo.toml dependencies or local source
+argument-hint: [--force] [--from-source <path>] [crate_names...]
 ---
 
 # Sync Crate Skills
 
 Scan Cargo.toml and generate skills for dependencies that don't have local skills yet.
+Supports both remote crates (docs.rs) and local Rust source code.
 
 Arguments: $ARGUMENTS
 - `--force`: Regenerate all skills even if they exist
+- `--from-source <path>`: Generate skills from local Rust source code
 - `crate_names`: Optional specific crates to sync (space-separated)
 
 ---
 
 ## Instructions
+
+### 0. Check for --from-source Flag
+
+If `--from-source` flag is present:
+
+```
+/create-llms-from-source {path}
+    ↓
+~/tmp/{timestamp}-{crate}-llms.txt
+    ↓
+/create-skills-via-llms {crate} {llms_path}
+```
+
+**Workflow for local source:**
+1. Parse path from `--from-source <path>` argument
+2. Call `/create-llms-from-source {path}` to generate llms.txt
+3. Call `/create-skills-via-llms {crate_name} {llms_path} {version}` to create skills
+4. Skip remaining steps (no need to check dependencies)
+
+**Input type detection:**
+| Input | Action |
+|-------|--------|
+| `--from-source /path/to/project` | Use `/create-llms-from-source` |
+| `https://docs.rs/...` URL | Use `/create-llms-for-skills` |
+| Crate name (e.g., `tokio`) | Use actionbook or `/create-llms-for-skills` |
+
+---
 
 ### 1. Find Cargo.toml Files
 
@@ -96,11 +125,15 @@ Skills location: ~/.claude/skills/
 
 ## Tool Priority
 
-1. **actionbook MCP** - Check for pre-generated llms.txt first
-2. **/create-llms-for-skills** - Generate if not in actionbook
+1. **--from-source flag** - If present, use `/create-llms-from-source` for local source
+2. **actionbook MCP** - Check for pre-generated llms.txt first
+3. **/create-llms-for-skills** - Generate from docs.rs if not in actionbook
    - Uses **agent-browser CLI** (preferred)
    - Falls back to **WebFetch** if agent-browser unavailable
-3. **/create-skills-via-llms** - Create skills from llms.txt
+4. **/create-llms-from-source** - Generate from local Rust source
+   - Uses **rustdoc JSON** (preferred)
+   - Falls back to **source code parsing** if rustdoc unavailable
+5. **/create-skills-via-llms** - Create skills from llms.txt
 
 **DO NOT use:**
 - Chrome MCP for documentation fetching
@@ -122,6 +155,12 @@ Skills location: ~/.claude/skills/
 
 # Force regenerate specific crate
 /sync-crate-skills --force tokio
+
+# Generate skills from local Rust source code
+/sync-crate-skills --from-source /path/to/my-rust-project
+
+# Force regenerate skills from local source
+/sync-crate-skills --force --from-source /path/to/project
 ```
 
 ---

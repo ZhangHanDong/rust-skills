@@ -4,6 +4,13 @@
 
 cat << 'EOF'
 
+=== RUST SKILLS DISPLAY FORMAT ===
+When showing Rust Skills loaded, display in this EXACT order:
+1. FIRST: "🦀 Rust Skills Loaded" text
+2. THEN: The Ferris crab ASCII art BELOW the text
+The text must be ABOVE the crab, not below.
+===
+
 === MANDATORY: META-COGNITION ROUTING ===
 
 CRITICAL: You MUST follow the COMPLETE meta-cognition framework.

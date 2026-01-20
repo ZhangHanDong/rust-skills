@@ -1,0 +1,79 @@
+{
+  "$schema": "https://claude.ai/schemas/hooks.json",
+  "_comment": "Achievement System Hook Configuration for Claude Code",
+  "_instructions": [
+    "Copy this configuration to your Claude Code settings:",
+    "1. Open Claude Code settings (claude config or ~/.claude/settings.json)",
+    "2. Add the 'hooks' section from this file",
+    "3. Adjust the script path to match your installation"
+  ],
+
+  "hooks": {
+    "PostToolUse": [
+      {
+        "_description": "Track coding activities after each tool use",
+        "matcher": "Edit|Write|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/achievement-tracker.sh PostToolUse",
+            "timeout": 5000
+          }
+        ]
+      }
+    ],
+
+    "UserPromptSubmit": [
+      {
+        "_description": "Track sessions and questions on each prompt",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/achievement-tracker.sh UserPromptSubmit",
+            "timeout": 3000
+          }
+        ]
+      }
+    ]
+  },
+
+  "_setup_instructions": {
+    "step1": "Copy the achievement tracker script to hooks directory",
+    "step1_command": "mkdir -p ~/.claude/hooks && cp /path/to/rust-skills/scripts/achievement-tracker.sh ~/.claude/hooks/",
+
+    "step2": "Make the script executable",
+    "step2_command": "chmod +x ~/.claude/hooks/achievement-tracker.sh",
+
+    "step3": "Initialize achievement data directory",
+    "step3_command": "mkdir -p ~/.claude/achievements",
+
+    "step4": "Add hooks configuration to Claude Code settings",
+    "step4_note": "Merge the 'hooks' section above into your settings.json"
+  },
+
+  "_quick_setup_script": "#!/bin/bash\n# Quick setup script\nset -e\n\nRUST_SKILLS_DIR=\"${1:-$(pwd)}\"\n\necho \"Setting up Achievement System...\"\n\n# Create directories\nmkdir -p ~/.claude/hooks\nmkdir -p ~/.claude/achievements\n\n# Copy script\ncp \"$RUST_SKILLS_DIR/scripts/achievement-tracker.sh\" ~/.claude/hooks/\nchmod +x ~/.claude/hooks/achievement-tracker.sh\n\necho \"✅ Achievement tracker installed!\"\necho \"\"\necho \"Next steps:\"\necho \"1. Add the hooks configuration to ~/.claude/settings.json\"\necho \"2. Run '/achievement' to view your achievements\"\n",
+
+  "_environment_variables": {
+    "CLAUDE_TOOL_NAME": "Name of the tool being used (Edit, Write, Bash, etc.)",
+    "CLAUDE_TOOL_INPUT": "Input/content passed to the tool",
+    "CLAUDE_FILE_PATH": "Path to the file being operated on",
+    "CLAUDE_USER_PROMPT": "The user's prompt text"
+  },
+
+  "_troubleshooting": {
+    "hook_not_triggering": [
+      "Check if the script path is correct",
+      "Verify the script is executable (chmod +x)",
+      "Check Claude Code logs for hook errors"
+    ],
+    "achievements_not_tracking": [
+      "Verify ~/.claude/achievements directory exists",
+      "Check if stats.json was created",
+      "Run the script manually to test: ./achievement-tracker.sh PostToolUse"
+    ],
+    "permission_denied": [
+      "Run: chmod +x ~/.claude/hooks/achievement-tracker.sh",
+      "Check directory permissions: ls -la ~/.claude/hooks/"
+    ]
+  }
+}

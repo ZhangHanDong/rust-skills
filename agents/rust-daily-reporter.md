@@ -23,10 +23,34 @@ Aggregate Rust news, filter by time range.
 
 See: `_shared/fetch-strategy.md`
 
-| Source | Tool |
-|--------|------|
-| Reddit | Local Chrome → crawl4ai |
-| Others | WebFetch |
+**Tool Priority (in order):**
+
+1. **actionbook MCP** - Check for cached/pre-fetched content first
+   ```
+   search_actions("rust news {date}")
+   search_actions("this week in rust")
+   search_actions("rust blog")
+   ```
+
+2. **agent-browser CLI** - For dynamic web content
+   ```bash
+   agent-browser open "https://www.reddit.com/r/rust/hot/"
+   agent-browser get text ".Post"
+   agent-browser close
+   ```
+
+3. **WebFetch** - Fallback if agent-browser unavailable
+
+| Source | Primary Tool | Fallback |
+|--------|--------------|----------|
+| Reddit | agent-browser | WebFetch |
+| TWIR | actionbook → agent-browser | WebFetch |
+| Rust Blog | actionbook → WebFetch | - |
+| Foundation | actionbook → WebFetch | - |
+
+**DO NOT use:**
+- Chrome MCP directly
+- WebSearch for fetching news pages
 
 ## Time Filter
 
