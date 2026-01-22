@@ -52,7 +52,7 @@ Install from Claude Code Plugin Marketplace in two steps:
 
 ```bash
 # Step 1: Add the marketplace
-/plugin marketplace add ZhangHanDong/rust-skills
+/plugin marketplace add https://github.com/ZhangHanDong/rust-skills
 
 # Step 2: Install the plugin
 /plugin install rust-skills@rust-skills
