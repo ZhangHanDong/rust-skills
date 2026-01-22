@@ -52,7 +52,7 @@ AI (使用 Rust Skills):
 
 ```bash
 # 步骤 1: 添加 marketplace
-/plugin marketplace add ZhangHanDong/rust-skills
+/plugin marketplace add https://github.com/ZhangHanDong/rust-skills
 
 # 步骤 2: 安装插件
 /plugin install rust-skills@rust-skills

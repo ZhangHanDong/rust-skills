@@ -52,7 +52,7 @@ Claude Code プラグインマーケットプレイスから2ステップでイ�
 
 ```bash
 # ステップ 1: marketplace を追加
-/plugin marketplace add ZhangHanDong/rust-skills
+/plugin marketplace add https://github.com/ZhangHanDong/rust-skills
 
 # ステップ 2: プラグインをインストール
 /plugin install rust-skills@rust-skills
