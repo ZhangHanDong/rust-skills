@@ -11,6 +11,10 @@
     {
       "name": "rust-skills",
       "description": "38 skills covering ownership, concurrency, error handling, unsafe code, LSP code intelligence, and domain-specific patterns for Rust development",
+      "source": {
+        "source": "github",
+        "repo": "ZhangHanDong/rust-skills"
+      },
       "category": "development"
     }
   ]
