@@ -1,9 +1,44 @@
-#!/bin/bash
-# Rust Skills Meta-Cognition Hook
-# Forces Claude to use meta-cognition routing with mandatory tracing
+#!/usr/bin/env node
+// Rust Skills Meta-Cognition Hook (Cross-platform)
+// Forces Claude to use meta-cognition routing with mandatory tracing
 
-cat << 'EOF'
+const fs = require('fs');
+const path = require('path');
 
+// Check if current directory is a Rust project
+function isRustProject() {
+  const cwd = process.cwd();
+
+  // Check for Cargo.toml in current directory or parent directories (up to 5 levels)
+  let dir = cwd;
+  for (let i = 0; i < 5; i++) {
+    if (fs.existsSync(path.join(dir, 'Cargo.toml'))) {
+      return true;
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) break; // reached root
+    dir = parent;
+  }
+
+  // Check for .rs files in current directory
+  try {
+    const files = fs.readdirSync(cwd);
+    if (files.some(f => f.endsWith('.rs'))) {
+      return true;
+    }
+  } catch (e) {
+    // ignore read errors
+  }
+
+  return false;
+}
+
+// Only output if this is a Rust project
+if (!isRustProject()) {
+  process.exit(0);
+}
+
+const output = `
 === RUST SKILLS DISPLAY FORMAT ===
 When showing Rust Skills loaded, display in this EXACT order:
 1. FIRST: "🦀 Rust Skills Loaded" text
@@ -42,21 +77,21 @@ Partial compliance (only loading L1 skill) is NOT acceptable.
 
 For Layer 1 entry with domain context:
 
-```
+\`\`\`
 L1 Error (e.g., Rc not Send)
     ^ TRACE UP: Why this design constraint?
     ^ Load domain skill (e.g., domain-web)
     ^ Find domain constraint (e.g., "handlers run on any thread")
     v TRACE DOWN: What pattern satisfies constraint?
     v Return to L1 with context-aware solution
-```
+\`\`\`
 
 ## STEP 3: MANDATORY OUTPUT FORMAT
 
 Your response MUST include ALL of these sections:
 
 ### Reasoning Chain
-```
+\`\`\`
 +-- Layer 1: [specific error]
 |   Problem: [error description]
 |       ^
@@ -66,7 +101,7 @@ Your response MUST include ALL of these sections:
 |       v
 +-- Layer 2: Design Choice
     Decision: [design decision based on domain constraint]
-```
+\`\`\`
 
 ### Domain Constraints Analysis
 - MUST reference specific rules from domain-xxx skill
@@ -81,7 +116,7 @@ Your response MUST include ALL of these sections:
 Question: "Web API config sharing error: Rc cannot be sent"
 
 CORRECT Response:
-```
+\`\`\`
 ### Reasoning Chain
 +-- Layer 1: Send/Sync Error
 |   Problem: Rc<T> cannot be sent between threads
@@ -101,13 +136,13 @@ From domain-web:
 
 ### Recommended Solution
 [Code following Web best practices]
-```
+\`\`\`
 
 WRONG Response (stops at L1):
-```
+\`\`\`
 Problem: Rc is not Send
 Solution: Use Arc
-```
+\`\`\`
 
 ## SKILLS TO INVOKE
 
@@ -117,5 +152,6 @@ Always invoke with Skill() tool:
 - Skill(domain-xxx) - Layer 3 skill based on domain keywords
 
 ===================================
+`;
 
-EOF
+console.log(output);
