@@ -1,0 +1,36 @@
+{
+  "name": "rust-skills",
+  "version": "2.0.9",
+  "description": "Claude Code skills and agents for mastering Rust development",
+  "private": true,
+  "scripts": {
+    "setup": "node scripts/setup.js",
+    "setup-achievements": "node scripts/setup-achievements.js",
+    "generate-index": "node scripts/generate-index.js",
+    "analyze": "node scripts/analyze-skills.js",
+    "quality-check": "node scripts/quality-check.js",
+    "validate": "node tests/validation/validate-skills.js",
+    "extract-docs": "node scripts/extract-rust-docs.js",
+    "test-triggers": "node test-triggers.js",
+    "verify-migration": "node scripts/verify-migration.js"
+  },
+  "keywords": [
+    "rust",
+    "claude",
+    "skills",
+    "development"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/rust-skills.git"
+  },
+  "dependencies": {
+    "glob": "^10.3.10"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "author": "",
+  "license": "MIT"
+}

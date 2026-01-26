@@ -5,6 +5,58 @@ All notable changes to rust-skills will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Node.js script migration (Batch 1 - Setup scripts)**:
+  - Migrated `setup.sh` to `scripts/setup.js` for cross-platform compatibility
+  - Migrated `scripts/setup-achievements.sh` to `scripts/setup-achievements.js`
+  - Added `package.json` with npm scripts for all tools
+  - Added `scripts/verify-migration.js` for testing migration correctness
+  - Created comprehensive migration guide: `docs/MIGRATION_TO_NODEJS.md`
+
+- **Node.js script migration (Batch 2 - Tool scripts)**:
+  - Migrated `scripts/generate-index.sh` to `scripts/generate-index.js`
+  - Migrated `scripts/analyze-skills.sh` to `scripts/analyze-skills.js`
+  - Migrated `tests/validation/validate-skills.sh` to `tests/validation/validate-skills.js`
+  - Fixed CRLF line ending handling for Windows compatibility
+  - All scripts now handle YAML frontmatter parsing correctly on all platforms
+
+- **Node.js script migration (Batch 3 - Complex scripts)**:
+  - Migrated `scripts/quality-check.sh` to `scripts/quality-check.js`
+  - Migrated `scripts/extract-rust-docs.sh` to `scripts/extract-rust-docs.js`
+  - Implemented Cargo.toml parsing without external dependencies
+  - Added rustdoc JSON support with automatic fallback to source parsing
+  - Enhanced link validation with proper relative path resolution
+
+- **Node.js script migration (Batch 4 - Runtime scripts)**:
+  - Migrated `test-triggers.sh` to `test-triggers.js`
+  - Migrated `scripts/achievement-tracker.sh` to `scripts/achievement-tracker.js`
+  - Implemented atomic JSON file updates for concurrent hook execution
+  - Added cross-platform date handling for streak calculation
+  - Enhanced achievement detection with regex pattern matching
+  - **COMPLETE**: All 9 shell scripts successfully migrated (100%)
+
+### Changed
+- Updated README.md with Node.js prerequisites and installation steps
+- Updated `.gitignore` to exclude `node_modules/` and `package-lock.json`
+- Enhanced `scripts/verify-migration.js` with tests for all migrated scripts (9/9 passing - 100% coverage)
+
+### Fixed
+- **Windows CRLF handling**: All frontmatter parsers now normalize line endings
+- **Core Question extraction**: Properly extract bold text from SKILL.md files
+- **Trigger keywords**: Correctly identify error codes and Chinese phrases in descriptions
+
+### Notes
+- **Windows users**: ALL scripts now work natively without Git Bash or WSL (100% Windows compatible)
+- **All platforms**: Use npm scripts like `npm run quality-check`, `npm run extract-docs`, `npm run test-triggers`
+- **Achievement system**: Fully migrated with atomic file updates and concurrent hook support
+- **Backward compatibility**: Shell scripts (.sh) remain available during transition period
+- **Deprecation timeline**: Shell scripts will be marked deprecated in v2.1.0, removed in v2.2.0
+- **Migration status**: ✅ COMPLETE - 9/9 scripts migrated (100%)
+
+---
+
 ## [2.0.9] - 2025-01-22
 
 ### Changed

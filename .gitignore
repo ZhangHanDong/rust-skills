@@ -6,3 +6,7 @@
 !.claude/settings.example.json
 
 # Keep .claude/hooks/ for distribution
+
+# Node.js dependencies
+node_modules/
+package-lock.json

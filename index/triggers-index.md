@@ -1,142 +1,60 @@
 # Trigger Keywords Index
 
-Complete mapping of keywords to skills.
+Keywords that trigger each skill.
 
----
+## m01-ownership
 
-## Error Codes → Skills
+CRITICAL: Use for ownership/borrow/lifetime issues. Triggers: E0382, E0597, E0506, E0507, E0515, E0716, E0106, value moved, borrowed value does not live long enough, cannot move out of, use of moved value, ownership, borrow, lifetime, 'a, 'static, move, clone, Copy, 所有权, 借用, 生命周期
 
-| Error Code | Description | Route To |
-|------------|-------------|----------|
-| E0382 | Use of moved value | m01-ownership |
-| E0597 | Lifetime too short | m01-ownership |
-| E0506 | Cannot assign to borrowed | m01-ownership |
-| E0507 | Cannot move out of borrowed | m01-ownership |
-| E0515 | Return local reference | m01-ownership |
-| E0716 | Temporary value dropped | m01-ownership |
-| E0106 | Missing lifetime specifier | m01-ownership |
-| E0596 | Cannot borrow as mutable | m03-mutability |
-| E0499 | Multiple mutable borrows | m03-mutability |
-| E0502 | Borrow conflict | m03-mutability |
-| E0277 | Trait bound not satisfied | m04-zero-cost / m07-concurrency |
-| E0308 | Type mismatch | m04-zero-cost |
-| E0599 | No method found | m04-zero-cost |
-| E0038 | Trait not object-safe | m04-zero-cost |
-| E0433 | Cannot find crate/module | m11-ecosystem |
+## m02-resource
 
----
+CRITICAL: Use for smart pointers and resource management. Triggers: Box, Rc, Arc, Weak, RefCell, Cell, smart pointer, heap allocation, reference counting, RAII, Drop, should I use Box or Rc, when to use Arc vs Rc, 智能指针, 引用计数, 堆分配
 
-## Keywords → Skills
+## m03-mutability
 
-### Layer 1: Language Mechanics
+CRITICAL: Use for mutability issues. Triggers: E0596, E0499, E0502, cannot borrow as mutable, already borrowed as immutable, mut, &mut, interior mutability, Cell, RefCell, Mutex, RwLock, 可变性, 内部可变性, 借用冲突
 
-| Keywords | Route To |
-|----------|----------|
-| ownership, borrow, lifetime, move, moved value | m01-ownership |
-| Box, Rc, Arc, RefCell, Cell, smart pointer | m02-resource |
-| mut, mutable, interior mutability | m03-mutability |
-| generic, trait, inline, monomorphization | m04-zero-cost |
-| type state, phantom, newtype, PhantomData | m05-type-driven |
-| Result, Option, Error, panic, ?, anyhow, thiserror | m06-error-handling |
-| Send, Sync, thread, async, await, channel, tokio | m07-concurrency |
-| unsafe, FFI, extern, raw pointer, transmute | unsafe-checker |
+## m04-zero-cost
 
-### Layer 2: Design Choices
+CRITICAL: Use for generics, traits, zero-cost abstraction. Triggers: E0277, E0308, E0599, generic, trait, impl, dyn, where, monomorphization, static dispatch, dynamic dispatch, impl Trait, trait bound not satisfied, 泛型, 特征, 零成本抽象, 单态化
 
-| Keywords | Route To |
-|----------|----------|
-| domain model, DDD, business logic | m09-domain |
-| performance, optimization, benchmark, profiling | m10-performance |
-| crate, dependency, interop, ecosystem | m11-ecosystem |
-| RAII, Drop, resource lifecycle | m12-lifecycle |
-| domain error, retry, circuit breaker, recovery | m13-domain-error |
-| mental model, how to think, learning Rust | m14-mental-model |
-| anti-pattern, common mistake, pitfall, code smell | m15-anti-pattern |
+## m05-type-driven
 
-### Layer 3: Domain Constraints
+CRITICAL: Use for type-driven design. Triggers: type state, PhantomData, newtype, marker trait, builder pattern, make invalid states unrepresentable, compile-time validation, sealed trait, ZST, 类型状态, 新类型模式, 类型驱动设计
 
-| Keywords | Route To |
-|----------|----------|
-| fintech, trading, decimal, currency, payment | domain-fintech |
-| web, HTTP, REST, axum, actix, handler | domain-web |
-| CLI, command line, clap, terminal | domain-cli |
-| kubernetes, docker, grpc, microservice | domain-cloud-native |
-| embedded, no_std, microcontroller, firmware | domain-embedded |
-| ML, tensor, model, inference, ndarray | domain-ml |
-| IoT, sensor, mqtt, edge | domain-iot |
+## m06-error-handling
 
----
+CRITICAL: Use for error handling. Triggers: Result, Option, Error, ?, unwrap, expect, panic, anyhow, thiserror, when to panic vs return Result, custom error, error propagation, 错误处理, Result 用法, 什么时候用 panic
 
-## Chinese Keywords → Skills
+## m07-concurrency
 
-| 中文关键词 | Route To |
-|------------|----------|
-| 所有权, 借用, 生命周期 | m01-ownership |
-| 智能指针 | m02-resource |
-| 可变性, 内部可变性 | m03-mutability |
-| 泛型, 特征, 零成本抽象 | m04-zero-cost |
-| 类型状态, 新类型 | m05-type-driven |
-| 错误处理, 结果类型 | m06-error-handling |
-| 并发, 异步, 线程安全 | m07-concurrency |
-| 不安全, FFI | unsafe-checker |
-| 领域模型 | m09-domain |
-| 性能优化, 基准测试 | m10-performance |
-| 生态系统, 依赖 | m11-ecosystem |
-| 资源生命周期, RAII | m12-lifecycle |
-| 领域错误 | m13-domain-error |
-| 心智模型, 如何思考 | m14-mental-model |
-| 反模式, 常见错误 | m15-anti-pattern |
+CRITICAL: Use for concurrency/async. Triggers: E0277 Send Sync, cannot be sent between threads, thread, spawn, channel, mpsc, Mutex, RwLock, Atomic, async, await, Future, tokio, deadlock, race condition, 并发, 线程, 异步, 死锁
 
----
+## m09-domain
 
-## Query Patterns → Actions
+CRITICAL: Use for domain modeling. Triggers: domain model, DDD, domain-driven design, entity, value object, aggregate, repository pattern, business rules, validation, invariant, 领域模型, 领域驱动设计, 业务规则
 
-| Pattern | Action |
-|---------|--------|
-| "比较 X 和 Y" / "compare" / "vs" | Enable Negotiation Protocol |
-| "最佳实践" / "best practice" | Enable Negotiation Protocol |
-| Domain + Error (e.g., "交易系统 E0382") | Enable Negotiation Protocol |
-| Single error code (e.g., "E0382") | Direct lookup, no negotiation |
-| Single version query (e.g., "tokio 版本") | Direct lookup, no negotiation |
+## m10-performance
 
----
+CRITICAL: Use for performance optimization. Triggers: performance, optimization, benchmark, profiling, flamegraph, criterion, slow, fast, allocation, cache, SIMD, make it faster, 性能优化, 基准测试
 
-## Priority Rules
+## m11-ecosystem
 
-When multiple skills match, use this priority:
+Use when integrating crates or ecosystem questions. Keywords: E0425, E0433, E0603, crate, cargo, dependency, feature flag, workspace, which crate to use, using external C libraries, creating Python extensions, PyO3, wasm, WebAssembly, bindgen, cbindgen, napi-rs, cannot find, private, crate recommendation, best crate for, Cargo.toml, features, crate 推荐, 依赖管理, 特性标志, 工作空间, Python 绑定
 
-1. **Error codes** take highest priority (direct mapping)
-2. **Domain keywords** + error → load BOTH domain skill and error skill
-3. **Comparison queries** → enable negotiation, load multiple skills
-4. **General keywords** → route to most specific skill
+## m12-lifecycle
 
-### Conflict Resolution
+Use when designing resource lifecycles. Keywords: RAII, Drop, resource lifecycle, connection pool, lazy initialization, connection pool design, resource cleanup patterns, cleanup, scope, OnceCell, Lazy, once_cell, OnceLock, transaction, session management, when is Drop called, cleanup on error, guard pattern, scope guard, 资源生命周期, 连接池, 惰性初始化, 资源清理, RAII 模式
 
-| Conflict | Resolution |
-|----------|------------|
-| unsafe in m11 vs unsafe-checker | unsafe-checker (more specific) |
-| error in m06 vs m13 | m06 for general, m13 for domain-specific |
-| RAII in m01 vs m12 | m12 for design, m01 for implementation |
+## m13-domain-error
 
----
+Use when designing domain error handling. Keywords: domain error, error categorization, recovery strategy, retry, fallback, domain error hierarchy, user-facing vs internal errors, error code design, circuit breaker, graceful degradation, resilience, error context, backoff, retry with backoff, error recovery, transient vs permanent error, 领域错误, 错误分类, 恢复策略, 重试, 熔断器, 优雅降级
 
-## Related Documents
+## m14-mental-model
 
-| Document | Purpose |
-|----------|---------|
-| [skills-index.md](./skills-index.md) | Complete skill catalog with descriptions |
-| [meta-questions.md](./meta-questions.md) | Meta-question category definitions |
-| [domain-extensions.md](./domain-extensions.md) | Domain-specific code ranges |
+Use when learning Rust concepts. Keywords: mental model, how to think about ownership, understanding borrow checker, visualizing memory layout, analogy, misconception, explaining ownership, why does Rust, help me understand, confused about, learning Rust, explain like I'm, ELI5, intuition for, coming from Java, coming from Python, 心智模型, 如何理解所有权, 学习 Rust, Rust 入门, 为什么 Rust
 
-### Framework
+## m15-anti-pattern
 
-| File | Purpose |
-|------|---------|
-| [../_meta/reasoning-framework.md](../_meta/reasoning-framework.md) | How to trace through cognitive layers |
-| [../_meta/negotiation-protocol.md](../_meta/negotiation-protocol.md) | When negotiation triggers |
+Use when reviewing code for anti-patterns. Keywords: anti-pattern, common mistake, pitfall, code smell, bad practice, code review, is this an anti-pattern, better way to do this, common mistake to avoid, why is this bad, idiomatic way, beginner mistake, fighting borrow checker, clone everywhere, unwrap in production, should I refactor, 反模式, 常见错误, 代码异味, 最佳实践, 地道写法
 
-### Router
-
-| File | Purpose |
-|------|---------|
-| [../skills/rust-router/SKILL.md](../skills/rust-router/SKILL.md) | Implements these routing rules |
