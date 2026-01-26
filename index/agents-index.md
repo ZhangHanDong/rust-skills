@@ -4,11 +4,14 @@ Auto-generated index of all agents.
 
 | Agent | Model | Tools | Purpose |
 |-------|-------|-------|---------|
-| browser-fetcher | haiku | 0 | # Fetch |
-| clippy-researcher | haiku | 0 | # URL |
-| crate-researcher | haiku | 0 | # Fetch |
-| docs-cache | haiku | 0 | # Cache Directory |
-| docs-researcher | haiku | 0 | # Fetch |
-| rust-changelog | haiku | 0 | # URL |
-| rust-daily-reporter | haiku | 0 | # Data Sources (Required) |
-| std-docs-researcher | haiku | 0 | # URL Patterns |
+| browser-fetcher | haiku | 0 | Background agent |
+| clippy-researcher | haiku | 0 | Background agent |
+| crate-researcher | haiku | 0 | Background agent |
+| docs-cache | haiku | 0 | Background agent |
+| docs-researcher | haiku | 0 | Background agent |
+| layer1-analyzer | haiku | 0 | Background agent |
+| layer2-analyzer | haiku | 0 | Background agent |
+| layer3-analyzer | haiku | 2 | Background agent |
+| rust-changelog | haiku | 0 | Background agent |
+| rust-daily-reporter | haiku | 0 | Rust {Day|Week|Month} Report |
+| std-docs-researcher | haiku | 0 | Background agent |

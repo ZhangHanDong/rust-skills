@@ -46,6 +46,13 @@ AI (with Rust Skills):
 
 ## Installation
 
+### Prerequisites
+
+- **Node.js 18+**: Required for setup scripts and tools
+  ```bash
+  node --version  # Should show v18.x.x or higher
+  ```
+
 ### Method 1: Marketplace (Recommended)
 
 Install from Claude Code Plugin Marketplace in two steps:
@@ -77,6 +84,13 @@ This method enables **all features including hooks** for automatic meta-cognitio
 ```bash
 # Clone the repository
 git clone https://github.com/ZhangHanDong/rust-skills.git
+cd rust-skills
+
+# Install dependencies
+npm install
+
+# Run setup (creates .claude/settings.local.json)
+npm run setup
 
 # Launch with plugin directory
 claude --plugin-dir /path/to/rust-skills
