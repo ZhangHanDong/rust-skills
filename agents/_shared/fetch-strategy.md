@@ -2,6 +2,19 @@
 
 Common web fetching strategy for anti-crawler handling.
 
+## Agent Compatibility Guide (Antigravity & Others)
+
+> [!NOTE]
+> **For Antigravity & Other LLM Agents:**
+>
+> 1.  **Tool Mapping**:
+>     - **WebFetch** -> Use your native static scraper (e.g., `read_url_content` in Antigravity).
+>     - **agent-browser / actionbook** -> Use your shell execution tool (e.g., `run_command`) to run the CLI.
+>
+> 2.  **Execution Logic**:
+>     - Execute CLI commands exactly as shown in the code blocks.
+>     - Only map `WebFetch` (which is missing) to your native static scraper.
+
 ## Site Classification
 
 | Type | Examples | Characteristics |
