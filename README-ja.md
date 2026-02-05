@@ -7,6 +7,7 @@
 [![Version](https://img.shields.io/badge/version-2.0.9-green.svg)](https://github.com/ZhangHanDong/rust-skills/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Plugin-blue)](https://github.com/anthropics/claude-code)
+[![Antigravity](https://img.shields.io/badge/Antigravity-Compatible-ff69b4)](ANTIGRAVITY.md)
 
 ## Rust Skills とは？
 
@@ -130,6 +131,20 @@ EOF
 
 [.claude/settings.example.json](.claude/settings.example.json) を参照してください。
 
+### 方法5：Antigravity IDE
+
+1. **リポジトリをクローン** して安定した場所に配置します (例: `/path/to/rust-skills`)。
+
+2. **Rules で設定**:
+   プロジェクトにルールを追加して（例: `.agent/rules.md` 内）、skills をロードします：
+
+   ```markdown
+   ## Rust Skills
+   - Always reference the Rust Skills capability suite located at @/path/to/rust-skills.
+   - Read @/path/to/rust-skills/ANTIGRAVITY.md to initialize the protocol and tool mappings.
+   - Resolve all relative paths in that file (e.g. `skills/`) against the @/path/to/rust-skills directory.
+   ```
+
 ### その他のプラットフォーム
 
 - **OpenCode**: [.opencode/INSTALL.md](.opencode/INSTALL.md) を参照
@@ -141,8 +156,8 @@ Rust Skills は完全な機能のために以下の外部ツールに依存し�
 
 | ツール | 説明 | GitHub |
 |--------|------|--------|
-| **actionbook** | ウェブサイトアクションマニュアル用 MCP サーバー。エージェントが構造化されたウェブコンテンツ（Rust リリース、crate 情報、ドキュメント）を取得するために使用。 | [actionbook/actionbook](https://github.com/actionbook/actionbook) |
-| **agent-browser** | リアルタイムウェブデータ取得のためのブラウザ自動化ツール。actionbook が利用できない場合のフォールバック。 | [vercel-labs/agent-browser](https://github.com/vercel-labs/agent-browser) |
+| **actionbook** | ウェブサイトアクションマニュアル用 MCP サーバー。エージェントが構造化されたウェブコンテンツ（Rust リリース、crate 情報、ドキュメント）を取得するために使用。 <br> **Antigravity**: ネイティブ `run_command` (CLI 実行) にマッピング。 | [actionbook/actionbook](https://github.com/actionbook/actionbook) |
+| **agent-browser** | リアルタイムウェブデータ取得のためのブラウザ自動化ツール。actionbook が利用できない場合のフォールバック。 <br> **Antigravity**: ネイティブ `run_command` (CLI 実行) にマッピング。 | [vercel-labs/agent-browser](https://github.com/vercel-labs/agent-browser) |
 
 ## メタ認知フレームワーク
 
