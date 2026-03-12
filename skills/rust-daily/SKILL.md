@@ -1,8 +1,10 @@
 ---
 name: rust-daily
 description: |
-  CRITICAL: Use for Rust news and daily/weekly/monthly reports. Triggers on:
-  rust news, rust daily, rust weekly, TWIR, rust blog,
+  Use when the user asks for Rust ecosystem news, daily/weekly/monthly digests, or community updates.
+  Fetches and summarizes content from Reddit r/rust, This Week in Rust, blog.rust-lang.org, Inside Rust,
+  and the Rust Foundation — then produces a formatted report with links.
+  Triggers on: rust news, rust daily, rust weekly, TWIR, rust blog,
   Rust 日报, Rust 周报, Rust 新闻, Rust 动态
 argument-hint: "[today|week|month]"
 context: fork
@@ -76,11 +78,8 @@ WebFetch("https://www.reddit.com/r/rust/hot/", "Extract top 10 posts with scores
 ### 2. This Week in Rust
 
 ```bash
-# Check actionbook first
 mcp__actionbook__search_actions("this week in rust")
 mcp__actionbook__get_action_by_id(<action_id>)
-
-# Then fetch
 agent-browser open "https://this-week-in-rust.org/"
 agent-browser get text "<selector_from_actionbook>"
 agent-browser close
@@ -121,18 +120,13 @@ WebFetch("https://blog.rust-lang.org/inside-rust/", "Extract latest 3 posts with
 
 ### 5. Rust Foundation
 
+Fetch from three endpoints (news, blog, events), limit 3 articles each:
+
 ```bash
-# News
 agent-browser open "https://rustfoundation.org/media/category/news/"
 agent-browser get text "article" --limit 3
-agent-browser close
-
-# Blog
 agent-browser open "https://rustfoundation.org/media/category/blog/"
 agent-browser get text "article" --limit 3
-agent-browser close
-
-# Events
 agent-browser open "https://rustfoundation.org/events/"
 agent-browser get text "article" --limit 3
 agent-browser close
@@ -154,36 +148,11 @@ After fetching all sources, combine into the output format below.
 
 ---
 
-## Tool Chain Priority
+## Tool Priority
 
-Both modes use the same tool chain order:
+1. **actionbook MCP** → 2. **agent-browser CLI** → 3. **WebFetch** fallback
 
-1. **actionbook MCP** - Check for cached/pre-fetched content first
-   ```
-   mcp__actionbook__search_actions("rust news {date}")
-   mcp__actionbook__search_actions("this week in rust")
-   mcp__actionbook__search_actions("rust blog")
-   ```
-
-2. **agent-browser CLI** - For dynamic web content
-   ```bash
-   agent-browser open "<url>"
-   agent-browser get text "<selector>"
-   agent-browser close
-   ```
-
-3. **WebFetch** - Fallback if agent-browser unavailable
-
-| Source | Primary Tool | Fallback |
-|--------|--------------|----------|
-| Reddit | agent-browser | WebFetch |
-| TWIR | actionbook → agent-browser | WebFetch |
-| Rust Blog | actionbook → WebFetch | - |
-| Foundation | actionbook → WebFetch | - |
-
-**DO NOT use:**
-- Chrome MCP directly
-- WebSearch for fetching news pages
+**DO NOT use:** Chrome MCP directly, or WebSearch for fetching news pages.
 
 ---
 

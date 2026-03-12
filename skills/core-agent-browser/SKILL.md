@@ -1,7 +1,6 @@
 ---
 name: core-agent-browser
-# Internal tool - no description to prevent auto-triggering
-# Used by: rust-learner, docs-researcher, crate-researcher agents
+description: "Use when automating browser interactions with agent-browser CLI. Keywords: agent-browser, browser automation, screenshot, click, fill, snapshot, navigate, form submission"
 ---
 
 # Browser Automation with agent-browser

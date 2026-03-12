@@ -109,16 +109,6 @@ Never both simultaneously.
 | `RwLock<T>` | Yes | Lock contention | Many readers, few writers |
 | `Atomic*` | Yes | Minimal | Simple types (bool, usize) |
 
-## Error Code Reference
-
-| Error | Cause | Quick Fix |
-|-------|-------|-----------|
-| E0596 | Borrowing immutable as mutable | Add `mut` or redesign |
-| E0499 | Multiple mutable borrows | Restructure code flow |
-| E0502 | &mut while & exists | Separate borrow scopes |
-
----
-
 ## Interior Mutability Decision
 
 | Scenario | Choose |
@@ -129,6 +119,79 @@ Never both simultaneously.
 | T: !Copy, multi-thread | `Mutex<T>` or `RwLock<T>` |
 | Read-heavy, multi-thread | `RwLock<T>` |
 | Simple flags/counters | `AtomicBool`, `AtomicUsize` |
+
+---
+
+## Workflow: Resolving Mutability Issues
+
+1. **Identify the error** — match against the Error → Design Question table above
+2. **Ask the core question** — does this data actually need to change?
+3. **Choose the pattern** — use the Interior Mutability Decision table
+4. **Apply the fix** — see examples below
+5. **Validate** — run `cargo check` and confirm no new borrow errors
+
+## Examples
+
+### E0596: Adding interior mutability with Cell
+
+```rust
+use std::cell::Cell;
+
+struct Counter {
+    count: Cell<u32>,
+}
+
+impl Counter {
+    fn new() -> Self {
+        Self { count: Cell::new(0) }
+    }
+    // &self, not &mut self — callers can share this
+    fn increment(&self) {
+        self.count.set(self.count.get() + 1);
+    }
+}
+```
+
+### E0502: Splitting borrows to avoid conflict
+
+```rust
+struct State {
+    items: Vec<String>,
+    log: Vec<String>,
+}
+
+// BAD: borrows all of `self` twice
+// fn process(&mut self) {
+//     for item in &self.items {  // immutable borrow of self
+//         self.log.push(item.clone()); // mutable borrow of self — ERROR
+//     }
+// }
+
+// GOOD: borrow fields independently
+fn process(items: &[String], log: &mut Vec<String>) {
+    for item in items {
+        log.push(item.clone());
+    }
+}
+```
+
+### Thread-safe shared state with Arc<Mutex<T>>
+
+```rust
+use std::sync::{Arc, Mutex};
+use std::thread;
+
+let data = Arc::new(Mutex::new(vec![1, 2, 3]));
+let data_clone = Arc::clone(&data);
+
+let handle = thread::spawn(move || {
+    let mut locked = data_clone.lock().unwrap();
+    locked.push(4);
+});
+
+handle.join().unwrap();
+assert_eq!(*data.lock().unwrap(), vec![1, 2, 3, 4]);
+```
 
 ---
 

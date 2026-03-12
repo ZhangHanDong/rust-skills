@@ -20,51 +20,14 @@ user-invocable: false
 
 ---
 
-## Critical Constraints
+## Implementation Workflow
 
-### Financial Precision
-
-```
-RULE: Never use f64 for money
-WHY: Floating point loses precision
-RUST: Use rust_decimal::Decimal
-```
-
-### Audit Requirements
-
-```
-RULE: All transactions must be immutable and traceable
-WHY: Regulatory compliance, dispute resolution
-RUST: Arc<T> for sharing, event sourcing pattern
-```
-
-### Consistency
-
-```
-RULE: Money can't disappear or appear
-WHY: Double-entry accounting principles
-RUST: Transaction types with validated totals
-```
-
----
-
-## Trace Down ↓
-
-From constraints to design (Layer 2):
-
-```
-"Need immutable transaction records"
-    ↓ m09-domain: Model as Value Objects
-    ↓ m01-ownership: Use Arc for shared immutable data
-
-"Need precise decimal math"
-    ↓ m05-type-driven: Newtype for Currency/Amount
-    ↓ rust_decimal: Use Decimal type
-
-"Need transaction boundaries"
-    ↓ m12-lifecycle: RAII for transaction scope
-    ↓ m09-domain: Aggregate boundaries
-```
+1. **Define currency types** — Create newtypes wrapping `rust_decimal::Decimal` for all monetary values. Never use `f64`.
+2. **Enforce currency safety** — Arithmetic operations must validate matching currencies at compile time or return `Result`.
+3. **Model transactions as immutable events** — Use event sourcing; once created, a transaction record is never mutated.
+4. **Validate double-entry invariants** — Every transaction must balance: total debits == total credits. Assert this at construction time.
+5. **Add structured audit logging** — Attach trace IDs (`tracing::Span`) to every financial operation for regulatory compliance.
+6. **Use checked arithmetic** — All math via `Decimal::checked_add`, `checked_mul` etc. Propagate overflow as errors, never silently truncate.
 
 ---
 
@@ -87,10 +50,24 @@ From constraints to design (Layer 2):
 | Audit log | Traceability | Structured logging with trace IDs |
 | Ledger | Double-entry | Debit/credit balance |
 
-## Code Pattern: Currency Type
+## Code Pattern: Currency Type with Checked Arithmetic
 
 ```rust
 use rust_decimal::Decimal;
+use std::sync::Arc;
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum Currency { USD, EUR, GBP }
+
+#[derive(Debug, Clone, thiserror::Error)]
+pub enum FinError {
+    #[error("currency mismatch: {0:?} vs {1:?}")]
+    CurrencyMismatch(Currency, Currency),
+    #[error("arithmetic overflow")]
+    Overflow,
+    #[error("transaction imbalance: debits={0}, credits={1}")]
+    Imbalance(Decimal, Decimal),
+}
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Amount {
@@ -103,11 +80,38 @@ impl Amount {
         Self { value, currency }
     }
 
-    pub fn add(&self, other: &Amount) -> Result<Amount, CurrencyMismatch> {
+    pub fn checked_add(&self, other: &Amount) -> Result<Amount, FinError> {
         if self.currency != other.currency {
-            return Err(CurrencyMismatch);
+            return Err(FinError::CurrencyMismatch(
+                self.currency.clone(), other.currency.clone(),
+            ));
         }
-        Ok(Amount::new(self.value + other.value, self.currency))
+        let sum = self.value.checked_add(other.value)
+            .ok_or(FinError::Overflow)?;
+        Ok(Amount::new(sum, self.currency.clone()))
+    }
+}
+
+/// Immutable ledger entry — wrap in Arc for shared read access.
+#[derive(Debug, Clone)]
+pub struct LedgerEntry {
+    pub debit: Amount,
+    pub credit: Amount,
+    pub trace_id: String,
+}
+
+impl LedgerEntry {
+    /// Validates double-entry invariant at construction time.
+    pub fn new(debit: Amount, credit: Amount, trace_id: String) -> Result<Arc<Self>, FinError> {
+        if debit.currency != credit.currency {
+            return Err(FinError::CurrencyMismatch(
+                debit.currency.clone(), credit.currency.clone(),
+            ));
+        }
+        if debit.value != credit.value {
+            return Err(FinError::Imbalance(debit.value, credit.value));
+        }
+        Ok(Arc::new(Self { debit, credit, trace_id }))
     }
 }
 ```
@@ -122,17 +126,6 @@ impl Amount {
 | Mutable transaction | Audit trail broken | Immutable + events |
 | String for amount | No validation | Validated newtype |
 | Silent overflow | Money disappears | Checked arithmetic |
-
----
-
-## Trace to Layer 1
-
-| Constraint | Layer 2 Pattern | Layer 1 Implementation |
-|------------|-----------------|------------------------|
-| Immutable records | Event sourcing | Arc<T>, Clone |
-| Transaction scope | Aggregate | Owned children |
-| Precision | Value Object | rust_decimal newtype |
-| Thread-safe sharing | Shared immutable | Arc (not Rc) |
 
 ---
 

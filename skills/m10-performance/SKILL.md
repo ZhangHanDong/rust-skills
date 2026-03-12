@@ -1,6 +1,6 @@
 ---
 name: m10-performance
-description: "CRITICAL: Use for performance optimization. Triggers: performance, optimization, benchmark, profiling, flamegraph, criterion, slow, fast, allocation, cache, SIMD, make it faster, 性能优化, 基准测试"
+description: "Use when the user asks about performance optimization, benchmarking, profiling, flamegraphs, criterion, slow code, allocations, cache efficiency, SIMD, or making Rust code faster. Triggers: performance, optimization, benchmark, profiling, flamegraph, criterion, slow, fast, allocation, cache, SIMD, make it faster, 性能优化, 基准测试"
 user-invocable: false
 ---
 
@@ -102,14 +102,48 @@ To implementation (Layer 1):
 | `heaptrack` | Allocation tracking |
 | `valgrind` / `cachegrind` | Cache analysis |
 
-## Optimization Priority
+## Workflow
 
-```
-1. Algorithm choice     (10x - 1000x)
-2. Data structure       (2x - 10x)
-3. Allocation reduction (2x - 5x)
-4. Cache optimization   (1.5x - 3x)
-5. SIMD/Parallelism     (2x - 8x)
+1. **Profile** — Identify the actual bottleneck before changing anything
+   - Run `cargo flamegraph` or `perf record` to find hot functions
+   - Validate: you can point to a specific function or line consuming >10% of runtime
+
+2. **Benchmark the baseline** — Establish a measurable starting point
+   - Add a criterion benchmark for the hot path
+   - Validate: `cargo bench` produces stable, reproducible numbers
+
+3. **Apply the highest-leverage fix** — Use the priority order (algorithm > data structure > allocation > cache > SIMD)
+   - Validate: `cargo bench` shows measurable improvement
+
+4. **Verify correctness** — Optimization must not break behavior
+   - Run `cargo test` and compare outputs against baseline
+   - Validate: all tests pass, no regressions
+
+### Example: Benchmark with Criterion
+
+```rust
+// benches/parse_bench.rs
+use criterion::{black_box, criterion_group, criterion_main, Criterion};
+
+fn parse_records(data: &[u8]) -> Vec<Record> {
+    // Pre-allocate based on estimated count to reduce allocations
+    let estimated = data.len() / 64;
+    let mut results = Vec::with_capacity(estimated);
+    for chunk in data.chunks(64) {
+        results.push(Record::from_bytes(chunk));
+    }
+    results
+}
+
+fn bench_parse(c: &mut Criterion) {
+    let data = vec![0u8; 6400];
+    c.bench_function("parse_records", |b| {
+        b.iter(|| parse_records(black_box(&data)))
+    });
+}
+
+criterion_group!(benches, bench_parse);
+criterion_main!(benches);
 ```
 
 ## Common Techniques
@@ -130,20 +164,12 @@ To implementation (Layer 1):
 |---------|-----------|--------|
 | Optimize without profiling | Wrong target | Profile first |
 | Benchmark in debug mode | Meaningless | Always `--release` |
-| Use LinkedList | Cache unfriendly | `Vec` or `VecDeque` |
-| Hidden `.clone()` | Unnecessary allocs | Use references |
-| Premature optimization | Wasted effort | Make it work first |
-
----
-
-## Anti-Patterns
-
-| Anti-Pattern | Why Bad | Better |
-|--------------|---------|--------|
-| Clone to avoid lifetimes | Performance cost | Proper ownership |
-| Box everything | Indirection cost | Stack when possible |
-| HashMap for small sets | Overhead | Vec with linear search |
-| String concat in loop | O(n^2) | `String::with_capacity` or `format!` |
+| Use `LinkedList` | Cache unfriendly | `Vec` or `VecDeque` |
+| Clone to avoid lifetimes | Unnecessary allocs on hot paths | Use references or `Cow<T>` |
+| Box everything | Indirection + cache miss cost | Stack allocate when possible |
+| `HashMap` for small sets | Hash overhead | `Vec` with linear search (<50 items) |
+| String concat in loop | O(n^2) allocations | `String::with_capacity` or `write!` |
+| Premature optimization | Wasted effort, added complexity | Make it correct first, then measure |
 
 ---
 

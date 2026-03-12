@@ -12,20 +12,15 @@ user-invocable: false
 
 # Ecosystem Integration
 
-> **Layer 2: Design Choices**
+## Workflow: Adding a Dependency
 
-## Core Question
+1. **Identify need** → Check table below for standard crate
+2. **Evaluate crate** → Apply selection criteria (maintenance, docs, stability)
+3. **Add dependency** → `cargo add <crate>` with appropriate feature flags
+4. **Configure features** → Disable defaults if unneeded: `default-features = false`
+5. **Verify integration** → `cargo check` then `cargo clippy`
 
-**What's the right crate for this job, and how should it integrate?**
-
-Before adding dependencies:
-- Is there a standard solution?
-- What's the maintenance status?
-- What's the API stability?
-
----
-
-## Integration Decision → Implementation
+## Standard Crate Recommendations
 
 | Need | Choice | Crates |
 |------|--------|--------|
@@ -40,57 +35,49 @@ Before adding dependencies:
 
 ---
 
-## Thinking Prompt
+## Example: Adding a Dependency with Feature Flags
 
-Before adding a dependency:
-
-1. **Is it well-maintained?**
-   - Recent commits?
-   - Active issue response?
-   - Breaking changes frequency?
-
-2. **What's the scope?**
-   - Do you need the full crate or just a feature?
-   - Can feature flags reduce bloat?
-
-3. **How does it integrate?**
-   - Trait-based or concrete types?
-   - Sync or async?
-   - What bounds does it require?
-
----
-
-## Trace Up ↑
-
-To domain constraints (Layer 3):
-
-```
-"Which HTTP framework should I use?"
-    ↑ Ask: What are the performance requirements?
-    ↑ Check: domain-web (latency, throughput needs)
-    ↑ Check: Team expertise (familiarity with framework)
+```toml
+# Cargo.toml — only enable what you need
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "postgres", "macros"] }
 ```
 
-| Question | Trace To | Ask |
-|----------|----------|-----|
-| Framework choice | domain-* | What constraints matter? |
-| Library vs build | domain-* | What's the deployment model? |
-| API design | domain-* | Who are the consumers? |
+```rust
+// Using serde with derive
+use serde::{Deserialize, Serialize};
 
----
+#[derive(Debug, Serialize, Deserialize)]
+struct Config {
+    host: String,
+    port: u16,
+}
 
-## Trace Down ↓
-
-To implementation (Layer 1):
-
+// Using reqwest with error handling
+async fn fetch_data(url: &str) -> Result<Config, Box<dyn std::error::Error>> {
+    let config: Config = reqwest::get(url).await?.json().await?;
+    Ok(config)
+}
 ```
-"Integrate external crate"
-    ↓ m04-zero-cost: Trait bounds and generics
-    ↓ m06-error-handling: Error type compatibility
 
-"FFI integration"
-    ↓ unsafe-checker: Safety requirements
-    ↓ m12-lifecycle: Resource cleanup
+## Example: Workspace Setup
+
+```toml
+# Root Cargo.toml
+[workspace]
+members = ["crates/*"]
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+tokio = { version = "1", features = ["full"] }
+
+# crates/my-lib/Cargo.toml — inherit workspace deps
+[dependencies]
+serde = { workspace = true }
+tokio = { workspace = true }
 ```
 
 ---
@@ -109,19 +96,31 @@ To implementation (Layer 1):
 
 ### Cargo Features
 
-| Feature | Purpose |
-|---------|---------|
-| `[features]` | Optional functionality |
-| `default = [...]` | Default features |
-| `feature = "serde"` | Conditional deps |
-| `[workspace]` | Multi-crate projects |
+```toml
+[features]
+default = ["json"]
+json = ["dep:serde_json"]
+full = ["json", "xml", "yaml"]
+
+[dependencies]
+serde_json = { version = "1", optional = true }
+```
+
+```rust
+// Conditional compilation on feature flags
+#[cfg(feature = "json")]
+pub fn parse_json(input: &str) -> Result<Value, serde_json::Error> {
+    serde_json::from_str(input)
+}
+```
 
 ## Error Code Reference
 
 | Error | Cause | Fix |
 |-------|-------|-----|
-| E0433 | Can't find crate | Add to Cargo.toml |
-| E0603 | Private item | Check crate docs |
+| E0425 | Unresolved name | Add `use` import or add crate to Cargo.toml |
+| E0433 | Can't find crate | `cargo add <crate>` or check spelling |
+| E0603 | Private item | Use public re-export or check crate docs |
 | Feature not enabled | Optional feature | Enable in `features` |
 | Version conflict | Incompatible deps | `cargo update` or pin |
 | Duplicate types | Different crate versions | Unify in workspace |

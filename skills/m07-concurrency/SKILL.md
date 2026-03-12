@@ -1,6 +1,6 @@
 ---
 name: m07-concurrency
-description: "CRITICAL: Use for concurrency/async. Triggers: E0277 Send Sync, cannot be sent between threads, thread, spawn, channel, mpsc, Mutex, RwLock, Atomic, async, await, Future, tokio, deadlock, race condition, 并发, 线程, 异步, 死锁"
+description: "Diagnoses Send/Sync errors, implements thread-safe patterns, resolves async/await concurrency issues, and debugs deadlocks. Use when: E0277 Send Sync, cannot be sent between threads, thread, spawn, channel, mpsc, Mutex, RwLock, Atomic, async, await, Future, tokio, deadlock, race condition, 并发, 线程, 异步, 死锁"
 user-invocable: false
 ---
 
@@ -30,24 +30,13 @@ Before choosing concurrency primitives:
 
 ---
 
-## Thinking Prompt
+## Workflow
 
-Before adding concurrency:
-
-1. **What's the workload?**
-   - CPU-bound → threads (std::thread, rayon)
-   - I/O-bound → async (tokio, async-std)
-   - Mixed → hybrid approach
-
-2. **What's the sharing model?**
-   - No sharing → message passing (channels)
-   - Immutable sharing → Arc<T>
-   - Mutable sharing → Arc<Mutex<T>> or Arc<RwLock<T>>
-
-3. **What are the Send/Sync requirements?**
-   - Cross-thread ownership → Send
-   - Cross-thread references → Sync
-   - Single-thread async → spawn_local
+1. **Identify workload type** → CPU-bound (threads/rayon) vs I/O-bound (async) vs mixed (spawn_blocking)
+2. **Determine sharing model** → none (channels), immutable (Arc), mutable (Arc<Mutex/RwLock>)
+3. **Check Send/Sync requirements** → validate types satisfy bounds for chosen concurrency model
+4. **Trace up to domain** → load domain skill for context-specific constraints (see below)
+5. **Implement and validate** → compile check for Send/Sync errors, test for deadlocks
 
 ---
 
@@ -90,30 +79,6 @@ Before adding concurrency:
 | Send/Sync in CLI | **domain-cli** | Is multi-thread really needed? |
 | Mutex vs channels | m09-domain | Shared state or message passing? |
 | Async vs threads | m10-performance | What's the workload profile? |
-
----
-
-## Trace Down ↓
-
-From design to implementation:
-
-```
-"Need parallelism for CPU work"
-    ↓ Use: std::thread or rayon
-
-"Need concurrency for I/O"
-    ↓ Use: async/await with tokio
-
-"Need to share immutable data across threads"
-    ↓ Use: Arc<T>
-
-"Need to share mutable data across threads"
-    ↓ Use: Arc<Mutex<T>> or Arc<RwLock<T>>
-    ↓ Or: channels for message passing
-
-"Need simple atomic operations"
-    ↓ Use: AtomicBool, AtomicUsize, etc.
-```
 
 ---
 
@@ -173,6 +138,43 @@ Async context?
 
 ---
 
+## Common Patterns
+
+### Thread + Channel (CPU-bound)
+
+```rust
+use std::sync::mpsc;
+use std::thread;
+
+let (tx, rx) = mpsc::channel();
+let handle = thread::spawn(move || {
+    let result = expensive_computation();
+    tx.send(result).unwrap();
+});
+let value = rx.recv().unwrap(); // blocks until ready
+handle.join().unwrap();
+```
+
+### Shared State with Arc<Mutex<T>>
+
+```rust
+use std::sync::{Arc, Mutex};
+use std::thread;
+
+let counter = Arc::new(Mutex::new(0));
+let handles: Vec<_> = (0..4).map(|_| {
+    let counter = Arc::clone(&counter);
+    thread::spawn(move || {
+        let mut num = counter.lock().unwrap();
+        *num += 1;
+    })
+}).collect();
+for h in handles { h.join().unwrap(); }
+assert_eq!(*counter.lock().unwrap(), 4);
+```
+
+---
+
 ## Anti-Patterns
 
 | Anti-Pattern | Why Bad | Better |
@@ -204,10 +206,24 @@ do_async().await;
 ### Non-Send Types in Async
 
 ```rust
-// Rc is !Send, can't cross await in spawned task
-// Option 1: use Arc instead
-// Option 2: use spawn_local (single-thread runtime)
-// Option 3: ensure Rc is dropped before .await
+// BAD: Rc held across await in spawned task
+let data = Rc::new(vec![1, 2, 3]);
+tokio::spawn(async move {
+    println!("{:?}", data); // ERROR: Rc is !Send
+});
+
+// FIX 1: Use Arc instead
+let data = Arc::new(vec![1, 2, 3]);
+tokio::spawn(async move {
+    println!("{:?}", data); // OK: Arc is Send
+});
+
+// FIX 2: Drop Rc before .await
+{
+    let data = Rc::new(vec![1, 2, 3]);
+    let result = data.iter().sum::<i32>();
+} // Rc dropped here
+do_async().await; // OK: no Rc across await
 ```
 
 ---

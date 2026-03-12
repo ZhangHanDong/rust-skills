@@ -6,8 +6,6 @@ user-invocable: false
 
 # Machine Learning Domain
 
-> **Layer 3: Domain Constraints**
-
 ## Domain Constraints → Design Implications
 
 | Domain Rule | Design Constraint | Rust Implication |
@@ -23,49 +21,11 @@ user-invocable: false
 
 ## Critical Constraints
 
-### Memory Efficiency
-
-```
-RULE: Avoid copying large tensors
-WHY: Memory bandwidth is bottleneck
-RUST: References, views, in-place ops
-```
-
-### GPU Utilization
-
-```
-RULE: Batch operations for GPU efficiency
-WHY: GPU overhead per kernel launch
-RUST: Batch sizes, async data loading
-```
-
-### Model Portability
-
-```
-RULE: Use standard model formats
-WHY: Train in Python, deploy in Rust
-RUST: ONNX via tract or candle
-```
-
----
-
-## Trace Down ↓
-
-From constraints to design (Layer 2):
-
-```
-"Need efficient data pipelines"
-    ↓ m10-performance: Streaming, batching
-    ↓ polars: Lazy evaluation
-
-"Need GPU inference"
-    ↓ m07-concurrency: Async data loading
-    ↓ candle/tch-rs: CUDA backend
-
-"Need model loading"
-    ↓ m12-lifecycle: Lazy init, caching
-    ↓ tract: ONNX runtime
-```
+| Constraint | Rule | Rust Approach |
+|-----------|------|---------------|
+| Memory efficiency | Never copy large tensors | References, views, in-place ops |
+| GPU utilization | Batch operations to amortize kernel launch overhead | Batch sizes, async data loading |
+| Model portability | Use standard formats (train Python, deploy Rust) | ONNX via tract or candle |
 
 ---
 
@@ -98,6 +58,16 @@ From constraints to design (Layer 2):
 | Streaming | Large data | Iterator-based |
 | GPU async | Parallelism | Data loading parallel to compute |
 
+## Workflow: Adding ML Inference to a Rust Service
+
+1. **Choose framework** — Use the Use Case → Framework table above to select crate
+2. **Add dependencies** — `cargo add tract-onnx ndarray anyhow` (or `candle-core` / `tch` per choice)
+3. **Load model once** — Use `OnceLock` or `once_cell::sync::Lazy` for singleton; never load per-request
+4. **Prepare input** — Convert raw data to `ndarray::Array` with correct shape and dtype
+5. **Run inference** — Call `model.run()` with batched inputs when possible
+6. **Validate output** — Check output tensor shape matches expectations before unwrapping
+7. **Benchmark** — Profile with `criterion`; compare batch sizes (32, 64, 128) for throughput
+
 ## Code Pattern: Inference Server
 
 ```rust
@@ -129,21 +99,29 @@ async fn predict(input: Vec<f32>) -> anyhow::Result<Vec<f32>> {
 ## Code Pattern: Batched Inference
 
 ```rust
-async fn batch_predict(inputs: Vec<Vec<f32>>, batch_size: usize) -> Vec<Vec<f32>> {
+use tract_onnx::prelude::*;
+use tract_ndarray::{Array2, Axis};
+
+fn batch_predict(
+    model: &SimplePlan<TypedFact, Box<dyn TypedOp>, Graph<TypedFact, Box<dyn TypedOp>>>,
+    inputs: &[Vec<f32>],
+    feature_dim: usize,
+    batch_size: usize,
+) -> anyhow::Result<Vec<Vec<f32>>> {
     let mut results = Vec::with_capacity(inputs.len());
 
     for batch in inputs.chunks(batch_size) {
-        // Stack inputs into batch tensor
-        let batch_tensor = stack_inputs(batch);
-
-        // Run inference on batch
-        let batch_output = model.run(batch_tensor).await;
-
-        // Unstack results
-        results.extend(unstack_outputs(batch_output));
+        let n = batch.len();
+        let flat: Vec<f32> = batch.iter().flatten().copied().collect();
+        let tensor = Array2::from_shape_vec((n, feature_dim), flat)?;
+        let output = model.run(tvec!(tensor.into_tensor().into()))?;
+        let view = output[0].to_array_view::<f32>()?;
+        for row in view.axis_iter(Axis(0)) {
+            results.push(row.iter().copied().collect());
+        }
     }
 
-    results
+    Ok(results)
 }
 ```
 
@@ -157,19 +135,6 @@ async fn batch_predict(inputs: Vec<Vec<f32>>, batch_size: usize) -> Vec<Vec<f32>
 | Single inference | GPU underutilized | Batch processing |
 | Load model per request | Slow | Singleton pattern |
 | Sync data loading | GPU idle | Async pipeline |
-
----
-
-## Trace to Layer 1
-
-| Constraint | Layer 2 Pattern | Layer 1 Implementation |
-|------------|-----------------|------------------------|
-| Memory efficiency | Zero-copy | ndarray views |
-| Model singleton | Lazy init | OnceLock<Model> |
-| Batch processing | Chunked iteration | chunks() + parallel |
-| GPU async | Concurrent loading | tokio::spawn + GPU |
-
----
 
 ## Related Skills
 

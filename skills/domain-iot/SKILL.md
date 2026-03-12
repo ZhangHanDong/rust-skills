@@ -1,6 +1,6 @@
 ---
 name: domain-iot
-description: "Use when building IoT apps. Keywords: IoT, Internet of Things, sensor, MQTT, device, edge computing, telemetry, actuator, smart home, gateway, protocol, 物联网, 传感器, 边缘计算, 智能家居"
+description: "Develops IoT applications and embedded device systems in Rust. Use when connecting sensors, configuring MQTT brokers, processing telemetry data, managing device communication, implementing store-and-forward queues, or building edge computing pipelines. Keywords: IoT, Internet of Things, sensor, MQTT, device, edge computing, telemetry, actuator, smart home, gateway, protocol, 物联网, 传感器, 边缘计算, 智能家居"
 user-invocable: false
 ---
 
@@ -21,51 +21,14 @@ user-invocable: false
 
 ---
 
-## Critical Constraints
+## IoT Project Workflow
 
-### Network Unreliability
-
-```
-RULE: Network can fail at any time
-WHY: Wireless, remote locations
-RUST: Local queue, retry with backoff
-```
-
-### Power Management
-
-```
-RULE: Minimize power consumption
-WHY: Battery life, energy costs
-RUST: Sleep modes, efficient algorithms
-```
-
-### Device Security
-
-```
-RULE: All communication encrypted
-WHY: Physical access possible
-RUST: TLS, signed messages
-```
-
----
-
-## Trace Down ↓
-
-From constraints to design (Layer 2):
-
-```
-"Need offline-first design"
-    ↓ m12-lifecycle: Local buffer with persistence
-    ↓ m13-domain-error: Retry with backoff
-
-"Need power efficiency"
-    ↓ domain-embedded: no_std patterns
-    ↓ m10-performance: Minimal allocations
-
-"Need reliable messaging"
-    ↓ m07-concurrency: Async with timeout
-    ↓ MQTT: QoS levels
-```
+1. **Choose runtime** → Check environment table below; pick `tokio` (Linux gateway) or `embassy` (MCU)
+2. **Set up messaging** → Configure MQTT client with appropriate QoS level (see code pattern below)
+3. **Add offline resilience** → Implement local message queue with persistence; retry with exponential backoff
+4. **Add power management** → Use sleep modes between sensor reads; wake on timer or interrupt
+5. **Secure communications** → Enable TLS (`rustls` for std, hardware crypto for no_std); sign firmware updates
+6. **Validate** → Confirm: messages survive network drop? Device sleeps between reads? All comms encrypted?
 
 ---
 
@@ -98,36 +61,61 @@ From constraints to design (Layer 2):
 | Power mgmt | Battery life | Sleep + wake events |
 | Store & forward | Network reliability | Local queue |
 
-## Code Pattern: MQTT Client
+## Code Pattern: MQTT Client with Store-and-Forward
 
 ```rust
-use rumqttc::{AsyncClient, MqttOptions, QoS};
+use rumqttc::{AsyncClient, MqttOptions, QoS, Event, Packet};
+use std::time::Duration;
+use tokio::sync::mpsc;
 
-async fn run_mqtt() -> anyhow::Result<()> {
-    let mut options = MqttOptions::new("device-1", "broker.example.com", 1883);
+/// MQTT client with local buffering for offline resilience.
+/// Uses QoS::AtLeastOnce so broker ACKs delivery.
+async fn run_mqtt(device_id: &str, broker: &str) -> anyhow::Result<()> {
+    let mut options = MqttOptions::new(device_id, broker, 1883);
     options.set_keep_alive(Duration::from_secs(30));
 
     let (client, mut eventloop) = AsyncClient::new(options, 10);
+    let topic_cmd = format!("devices/{device_id}/commands");
+    let topic_tel = format!("devices/{device_id}/telemetry");
 
-    // Subscribe to commands
-    client.subscribe("devices/device-1/commands", QoS::AtLeastOnce).await?;
+    client.subscribe(&topic_cmd, QoS::AtLeastOnce).await?;
 
-    // Publish telemetry
+    // Local buffer: survives transient disconnects
+    let (tx, mut rx) = mpsc::channel::<Vec<u8>>(128);
+
+    // Producer: read sensor on interval, buffer locally
     tokio::spawn(async move {
         loop {
             let data = read_sensor().await;
-            client.publish("devices/device-1/telemetry", QoS::AtLeastOnce, false, data).await.ok();
+            let _ = tx.send(data).await; // buffer if MQTT is down
             tokio::time::sleep(Duration::from_secs(60)).await;
         }
     });
 
-    // Process events
+    // Publisher: drain buffer → broker
+    let pub_client = client.clone();
+    let pub_topic = topic_tel.clone();
+    tokio::spawn(async move {
+        while let Some(data) = rx.recv().await {
+            if let Err(e) = pub_client.publish(&pub_topic, QoS::AtLeastOnce, false, data).await {
+                tracing::warn!("Publish failed, will retry: {e}");
+            }
+        }
+    });
+
+    // Event loop with reconnect backoff
+    let mut backoff = Duration::from_secs(1);
     loop {
         match eventloop.poll().await {
-            Ok(event) => handle_event(event).await,
+            Ok(Event::Incoming(Packet::Publish(msg))) => {
+                handle_command(&msg.payload).await;
+                backoff = Duration::from_secs(1); // reset on success
+            }
+            Ok(_) => {}
             Err(e) => {
-                tracing::error!("MQTT error: {}", e);
-                tokio::time::sleep(Duration::from_secs(5)).await;
+                tracing::error!("MQTT error: {e}, retry in {backoff:?}");
+                tokio::time::sleep(backoff).await;
+                backoff = (backoff * 2).min(Duration::from_secs(60));
             }
         }
     }
@@ -144,17 +132,6 @@ async fn run_mqtt() -> anyhow::Result<()> {
 | Always-on radio | Battery drain | Sleep between sends |
 | Unencrypted MQTT | Security risk | TLS |
 | No local buffer | Network outage = data loss | Persist locally |
-
----
-
-## Trace to Layer 1
-
-| Constraint | Layer 2 Pattern | Layer 1 Implementation |
-|------------|-----------------|------------------------|
-| Offline-first | Store & forward | Local queue + flush |
-| Power efficiency | Sleep patterns | Timer-based wake |
-| Network reliability | Retry | tokio-retry, backoff |
-| Security | TLS | rustls, native-tls |
 
 ---
 
