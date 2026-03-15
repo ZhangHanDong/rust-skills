@@ -90,6 +90,36 @@ all = "warn"
 pedantic = "warn"
 ```
 
+## Standalone Quick Reference
+
+This section intentionally duplicates a small amount of guidance so the documented "copy `AGENTS.md` only" install path remains useful.
+
+### Routing Summary
+
+- ownership / borrow / lifetime / `E0382` / `E0597` -> `m01-ownership`
+- `Box` / `Rc` / `Arc` / smart pointers -> `m02-resource`
+- `Result` / `panic` / error handling -> `m06-error-handling`
+- `async` / `await` / `Send` / `Sync` -> `m07-concurrency`
+- versions / crate info / docs -> `rust-learner`
+- `unsafe` / FFI / raw pointers -> `unsafe-checker`
+
+### Common Error Fixes
+
+| Error | Cause | Fix Direction |
+|---|---|---|
+| `E0382` | use of moved value | borrow, clone intentionally, or redesign ownership |
+| `E0597` | lifetime too short | extend lifetime or restructure borrows |
+| `E0502` | borrow conflict | split borrows or change borrowing pattern |
+| `E0499` | multiple mutable borrows | restructure to one mutable borrow at a time |
+| `E0277` | missing trait bound | add the right bound or use the correct thread-safe type |
+
+### Practical Rust Rules
+
+- Use `?` instead of `unwrap()` in library-style code.
+- Every `unsafe` block needs a `// SAFETY:` comment.
+- Prefer `Arc<T>` over `Rc<T>` when state may cross threads.
+- For read-only functions, prefer `&T` over taking ownership.
+
 ## Key Skill Entry Points
 
 If the repository is available locally:

@@ -113,6 +113,12 @@ claude -p "tokio 最新版本"                # rust-learner
 - negotiation parity
 - `Agent Mode` vs `Inline Mode` expectations
 
+Manual parity prompts:
+- `E0382 use of moved value`
+- `Web API config sharing error: Rc cannot be sent`
+- `compare tokio vs async-std`
+- `What's the latest version of tokio?`
+
 ## Coverage Summary
 
 | Category | Skills | Tested |

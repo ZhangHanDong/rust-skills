@@ -76,11 +76,13 @@ Typical use cases:
 
 Use the same skill routing and reasoning contract, but execute directly with the tools available on the current platform when agent infrastructure is unavailable.
 
-Inline mode should preserve:
+Inline mode should aim to preserve:
 - routing behavior
 - negotiation behavior
 - domain-aware analysis
 - live-data fetching priority where possible
+
+Actual behavior depends on the platform's available tools. If live retrieval is unavailable, the response should disclose that limitation instead of implying full parity.
 
 ## Output Contract
 
@@ -100,6 +102,22 @@ When negotiation is enabled, answers should include:
 - confidence
 - gaps or missing data
 - final recommendation
+
+Suggested structure:
+
+```markdown
+## Negotiation Analysis
+
+**Query Type:** [Comparative | Cross-domain | Synthesis | Ambiguous]
+**Negotiation:** Enabled
+
+### Source Assessment
+- **Confidence:** HIGH | MEDIUM | LOW | UNCERTAIN
+- **Gaps:** [What is still missing]
+
+## Synthesized Answer
+[Recommendation]
+```
 
 ### Live Data Responses
 

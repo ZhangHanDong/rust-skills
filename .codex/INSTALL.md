@@ -11,7 +11,7 @@ Copy the main agent instructions to your project:
 cp AGENTS.md /path/to/your/project/AGENTS.md
 ```
 
-This is the lightest install path. It gives Codex the required Rust workflow summary, but not the full repository context.
+This is the lightest install path. It gives Codex a useful Rust workflow summary and standalone quick reference, but not the full repository context or the closest Claude parity.
 
 ### Option 2: Reference as Submodule
 
@@ -52,6 +52,7 @@ What parity does not mean:
 - automatic prompt-submit hook injection
 - identical runtime tool APIs
 - identical enforcement strength
+- guaranteed live-data retrieval when the required tools are unavailable
 
 ## What's Included
 
