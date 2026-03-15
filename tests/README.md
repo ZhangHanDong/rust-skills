@@ -15,6 +15,7 @@ tests/
 │   ├── domain-skills.md    # Layer 3 domain skills
 │   ├── unsafe.md           # unsafe-checker tests
 │   ├── routing.md          # rust-router tests
+│   ├── platform-parity.md  # Claude/Codex behavior parity tests
 │   └── agents.md           # Agent integration tests
 │
 ├── pressure-scenarios/     # Edge case tests
@@ -105,6 +106,12 @@ claude -p "tokio 最新版本"                # rust-learner
 - rust-changelog
 - docs-researcher
 - clippy-researcher
+
+### 6. Cross-Platform Parity
+- Claude Code and Codex adapter behavior
+- shared routing expectations
+- negotiation parity
+- `Agent Mode` vs `Inline Mode` expectations
 
 ## Coverage Summary
 
