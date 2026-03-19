@@ -63,7 +63,10 @@ claude -p "tokio 最新版本"                # rust-learner
 
 ```bash
 ./tests/validation/validate-skills.sh
+./tests/validation/validate-skill-frontmatter.sh
 ```
+
+The validation script scans every `skills/**/SKILL.md` file and fails if required frontmatter such as `name` or `description` is missing.
 
 ## Test Categories
 
