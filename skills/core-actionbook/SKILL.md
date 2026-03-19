@@ -1,6 +1,6 @@
 ---
 name: core-actionbook
-description: Internal: pre-computed action selectors used by rust-learner agents.
+description: "Internal: pre-computed action selectors used by rust-learner agents."
 # Internal tool - no description to prevent auto-triggering
 # Used by: rust-learner agents for pre-computed selectors
 ---

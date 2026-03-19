@@ -1,5 +1,5 @@
 #!/bin/bash
-# Validate that every skill declares required frontmatter fields.
+# Validate that every skill declares required frontmatter fields and parses as YAML.
 
 set -euo pipefail
 
@@ -18,13 +18,20 @@ while IFS= read -r -d '' skill_file; do
     COUNT=$((COUNT + 1))
     relative_file="${skill_file#"$ROOT_DIR"/}"
 
-    if ! grep -q "^name:" "$skill_file"; then
-        echo "FAIL: $relative_file missing name:"
-        FAILED=1
-    fi
-
-    if ! grep -q "^description:" "$skill_file"; then
-        echo "FAIL: $relative_file missing description:"
+    if ! ruby -e '
+        require "yaml"
+        path = ARGV.fetch(0)
+        text = File.read(path)
+        parts = text.split(/^---\s*$\n?/, 3)
+        raise "missing frontmatter delimiters" if parts.length < 3
+        data = YAML.safe_load(parts[1], permitted_classes: [], aliases: false)
+        raise "frontmatter must be a mapping" unless data.is_a?(Hash)
+        %w[name description].each do |key|
+          value = data[key]
+          raise "missing #{key}" if value.nil? || value.to_s.strip.empty?
+        end
+      ' "$skill_file" >/dev/null 2>&1; then
+        echo "FAIL: $relative_file has invalid or incomplete YAML frontmatter"
         FAILED=1
     fi
 done < <(find "$ROOT_DIR/skills" -name "SKILL.md" -type f -print0)

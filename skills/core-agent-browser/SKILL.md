@@ -1,6 +1,6 @@
 ---
 name: core-agent-browser
-description: Internal: browser-based documentation fetcher used by rust-learner and researcher agents.
+description: "Internal: browser-based documentation fetcher used by rust-learner and researcher agents."
 # Internal tool - no description to prevent auto-triggering
 # Used by: rust-learner, docs-researcher, crate-researcher agents
 ---

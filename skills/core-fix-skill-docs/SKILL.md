@@ -1,6 +1,6 @@
 ---
 name: core-fix-skill-docs
-description: Internal: check and fix missing reference files in dynamic skills. Triggered by slash command only.
+description: "Internal: check and fix missing reference files in dynamic skills. Triggered by slash command only."
 # Internal maintenance tool - no description to prevent auto-triggering
 # Triggered by: /fix-skill-docs command
 argument-hint: "[crate_name] [--check-only]"
