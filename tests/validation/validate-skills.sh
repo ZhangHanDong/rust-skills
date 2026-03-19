@@ -70,21 +70,14 @@ echo ""
 # =====================================
 echo "Checking SKILL.md files..."
 
-skill_count=0
-
-while IFS= read -r -d '' skill_file; do
-    skill_count=$((skill_count + 1))
-    relative_file="${skill_file#"$ROOT_DIR"/}"
-
-    if grep -q "^name:" "$skill_file" && grep -q "^description:" "$skill_file"; then
-        pass "$relative_file valid"
-    else
-        fail "$relative_file missing required frontmatter"
-    fi
-done < <(find "$ROOT_DIR/skills" -name "SKILL.md" -type f -print0)
+skill_count=$(find "$ROOT_DIR/skills" -name "SKILL.md" -type f | wc -l | tr -d ' ')
 
 if [ "$skill_count" -eq 0 ]; then
     fail "No SKILL.md files found under skills/"
+elif "$SCRIPT_DIR/validate-skill-frontmatter.sh"; then
+    pass "Validated frontmatter for $skill_count skill files"
+else
+    fail "skills/**/SKILL.md frontmatter validation failed"
 fi
 
 echo ""

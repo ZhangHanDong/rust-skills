@@ -1,7 +1,7 @@
 ---
 name: core-dynamic-skills
 description: "Internal: sync, clean, or update dynamic crate skills. Triggered by slash commands only."
-# Command-based tool - no description to prevent auto-triggering
+# Command-based tool: keep a low-trigger description for schema validity; operational entrypoints are explicit slash commands.
 # Triggered by: /sync-crate-skills, /clean-crate-skills, /update-crate-skill
 argument-hint: "[--force] | <crate_name>"
 context: fork

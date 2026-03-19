@@ -66,7 +66,8 @@ claude -p "tokio 最新版本"                # rust-learner
 ./tests/validation/validate-skill-frontmatter.sh
 ```
 
-The validation script scans every `skills/**/SKILL.md` file and fails if required frontmatter such as `name` or `description` is missing.
+- `validate-skills.sh` runs the broader repository validation suite and delegates skill frontmatter checks to the focused validator.
+- `validate-skill-frontmatter.sh` parses every `skills/**/SKILL.md` frontmatter block as YAML and requires non-empty `name` and `description` fields.
 
 ## Test Categories
 
