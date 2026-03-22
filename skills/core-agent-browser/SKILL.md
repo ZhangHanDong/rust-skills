@@ -1,6 +1,7 @@
 ---
 name: core-agent-browser
-# Internal tool - no description to prevent auto-triggering
+description: "Internal: browser-based documentation fetcher used by rust-learner and researcher agents."
+# Internal helper: keep a low-trigger description for schema validity; use explicit routing from parent skills.
 # Used by: rust-learner, docs-researcher, crate-researcher agents
 ---
 

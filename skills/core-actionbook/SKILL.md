@@ -1,6 +1,7 @@
 ---
 name: core-actionbook
-# Internal tool - no description to prevent auto-triggering
+description: "Internal: pre-computed action selectors used by rust-learner agents."
+# Internal helper: keep a low-trigger description for schema validity; use explicit routing from parent skills.
 # Used by: rust-learner agents for pre-computed selectors
 ---
 

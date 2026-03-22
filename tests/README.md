@@ -63,7 +63,11 @@ claude -p "tokio 最新版本"                # rust-learner
 
 ```bash
 ./tests/validation/validate-skills.sh
+./tests/validation/validate-skill-frontmatter.sh
 ```
+
+- `validate-skills.sh` runs the broader repository validation suite and delegates skill frontmatter checks to the focused validator.
+- `validate-skill-frontmatter.sh` parses every `skills/**/SKILL.md` frontmatter block as YAML and requires non-empty `name` and `description` fields.
 
 ## Test Categories
 
