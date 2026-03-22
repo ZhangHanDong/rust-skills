@@ -1,62 +1,33 @@
 ---
 name: rust-router
-description: "CRITICAL: Use for ALL Rust questions including errors, design, and coding.
-HIGHEST PRIORITY for: 比较, 对比, compare, vs, versus, 区别, difference, 最佳实践, best practice,
-tokio vs, async-std vs, 比较 tokio, 比较 async,
-Triggers on: Rust, cargo, rustc, crate, Cargo.toml,
-意图分析, 问题分析, 语义分析, analyze intent, question analysis,
-compile error, borrow error, lifetime error, ownership error, type error, trait error,
-value moved, cannot borrow, does not live long enough, mismatched types, not satisfied,
-E0382, E0597, E0277, E0308, E0499, E0502, E0596,
-async, await, Send, Sync, tokio, concurrency, error handling,
-编译错误, compile error, 所有权, ownership, 借用, borrow, 生命周期, lifetime, 类型错误, type error,
-异步, async, 并发, concurrency, 错误处理, error handling,
-问题, problem, question, 怎么用, how to use, 如何, how to, 为什么, why,
-什么是, what is, 帮我写, help me write, 实现, implement, 解释, explain"
+description: "Use when answering ANY Rust question — errors, design, architecture, or coding.
+Routes queries to the correct specialized skill by analyzing intent and domain.
+Triggers: Rust, cargo, rustc, crate, Cargo.toml, compile error, borrow error, lifetime error,
+ownership error, type error, trait error, E0382, E0597, E0277, E0308, E0499, E0502, E0596,
+async, await, Send, Sync, tokio, concurrency, error handling, compare, vs, best practice,
+所有权, 借用, 生命周期, 异步, 并发, 错误处理, 比较, 最佳实践"
 globs: ["**/Cargo.toml", "**/*.rs"]
----
-
 ---
 
 # Rust Question Router
 
-> **Version:** 2.0.0 | **Last Updated:** 2025-01-22
->
-> **v2.0:** Context optimized - detailed examples moved to sub-files
+## Routing Workflow
 
-## Meta-Cognition Framework
+1. **Classify the query** into a layer:
+   - **Layer 1 (HOW):** Language mechanics — ownership, borrowing, lifetimes, traits → m01-m07
+   - **Layer 2 (WHAT):** Design choices — architecture, patterns, DDD → m09-m15
+   - **Layer 3 (WHY):** Domain constraints — business rules, regulatory → domain-*
+2. **Load the entry skill** from the routing tables below
+3. **Trace through layers** — errors trace UP (L1→L2→L3), domain questions trace DOWN (L3→L2→L1)
+4. **Cross-reference** related skills as indicated in each skill's "Trace" sections
 
-### Core Principle
-
-**Don't answer directly. Trace through the cognitive layers first.**
-
-```
-Layer 3: Domain Constraints (WHY)
-├── Business rules, regulatory requirements
-├── domain-fintech, domain-web, domain-cli, etc.
-└── "Why is it designed this way?"
-
-Layer 2: Design Choices (WHAT)
-├── Architecture patterns, DDD concepts
-├── m09-m15 skills
-└── "What pattern should I use?"
-
-Layer 1: Language Mechanics (HOW)
-├── Ownership, borrowing, lifetimes, traits
-├── m01-m07 skills
-└── "How do I implement this in Rust?"
-```
-
-### Routing by Entry Point
-
-| User Signal | Entry Layer | Direction | First Skill |
-|-------------|-------------|-----------|-------------|
-| E0xxx error | Layer 1 | Trace UP ↑ | m01-m07 |
-| Compile error | Layer 1 | Trace UP ↑ | Error table below |
-| "How to design..." | Layer 2 | Check L3, then DOWN ↓ | m09-domain |
-| "Building [domain] app" | Layer 3 | Trace DOWN ↓ | domain-* |
-| "Best practice..." | Layer 2 | Both directions | m09-m15 |
-| Performance issue | Layer 1 → 2 | UP then DOWN | m10-performance |
+| User Signal | Entry Layer | First Skill |
+|-------------|-------------|-------------|
+| E0xxx error code | Layer 1 | Error table below |
+| "How to design..." | Layer 2 | m09-domain |
+| "Building [domain] app" | Layer 3 | domain-* |
+| "Best practice..." | Layer 2 | m09-m15 |
+| Performance issue | Layer 1→2 | m10-performance |
 
 ### CRITICAL: Dual-Skill Loading
 
@@ -72,58 +43,18 @@ Layer 1: Language Mechanics (HOW)
 
 ---
 
-## INSTRUCTIONS FOR CLAUDE
+### Negotiation Protocol
 
-### CRITICAL: Negotiation Protocol Trigger
-
-**BEFORE answering, check if negotiation is required:**
+**BEFORE answering, check if negotiation is required.** When triggered, load ALL relevant skills, assess confidence from each source, synthesize, and disclose gaps.
 
 | Query Contains | Action |
 |----------------|--------|
-| "比较", "对比", "compare", "vs", "versus" | **MUST use negotiation** |
-| "最佳实践", "best practice" | **MUST use negotiation** |
+| "compare", "vs", "versus", "比较", "对比" | **MUST use negotiation** |
+| "best practice", "最佳实践" | **MUST use negotiation** |
 | Domain + error (e.g., "交易系统 E0382") | **MUST use negotiation** |
 | Ambiguous scope (e.g., "tokio 性能") | **SHOULD use negotiation** |
 
-**When negotiation is required, include:**
-
-```markdown
-## Negotiation Analysis
-
-**Query Type:** [Comparative | Cross-domain | Synthesis | Ambiguous]
-**Negotiation:** Enabled
-
-### Source: [Agent/Skill Name]
-**Confidence:** HIGH | MEDIUM | LOW | UNCERTAIN
-**Gaps:** [What's missing]
-
-## Synthesized Answer
-[Answer]
-
-**Overall Confidence:** [Level]
-**Disclosed Gaps:** [Gaps user should know]
-```
-
 > **详细协议见:** `patterns/negotiation.md`
-
----
-
-### Default Project Settings
-
-When creating new Rust projects or Cargo.toml files, ALWAYS use:
-
-```toml
-[package]
-edition = "2024"  # ALWAYS use latest stable edition
-rust-version = "1.85"
-
-[lints.rust]
-unsafe_code = "warn"
-
-[lints.clippy]
-all = "warn"
-pedantic = "warn"
-```
 
 ---
 
@@ -200,15 +131,7 @@ pedantic = "warn"
 
 ---
 
-## Priority Order
-
-1. **Identify cognitive layer** (L1/L2/L3)
-2. **Load entry skill** (m0x/m1x/domain)
-3. **Trace through layers** (UP or DOWN)
-4. **Cross-reference skills** as indicated in "Trace" sections
-5. **Answer with reasoning chain**
-
-### Keyword Conflict Resolution
+## Keyword Conflict Resolution
 
 | Keyword | Resolution |
 |---------|------------|
@@ -218,22 +141,10 @@ pedantic = "warn"
 | `crate` | **rust-learner** for version, **m11** for integration |
 | `tokio` | **tokio-*** for API, **m07** for concepts |
 
-**Priority Hierarchy:**
+### Resolution Priority
 
-```
-1. Error codes (E0xxx) → Direct lookup, highest priority
-2. Negotiation triggers (compare, vs, best practice) → Enable negotiation
+1. Error codes (E0xxx) → Direct lookup in error table
+2. Negotiation triggers (compare, vs, best practice) → Enable negotiation protocol
 3. Domain keywords + error → Load BOTH domain + error skills
-4. Specific crate keywords → Route to crate-specific skill if exists
+4. Specific crate keywords → Route to crate-specific skill
 5. General concept keywords → Route to meta-question skill
-```
-
----
-
-## Sub-Files Reference
-
-| File | Content |
-|------|---------|
-| `patterns/negotiation.md` | Negotiation protocol details |
-| `examples/workflow.md` | Workflow examples |
-| `integrations/os-checker.md` | OS-Checker integration |

@@ -46,48 +46,75 @@ When learning or explaining Rust:
 
 ---
 
-## Thinking Prompt
+## Diagnostic Workflow
 
-When confused about Rust:
+When a user is confused about a Rust concept:
 
-1. **What's the ownership model?**
-   - Who owns this data?
-   - How long does it live?
-   - Who can access it?
-
-2. **What guarantee is Rust providing?**
-   - No data races
-   - No dangling pointers
-   - No use-after-free
-
-3. **What's the compiler telling me?**
-   - Error = violation of safety rule
-   - Solution = work with the rules
+1. **Identify ownership** — Who owns this data? How long does it live?
+   - Checkpoint: Can you name the owning variable and its scope?
+2. **Identify the safety rule** — Which guarantee is the compiler enforcing?
+   - No data races, no dangling pointers, no use-after-free
+   - Checkpoint: Can you match the error code (E0382, E0502, etc.) to a rule?
+3. **Read the compiler message** — Error = violation of a safety rule
+   - Checkpoint: Does the compiler's suggestion fix the issue?
+4. **Choose the pattern** — Work with the rules, not against them
+   - Clone for simplicity, refactor ownership for performance, use `Rc`/`Arc` for shared access
+   - Checkpoint: Does the fix compile and preserve the intended semantics?
 
 ---
 
-## Trace Up ↑
+## Concrete Examples
 
-To design understanding (Layer 2):
+### Ownership and Move
 
+```rust
+fn main() {
+    let s1 = String::from("hello");
+    let s2 = s1;          // s1 is MOVED to s2
+    // println!("{s1}");   // ERROR E0382: value used after move
+    println!("{s2}");      // OK — s2 owns the data now
+}
 ```
-"Why can't I do X in Rust?"
-    ↑ Ask: What safety guarantee would be violated?
-    ↑ Check: m01-m07 for the rule being enforced
-    ↑ Ask: What's the intended design pattern?
+
+### Borrowing Rules
+
+```rust
+fn main() {
+    let mut data = vec![1, 2, 3];
+
+    // Multiple immutable borrows — OK
+    let r1 = &data;
+    let r2 = &data;
+    println!("{r1:?} {r2:?}");
+
+    // Mutable borrow — OK only when no immutable borrows are active
+    data.push(4);
+
+    // This would fail — can't hold &data across a mutation:
+    // let r3 = &data;
+    // data.push(5);       // ERROR E0502: cannot borrow as mutable
+    // println!("{r3:?}");
+}
 ```
 
----
+### Lifetime Annotation
 
-## Trace Down ↓
+```rust
+// 'a means: returned reference lives as long as the shorter of x or y
+fn longest<'a>(x: &'a str, y: &'a str) -> &'a str {
+    if x.len() > y.len() { x } else { y }
+}
 
-To implementation (Layer 1):
-
-```
-"I understand the concept, now how do I implement?"
-    ↓ m01-ownership: Ownership patterns
-    ↓ m02-resource: Smart pointer choice
-    ↓ m07-concurrency: Thread safety
+fn main() {
+    let result;
+    let s1 = String::from("long string");
+    {
+        let s2 = String::from("hi");
+        result = longest(&s1, &s2);
+        println!("{result}"); // OK — s2 still alive here
+    }
+    // println!("{result}"); // ERROR E0597: s2 doesn't live long enough
+}
 ```
 
 ---
@@ -101,71 +128,6 @@ To implementation (Layer 1):
 | E0499 multiple mut borrows | Aliased mutation | Exclusive access for mutation |
 | E0106 missing lifetime | Ignoring scope | References have validity scope |
 | E0507 cannot move from `&T` | Implicit clone | References don't own data |
-
-## Deprecated Thinking
-
-| Deprecated | Better |
-|------------|--------|
-| "Rust is like C++" | Different ownership model |
-| "Lifetimes are GC" | Compile-time validity scope |
-| "Clone solves everything" | Restructure ownership |
-| "Fight the borrow checker" | Work with the compiler |
-| "`unsafe` to avoid rules" | Understand safe patterns first |
-
----
-
-## Ownership Visualization
-
-```
-Stack                          Heap
-+----------------+            +----------------+
-| main()         |            |                |
-|   s1 ─────────────────────> │ "hello"        |
-|                |            |                |
-| fn takes(s) {  |            |                |
-|   s2 (moved) ─────────────> │ "hello"        |
-| }              |            | (s1 invalid)   |
-+----------------+            +----------------+
-
-After move: s1 is no longer valid
-```
-
-## Reference Visualization
-
-```
-+----------------+
-| data: String   |────────────> "hello"
-+----------------+
-       ↑
-       │ &data (immutable borrow)
-       │
-+------+------+
-| reader1    reader2    (multiple OK)
-+------+------+
-
-+----------------+
-| data: String   |────────────> "hello"
-+----------------+
-       ↑
-       │ &mut data (mutable borrow)
-       │
-+------+
-| writer (only one)
-+------+
-```
-
----
-
-## Learning Path
-
-| Stage | Focus | Skills |
-|-------|-------|--------|
-| Beginner | Ownership basics | m01-ownership, m14-mental-model |
-| Intermediate | Smart pointers, error handling | m02, m06 |
-| Advanced | Concurrency, unsafe | m07, unsafe-checker |
-| Expert | Design patterns | m09-m15, domain-* |
-
----
 
 ## Related Skills
 

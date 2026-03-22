@@ -31,25 +31,75 @@ When reviewing code:
 | Giant match arms | Unmaintainable | Extract to methods |
 | `String` everywhere | Allocation waste | `&str`, `Cow<str>` |
 | Ignoring `#[must_use]` | Lost errors | Handle or `let _ =` |
+| Index loops | Off-by-one, not idiomatic | `.iter()`, `.enumerate()` |
+
+### Concrete Examples
+
+**Clone to fix borrow checker (bad) → references (good):**
+
+```rust
+// BAD: cloning to satisfy borrow checker
+fn process(data: &Vec<String>) {
+    let copy = data.clone();
+    for item in &copy {
+        println!("{item}");
+    }
+}
+
+// GOOD: borrow directly
+fn process(data: &[String]) {
+    for item in data {
+        println!("{item}");
+    }
+}
+```
+
+**Unwrap in production (bad) → propagate errors (good):**
+
+```rust
+// BAD: panics if file missing
+let config = std::fs::read_to_string("config.toml").unwrap();
+
+// GOOD: propagate with context
+let config = std::fs::read_to_string("config.toml")
+    .map_err(|e| AppError::Config(format!("Failed to read config: {e}")))?;
+```
+
+**String everywhere (bad) → borrowed str (good):**
+
+```rust
+// BAD: unnecessary allocation
+fn greet(name: String) -> String {
+    format!("Hello, {name}")
+}
+
+// GOOD: accept borrowed, allocate only when needed
+fn greet(name: &str) -> String {
+    format!("Hello, {name}")
+}
+```
 
 ---
 
-## Thinking Prompt
+## Review Workflow
 
-When seeing suspicious code:
+When seeing suspicious code, follow these steps:
 
-1. **Is this symptom or cause?**
+1. **Identify: symptom or cause?**
    - Clone to avoid borrow? → Ownership design issue
-   - Unwrap "because it won't fail"? → Unhandled case
+   - Unwrap "because it won't fail"? → Unhandled error case
+   - **Checkpoint:** Can you name the root cause, not just the surface fix?
 
-2. **What would idiomatic code look like?**
+2. **Propose idiomatic alternative**
    - References instead of clones
    - Iterators instead of index loops
-   - Pattern matching instead of flags
+   - Pattern matching instead of boolean flags
+   - **Checkpoint:** Does the alternative compile without new `unsafe` or `.clone()`?
 
-3. **Does this fight Rust?**
-   - Fighting borrow checker → restructure
-   - Excessive unsafe → find safe pattern
+3. **Validate: does the fix flow with Rust?**
+   - Fighting borrow checker → restructure data ownership
+   - Excessive unsafe → find safe abstraction
+   - **Checkpoint:** Run `cargo clippy -- -W clippy::pedantic` — are warnings reduced?
 
 ---
 
@@ -89,16 +139,6 @@ To implementation (Layer 1):
 
 ---
 
-## Top 5 Beginner Mistakes
-
-| Rank | Mistake | Fix |
-|------|---------|-----|
-| 1 | Clone to escape borrow checker | Use references |
-| 2 | Unwrap in production | Propagate with `?` |
-| 3 | String for everything | Use `&str` |
-| 4 | Index loops | Use iterators |
-| 5 | Fighting lifetimes | Restructure to own data |
-
 ## Code Smell → Refactoring
 
 | Smell | Indicates | Refactoring |
@@ -112,28 +152,25 @@ To implementation (Layer 1):
 
 ---
 
-## Common Error Patterns
+## Compiler Error → Anti-Pattern Diagnosis
 
-| Error | Anti-Pattern Cause | Fix |
-|-------|-------------------|-----|
-| E0382 use after move | Cloning vs ownership | Proper references |
-| Panic in production | Unwrap everywhere | ?, matching |
-| Slow performance | String for all text | &str, Cow |
-| Borrow checker fights | Wrong structure | Restructure |
-| Memory bloat | Rc/Arc everywhere | Simple ownership |
+| Error Code | Likely Anti-Pattern | Fix Direction |
+|------------|-------------------|---------------|
+| E0382 (use after move) | Cloning to work around ownership | Redesign who owns the data |
+| E0502 (borrow conflict) | Holding references too long | Narrow borrow scopes |
+| E0597 (lifetime too short) | Wrong data structure | Restructure to own data |
 
 ---
 
-## Deprecated → Better
+## Deprecated → Modern Replacement
 
 | Deprecated | Better |
 |------------|--------|
-| Index-based loops | `.iter()`, `.enumerate()` |
-| `collect::<Vec<_>>()` then iterate | Chain iterators |
+| `collect::<Vec<_>>()` then iterate | Chain iterators directly |
 | Manual unsafe cell | `Cell`, `RefCell` |
 | `mem::transmute` for casts | `as` or `TryFrom` |
 | Custom linked list | `Vec`, `VecDeque` |
-| `lazy_static!` | `std::sync::OnceLock` |
+| `lazy_static!` | `std::sync::OnceLock` (1.70+) |
 
 ---
 

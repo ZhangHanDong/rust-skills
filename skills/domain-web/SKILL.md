@@ -49,26 +49,6 @@ RUST: Extractors, proper ownership
 
 ---
 
-## Trace Down ↓
-
-From constraints to design (Layer 2):
-
-```
-"Need shared application state"
-    ↓ m07-concurrency: Use Arc for thread-safe sharing
-    ↓ m02-resource: Arc<RwLock<T>> for mutable state
-
-"Need request validation"
-    ↓ m05-type-driven: Validated extractors
-    ↓ m06-error-handling: IntoResponse for errors
-
-"Need middleware stack"
-    ↓ m12-lifecycle: Tower layers
-    ↓ m04-zero-cost: Trait-based composition
-```
-
----
-
 ## Framework Comparison
 
 | Framework | Style | Best For |
@@ -99,26 +79,74 @@ From constraints to design (Layer 2):
 | Middleware | Cross-cutting | Tower layers |
 | Shared state | App config | `Arc<AppState>` |
 
-## Code Pattern: Axum Handler
+## Workflow: Build a Web Endpoint
+
+1. **Define types** — request/response structs with serde derives
+2. **Implement handler** — async fn with extractors, return `Result<impl IntoResponse, AppError>`
+3. **Add error type** — enum implementing `IntoResponse` for consistent error JSON
+4. **Wire router** — register routes with shared state via `Router::new().route(...).with_state(...)`
+5. **Validate** — confirm handler compiles with `cargo check`, test with `cargo test`
+
+## Code Pattern: Axum CRUD Endpoint
 
 ```rust
-async fn handler(
-    State(db): State<Arc<DbPool>>,
+use axum::{
+    extract::{Path, State},
+    http::StatusCode,
+    response::IntoResponse,
+    routing::{get, post},
+    Json, Router,
+};
+use serde::{Deserialize, Serialize};
+use std::sync::Arc;
+use tokio::sync::RwLock;
+
+#[derive(Serialize, Clone)]
+struct User { id: u64, name: String }
+
+#[derive(Deserialize)]
+struct CreateUser { name: String }
+
+// Shared application state
+struct AppState { users: RwLock<Vec<User>> }
+
+// Handler: create user
+async fn create_user(
+    State(state): State<Arc<AppState>>,
     Json(payload): Json<CreateUser>,
-) -> Result<Json<User>, AppError> {
-    let user = db.create_user(&payload).await?;
-    Ok(Json(user))
+) -> Result<(StatusCode, Json<User>), AppError> {
+    let mut users = state.users.write().await;
+    let user = User { id: users.len() as u64 + 1, name: payload.name };
+    users.push(user.clone());
+    Ok((StatusCode::CREATED, Json(user)))
 }
 
-// Error handling
+// Handler: list users
+async fn list_users(
+    State(state): State<Arc<AppState>>,
+) -> Json<Vec<User>> {
+    Json(state.users.read().await.clone())
+}
+
+// Unified error type
+enum AppError { NotFound, Internal(String) }
+
 impl IntoResponse for AppError {
-    fn into_response(self) -> Response {
-        let (status, message) = match self {
-            Self::NotFound => (StatusCode::NOT_FOUND, "Not found"),
-            Self::Internal(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Internal error"),
+    fn into_response(self) -> axum::response::Response {
+        let (status, msg) = match self {
+            Self::NotFound => (StatusCode::NOT_FOUND, "not found"),
+            Self::Internal(e) => (StatusCode::INTERNAL_SERVER_ERROR, Box::leak(e.into_boxed_str()) as &str),
         };
-        (status, Json(json!({"error": message}))).into_response()
+        (status, Json(serde_json::json!({"error": msg}))).into_response()
     }
+}
+
+// Router setup
+fn app() -> Router {
+    let state = Arc::new(AppState { users: RwLock::new(vec![]) });
+    Router::new()
+        .route("/users", get(list_users).post(create_user))
+        .with_state(state)
 }
 ```
 
@@ -135,22 +163,12 @@ impl IntoResponse for AppError {
 
 ---
 
-## Trace to Layer 1
-
-| Constraint | Layer 2 Pattern | Layer 1 Implementation |
-|------------|-----------------|------------------------|
-| Async handlers | Async/await | tokio runtime |
-| Thread-safe state | Shared state | Arc<T>, Arc<RwLock<T>> |
-| Request lifecycle | Extractors | Ownership via From<Request> |
-| Middleware | Tower layers | Trait-based composition |
-
----
-
 ## Related Skills
 
-| When | See |
-|------|-----|
-| Async patterns | m07-concurrency |
-| State management | m02-resource |
-| Error handling | m06-error-handling |
-| Middleware design | m12-lifecycle |
+| Need | Skill | Example |
+|------|-------|---------|
+| Async/concurrency | m07-concurrency | tokio runtime, Send + Sync bounds |
+| Shared state | m02-resource | Arc<T>, Arc<RwLock<T>> |
+| Error handling | m06-error-handling | IntoResponse, Result patterns |
+| Middleware/RAII | m12-lifecycle | Tower layers, Drop-based cleanup |
+| Type-safe extractors | m05-type-driven | Validated newtypes for request data |

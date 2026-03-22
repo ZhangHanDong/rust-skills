@@ -72,6 +72,12 @@ After llms.txt is generated, use:
 /create-skills-via-llms <crate_name> <llms_path> [version]
 ```
 
+#### 4. Validate Output
+
+- Confirm `~/.claude/skills/{crate_name}/SKILL.md` exists and contains non-empty content
+- Verify reference files were created under `references/`
+- Check that key types and examples are present in the generated skill
+
 ---
 
 ## Inline Mode (Skills-only Install)
@@ -142,7 +148,19 @@ description: "Documentation for {crate_name} crate. Keywords: {keywords}"
 ## Examples
 
 ```rust
-{Example code from documentation}
+// Include real, compilable examples from the crate documentation.
+// For example, for the `serde` crate:
+use serde::{Serialize, Deserialize};
+
+#[derive(Serialize, Deserialize, Debug)]
+struct Point {
+    x: i32,
+    y: i32,
+}
+
+let point = Point { x: 1, y: 2 };
+let serialized = serde_json::to_string(&point).unwrap();
+println!("serialized = {}", serialized);
 ```
 
 ## Documentation
@@ -170,22 +188,20 @@ agent-browser close
 ### Step 6: Verify Skill
 
 ```bash
-# Check skill structure
+# Check skill structure — must have SKILL.md and at least one reference file
 ls -la ~/.claude/skills/{crate_name}/
-cat ~/.claude/skills/{crate_name}/SKILL.md
+ls -la ~/.claude/skills/{crate_name}/references/
+# Verify SKILL.md has frontmatter, overview, examples, and links sections
+head -30 ~/.claude/skills/{crate_name}/SKILL.md
 ```
 
+**Validation checklist:**
+- [ ] SKILL.md has valid YAML frontmatter with `name`, `description`, and keywords
+- [ ] At least one reference file exists under `references/`
+- [ ] Examples section contains compilable Rust code (not pseudocode)
+- [ ] Links point to valid docs.rs or doc.rust-lang.org URLs
+
 ---
-
-## URL Construction Helper
-
-| Target | URL Template |
-|--------|--------------|
-| Crate overview | `https://docs.rs/{crate}/latest/{crate}/` |
-| Crate module | `https://docs.rs/{crate}/latest/{crate}/{module}/` |
-| Std trait | `https://doc.rust-lang.org/std/{module}/trait.{Name}.html` |
-| Std struct | `https://doc.rust-lang.org/std/{module}/struct.{Name}.html` |
-| Std module | `https://doc.rust-lang.org/std/{module}/index.html` |
 
 ## Common Std Library Paths
 
@@ -205,51 +221,59 @@ cat ~/.claude/skills/{crate_name}/SKILL.md
 
 ## Example Interactions
 
-### Example 1: Create Crate Skill (Agent Mode)
+### Example 1: Third-party Crate (Agent Mode)
 
-```
-User: "Create a dynamic skill for tokio"
+**Input:** "Create a dynamic skill for tokio"
 
-Claude:
-1. Identify: Third-party crate "tokio"
-2. Execute: /create-llms-for-skills https://docs.rs/tokio/latest/tokio/
-3. Wait for llms.txt generation
-4. Execute: /create-skills-via-llms tokio ~/tmp/{timestamp}-tokio-llms.txt
-```
-
-### Example 2: Create Crate Skill (Inline Mode)
-
-```
-User: "Create a dynamic skill for tokio"
-
-Claude:
-1. Identify: Third-party crate "tokio"
-2. Fetch: agent-browser open "https://docs.rs/tokio/latest/tokio/"
-3. Extract documentation
-4. Create: ~/.claude/skills/tokio/SKILL.md
-5. Create: ~/.claude/skills/tokio/references/
-6. Save reference files for key modules (sync, task, runtime, etc.)
+```bash
+# 1. Generate llms.txt from docs
+/create-llms-for-skills https://docs.rs/tokio/latest/tokio/
+# 2. Create skill from generated llms.txt
+/create-skills-via-llms tokio ~/tmp/1706000000-tokio-llms.txt
+# 3. Verify
+ls ~/.claude/skills/tokio/SKILL.md ~/.claude/skills/tokio/references/
 ```
 
-### Example 3: Create Std Library Skill
+### Example 2: Third-party Crate (Inline Mode)
 
+**Input:** "Create a dynamic skill for serde"
+
+```bash
+# 1. Fetch documentation
+agent-browser open "https://docs.rs/serde/latest/serde/"
+agent-browser get text ".docblock"
+# 2. Create directory structure
+mkdir -p ~/.claude/skills/serde/references
+# 3. Write SKILL.md with extracted types, traits (Serialize, Deserialize), and examples
+# 4. Fetch module docs for reference files
+agent-browser open "https://docs.rs/serde/latest/serde/ser/"
+agent-browser get text ".docblock" > ~/.claude/skills/serde/references/ser.md
 ```
-User: "Create a skill for Send and Sync traits"
 
-Claude:
-1. Identify: Std library traits
-2. (Agent Mode) Execute: /create-llms-for-skills https://doc.rust-lang.org/std/marker/trait.Send.html https://doc.rust-lang.org/std/marker/trait.Sync.html
-   (Inline Mode) Fetch each URL, create skill manually
-3. Complete skill creation
+### Example 3: Std Library Skill
+
+**Input:** "Create a skill for Send and Sync traits"
+
+```bash
+# Agent Mode
+/create-llms-for-skills https://doc.rust-lang.org/std/marker/trait.Send.html https://doc.rust-lang.org/std/marker/trait.Sync.html
+
+# Inline Mode — fetch each trait page separately
+agent-browser open "https://doc.rust-lang.org/std/marker/trait.Send.html"
+agent-browser get text ".docblock"
+agent-browser open "https://doc.rust-lang.org/std/marker/trait.Sync.html"
+agent-browser get text ".docblock"
+# Then create ~/.claude/skills/std-marker/SKILL.md covering both traits
 ```
 
 ---
 
-## DO NOT
+## Constraints
 
-- Use `best-skill-creator` for Rust-related skill creation
-- Guess documentation URLs without verification
-- Skip documentation fetching step
+- Do NOT use `best-skill-creator` for Rust-related skill creation — always use this skill
+- Do NOT guess documentation URLs — verify the crate exists on crates.io or doc.rust-lang.org first
+- Do NOT skip documentation fetching — generated skills must be grounded in real API docs
+- Do NOT include pseudocode in generated skills — all code examples must be compilable Rust
 
 ## Output Location
 

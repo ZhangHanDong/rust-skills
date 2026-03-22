@@ -1,6 +1,6 @@
 ---
 name: m01-ownership
-description: "CRITICAL: Use for ownership/borrow/lifetime issues. Triggers: E0382, E0597, E0506, E0507, E0515, E0716, E0106, value moved, borrowed value does not live long enough, cannot move out of, use of moved value, ownership, borrow, lifetime, 'a, 'static, move, clone, Copy, 所有权, 借用, 生命周期"
+description: "Use when diagnosing or fixing Rust ownership, borrowing, or lifetime errors. Triggers: E0382, E0597, E0506, E0507, E0515, E0716, E0106, value moved, borrowed value does not live long enough, cannot move out of, use of moved value, ownership, borrow, lifetime, 'a, 'static, move, clone, Copy, 所有权, 借用, 生命周期"
 user-invocable: false
 ---
 
@@ -33,21 +33,56 @@ Before fixing ownership errors, understand the data's role:
 
 ---
 
-## Thinking Prompt
+## Workflow
 
-Before fixing an ownership error, ask:
+1. **Identify the error** — Read the compiler error code (E0382, E0597, etc.) and locate the offending line.
+2. **Determine data role** — Is the data an entity (unique identity → owned), a value object (interchangeable → clone/copy OK), or a temporary (computation result → restructure)?
+3. **Choose a fix strategy** — Consult the Error → Design Question table above. Pick the lowest-cost pattern from the Quick Reference.
+4. **Apply and verify** — Make the change, run `cargo check`, confirm the error is resolved and no new errors appear.
+5. **Escalate if stuck** — If this is the 3rd attempt, trace up to the design layer (m02-resource, m03-mutability, or m09-domain).
 
-1. **What is this data's domain role?**
-   - Entity (unique identity) → owned
-   - Value Object (interchangeable) → clone/copy OK
-   - Temporary (computation result) → maybe restructure
+---
 
-2. **Is the ownership design intentional?**
-   - By design → work within constraints
-   - Accidental → consider redesign
+## Examples
 
-3. **Fix symptom or redesign?**
-   - If Strike 3 (3rd attempt) → escalate to Layer 2
+### E0382: Use of moved value
+
+```rust
+// BAD: s is moved into greet(), then used again
+fn greet(name: String) { println!("Hello, {name}"); }
+
+let s = String::from("Alice");
+greet(s);
+println!("{s}"); // ERROR: value used after move
+```
+
+```rust
+// FIX A: Borrow instead of moving
+fn greet(name: &str) { println!("Hello, {name}"); }
+
+let s = String::from("Alice");
+greet(&s);
+println!("{s}"); // OK
+```
+
+### E0597: Borrowed value does not live long enough
+
+```rust
+// BAD: reference outlives the data it points to
+let r;
+{
+    let x = 5;
+    r = &x; // ERROR: x dropped here while still borrowed
+}
+println!("{r}");
+```
+
+```rust
+// FIX: Extend the owner's scope
+let x = 5;
+let r = &x;
+println!("{r}"); // OK — x lives long enough
+```
 
 ---
 

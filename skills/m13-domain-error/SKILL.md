@@ -8,14 +8,13 @@ user-invocable: false
 
 > **Layer 2: Design Choices**
 
-## Core Question
+## Workflow
 
-**Who needs to handle this error, and how should they recover?**
-
-Before designing error types:
-- Is this user-facing or internal?
-- Is recovery possible?
-- What context is needed for debugging?
+1. **Categorize the error** — Determine audience and recovery (see table below)
+2. **Design the hierarchy** — Create typed errors with `thiserror`, grouped by category
+3. **Add context** — Attach `.context()` at every propagation boundary
+4. **Wire recovery** — Match error category to recovery pattern (retry, fallback, circuit breaker)
+5. **Validate** — Confirm: user-facing errors are friendly, internal errors are debuggable, transient errors are retried
 
 ---
 
@@ -31,67 +30,7 @@ Before designing error types:
 
 ---
 
-## Thinking Prompt
-
-Before designing error types:
-
-1. **Who sees this error?**
-   - End user → friendly message, actionable
-   - Developer → detailed, debuggable
-   - Ops → structured, alertable
-
-2. **Can we recover?**
-   - Transient → retry with backoff
-   - Degradable → fallback value
-   - Permanent → fail fast, alert
-
-3. **What context is needed?**
-   - Call chain → anyhow::Context
-   - Request ID → structured logging
-   - Input data → error payload
-
----
-
-## Trace Up ↑
-
-To domain constraints (Layer 3):
-
-```
-"How should I handle payment failures?"
-    ↑ Ask: What are the business rules for retries?
-    ↑ Check: domain-fintech (transaction requirements)
-    ↑ Check: SLA (availability requirements)
-```
-
-| Question | Trace To | Ask |
-|----------|----------|-----|
-| Retry policy | domain-* | What's acceptable latency for retry? |
-| User experience | domain-* | What message should users see? |
-| Compliance | domain-* | What must be logged for audit? |
-
----
-
-## Trace Down ↓
-
-To implementation (Layer 1):
-
-```
-"Need typed errors"
-    ↓ m06-error-handling: thiserror for library
-    ↓ m04-zero-cost: Error enum design
-
-"Need error context"
-    ↓ m06-error-handling: anyhow::Context
-    ↓ Logging: tracing with fields
-
-"Need retry logic"
-    ↓ m07-concurrency: async retry patterns
-    ↓ Crates: tokio-retry, backoff
-```
-
----
-
-## Quick Reference
+## Recovery Patterns
 
 | Recovery Pattern | When | Implementation |
 |------------------|------|----------------|
@@ -104,43 +43,81 @@ To implementation (Layer 1):
 ## Error Hierarchy
 
 ```rust
-#[derive(thiserror::Error, Debug)]
+use thiserror::Error;
+
+#[derive(Error, Debug)]
 pub enum AppError {
-    // User-facing
+    // User-facing — shown directly to end users
     #[error("Invalid input: {0}")]
     Validation(String),
 
-    // Transient (retryable)
+    #[error("Resource not found: {resource}")]
+    NotFound { resource: String },
+
+    // Transient — safe to retry
     #[error("Service temporarily unavailable")]
     ServiceUnavailable(#[source] reqwest::Error),
 
-    // Internal (log details, show generic)
+    // Internal — log detail, show generic message to users
     #[error("Internal error")]
-    Internal(#[source] anyhow::Error),
+    Internal(#[from] anyhow::Error),
 }
 
 impl AppError {
     pub fn is_retryable(&self) -> bool {
         matches!(self, Self::ServiceUnavailable(_))
     }
+
+    /// Map to user-safe message at API boundary
+    pub fn user_message(&self) -> &str {
+        match self {
+            Self::Validation(msg) => msg,
+            Self::NotFound { .. } => "The requested resource was not found",
+            Self::ServiceUnavailable(_) => "Please try again shortly",
+            Self::Internal(_) => "An unexpected error occurred",
+        }
+    }
 }
 ```
 
-## Retry Pattern
+## Retry with Backoff
 
 ```rust
-use tokio_retry::{Retry, strategy::ExponentialBackoff};
+use std::time::Duration;
+use tokio_retry::strategy::ExponentialBackoff;
+use tokio_retry::Retry;
 
-async fn with_retry<F, T, E>(f: F) -> Result<T, E>
-where
-    F: Fn() -> impl Future<Output = Result<T, E>>,
-    E: std::fmt::Debug,
-{
+async fn fetch_with_retry(url: &str) -> Result<String, AppError> {
     let strategy = ExponentialBackoff::from_millis(100)
         .max_delay(Duration::from_secs(10))
-        .take(5);
+        .take(3); // max 3 attempts
 
-    Retry::spawn(strategy, || f()).await
+    let url = url.to_owned();
+    Retry::spawn(strategy, move || {
+        let url = url.clone();
+        async move {
+            reqwest::get(&url)
+                .await
+                .map_err(AppError::ServiceUnavailable)?
+                .text()
+                .await
+                .map_err(AppError::ServiceUnavailable)
+        }
+    })
+    .await
+}
+```
+
+## Context Propagation
+
+```rust
+use anyhow::Context;
+
+fn load_config(path: &str) -> Result<Config, anyhow::Error> {
+    let contents = std::fs::read_to_string(path)
+        .context(format!("failed to read config from {path}"))?;
+    toml::from_str(&contents)
+        .context("failed to parse config as TOML")
 }
 ```
 
@@ -148,25 +125,16 @@ where
 
 ## Common Mistakes
 
-| Mistake | Why Wrong | Better |
-|---------|-----------|--------|
-| Same error for all | No actionability | Categorize by audience |
-| Retry everything | Wasted resources | Only transient errors |
-| Infinite retry | DoS self | Max attempts + backoff |
-| Expose internal errors | Security risk | User-friendly messages |
-| No context | Hard to debug | .context() everywhere |
-
----
-
-## Anti-Patterns
-
-| Anti-Pattern | Why Bad | Better |
-|--------------|---------|--------|
-| String errors | No structure | thiserror types |
-| panic! for recoverable | Bad UX | Result with context |
-| Ignore errors | Silent failures | Log or propagate |
-| Box<dyn Error> everywhere | Lost type info | thiserror |
-| Error in happy path | Performance | Early validation |
+| Mistake | Better |
+|---------|--------|
+| Same error type for all cases | Categorize by audience (user/dev/ops) |
+| Retry everything | Only retry transient errors (`is_retryable()`) |
+| Infinite retry / no backoff | Max attempts + exponential backoff |
+| Expose internal errors to users | Map to user-friendly messages at API boundary |
+| No `.context()` on propagation | Add context at every `?` boundary |
+| `String` or `Box<dyn Error>` everywhere | Use `thiserror` typed enums |
+| `panic!` for recoverable errors | Return `Result` with context |
+| Errors in happy path | Validate early, fail before work begins |
 
 ---
 

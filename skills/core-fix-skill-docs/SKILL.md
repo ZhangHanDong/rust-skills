@@ -1,10 +1,7 @@
 ---
 name: core-fix-skill-docs
-# Internal maintenance tool - no description to prevent auto-triggering
-# Triggered by: /fix-skill-docs command
+description: "Use when checking and fixing missing reference files in dynamic skills. Keywords: /fix-skill-docs, missing references, skill documentation, repair skills, check-only"
 argument-hint: "[crate_name] [--check-only]"
-context: fork
-agent: general-purpose
 ---
 
 # Fix Skill Documentation

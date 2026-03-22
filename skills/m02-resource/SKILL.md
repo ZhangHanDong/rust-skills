@@ -1,6 +1,6 @@
 ---
 name: m02-resource
-description: "CRITICAL: Use for smart pointers and resource management. Triggers: Box, Rc, Arc, Weak, RefCell, Cell, smart pointer, heap allocation, reference counting, RAII, Drop, should I use Box or Rc, when to use Arc vs Rc, 智能指针, 引用计数, 堆分配"
+description: "CRITICAL: Guides smart pointer selection, implements RAII patterns, and debugs ownership issues for Rust resource management. Use when the user asks about choosing between Box, Rc, Arc, Weak, RefCell, or Cell, or needs help with heap allocation, reference counting, or resource cleanup. Triggers: smart pointer, heap allocation, reference counting, RAII, Drop, should I use Box or Rc, when to use Arc vs Rc, 智能指针, 引用计数, 堆分配"
 user-invocable: false
 ---
 
@@ -103,6 +103,67 @@ From design to implementation:
 | `Cell<T>` | Single | No | Interior mutability (Copy types) |
 | `RefCell<T>` | Single | No | Interior mutability (runtime check) |
 
+## Code Examples
+
+### Box: Recursive type
+
+```rust
+// Box enables recursive types that would otherwise have unknown size
+enum List<T> {
+    Cons(T, Box<List<T>>),
+    Nil,
+}
+
+let list = List::Cons(1, Box::new(List::Cons(2, Box::new(List::Nil))));
+```
+
+### Rc + Weak: Breaking cycles in a tree
+
+```rust
+use std::cell::RefCell;
+use std::rc::{Rc, Weak};
+
+struct Node {
+    value: i32,
+    parent: RefCell<Weak<Node>>,       // Weak avoids cycle
+    children: RefCell<Vec<Rc<Node>>>,   // Strong owns children
+}
+
+let parent = Rc::new(Node {
+    value: 1,
+    parent: RefCell::new(Weak::new()),
+    children: RefCell::new(vec![]),
+});
+
+let child = Rc::new(Node {
+    value: 2,
+    parent: RefCell::new(Rc::downgrade(&parent)),
+    children: RefCell::new(vec![]),
+});
+parent.children.borrow_mut().push(Rc::clone(&child));
+// When parent is dropped, child.parent.upgrade() returns None
+```
+
+### Arc + Mutex: Thread-safe shared state
+
+```rust
+use std::sync::{Arc, Mutex};
+use std::thread;
+
+let counter = Arc::new(Mutex::new(0));
+let mut handles = vec![];
+
+for _ in 0..5 {
+    let counter = Arc::clone(&counter);
+    handles.push(thread::spawn(move || {
+        let mut num = counter.lock().unwrap();
+        *num += 1;
+    }));
+}
+for h in handles { h.join().unwrap(); }
+assert_eq!(*counter.lock().unwrap(), 5);
+```
+
 ## Decision Flowchart
 
 ```
@@ -127,25 +188,15 @@ Need interior mutability?
 
 ---
 
-## Common Errors
+## Common Errors and Anti-Patterns
 
 | Problem | Cause | Fix |
 |---------|-------|-----|
-| Rc cycle leak | Mutual strong refs | Use Weak for one direction |
-| RefCell panic | Borrow conflict at runtime | Use try_borrow or restructure |
-| Arc overhead | Atomic ops in hot path | Consider Rc if single-threaded |
-| Box unnecessary | Data fits on stack | Remove Box |
-
----
-
-## Anti-Patterns
-
-| Anti-Pattern | Why Bad | Better |
-|--------------|---------|--------|
-| Arc everywhere | Unnecessary atomic overhead | Use Rc for single-thread |
-| RefCell everywhere | Runtime panics | Design clear ownership |
-| Box for small types | Unnecessary allocation | Stack allocation |
-| Ignore Weak for cycles | Memory leaks | Design parent-child with Weak |
+| Rc cycle leak | Mutual strong refs | Use `Weak` for one direction |
+| RefCell panic | Borrow conflict at runtime | Use `try_borrow` or redesign ownership |
+| RefCell everywhere | Hiding ownership issues | Design clear ownership boundaries first |
+| Arc in single-thread code | Unnecessary atomic overhead | Use `Rc` when `Send`/`Sync` not needed |
+| Box for small `Copy` types | Unnecessary heap allocation | Keep on stack |
 
 ---
 

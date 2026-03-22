@@ -14,8 +14,6 @@ user-invocable: false
 
 # Embedded Domain
 
-> **Layer 3: Domain Constraints**
-
 ## Domain Constraints → Design Implications
 
 | Domain Rule | Design Constraint | Rust Implication |
@@ -33,57 +31,51 @@ user-invocable: false
 
 ### No Dynamic Allocation
 
-```
-RULE: Cannot use heap (no allocator)
-WHY: Deterministic memory, no OOM
-RUST: heapless::Vec<T, N>, arrays
+Use fixed-capacity collections from `heapless` instead of `std` collections:
+
+```rust
+use heapless::Vec;
+
+// Fixed-capacity buffer — no heap, compile-time size
+let mut buf: Vec<u8, 64> = Vec::new();
+buf.push(0xAB).unwrap(); // Returns Err if full
 ```
 
 ### Interrupt Safety
 
-```
-RULE: Shared state must be interrupt-safe
-WHY: ISR can preempt at any time
-RUST: Mutex<RefCell<T>> + critical section
+Shared state between main and ISR requires a critical section:
+
+```rust
+use cortex_m::interrupt::{self, Mutex};
+use core::cell::RefCell;
+
+static COUNTER: Mutex<RefCell<u32>> = Mutex::new(RefCell::new(0));
+
+// In ISR handler:
+interrupt::free(|cs| {
+    let mut cnt = COUNTER.borrow(cs).borrow_mut();
+    *cnt += 1;
+});
 ```
 
 ### Hardware Ownership
 
-```
-RULE: Peripherals must have clear ownership
-WHY: Prevent conflicting access
-RUST: HAL takes ownership, singletons
-```
+Peripherals use singleton pattern — `take()` returns `Some` only once:
 
----
-
-## Trace Down ↓
-
-From constraints to design (Layer 2):
-
-```
-"Need no_std compatible data structures"
-    ↓ m02-resource: heapless collections
-    ↓ Static sizing: heapless::Vec<T, N>
-
-"Need interrupt-safe state"
-    ↓ m03-mutability: Mutex<RefCell<Option<T>>>
-    ↓ m07-concurrency: Critical sections
-
-"Need peripheral ownership"
-    ↓ m01-ownership: Singleton pattern
-    ↓ m12-lifecycle: RAII for hardware
+```rust
+let dp = pac::Peripherals::take().unwrap(); // Second call panics
+let led = Led::new(dp.GPIOA); // Ownership transferred — no conflicting access
 ```
 
 ---
 
-## Layer Stack
+## Embedded Stack Layers
 
 | Layer | Examples | Purpose |
 |-------|----------|---------|
 | PAC | stm32f4, esp32c3 | Register access |
 | HAL | stm32f4xx-hal | Hardware abstraction |
-| Framework | RTIC, Embassy | Concurrency |
+| Framework | RTIC, Embassy | Concurrency model |
 | Traits | embedded-hal | Portable drivers |
 
 ## Framework Comparison
@@ -105,16 +97,7 @@ From constraints to design (Layer 2):
 | Logging | defmt |
 | Flash/debug | probe-run |
 
-## Design Patterns
-
-| Pattern | Purpose | Implementation |
-|---------|---------|----------------|
-| no_std setup | Bare metal | `#![no_std]` + `#![no_main]` |
-| Entry point | Startup | `#[entry]` or embassy |
-| Static state | ISR access | `Mutex<RefCell<Option<T>>>` |
-| Fixed buffers | No heap | `heapless::Vec<T, N>` |
-
-## Code Pattern: Static Peripheral
+## Code Pattern: Static Peripheral (cortex-m)
 
 ```rust
 #![no_std]
@@ -157,22 +140,35 @@ fn main() -> ! {
 
 ---
 
-## Trace to Layer 1
+## Code Pattern: Embassy Async
 
-| Constraint | Layer 2 Pattern | Layer 1 Implementation |
-|------------|-----------------|------------------------|
-| No heap | Static collections | heapless::Vec<T, N> |
-| ISR safety | Critical sections | Mutex<RefCell<T>> |
-| Hardware ownership | Singleton | take().unwrap() |
-| no_std | Core-only | #![no_std], #![no_main] |
+```rust
+#![no_std]
+#![no_main]
+
+use embassy_executor::Spawner;
+use embassy_stm32::gpio::{Level, Output, Speed};
+use embassy_time::Timer;
+
+#[embassy_executor::main]
+async fn main(_spawner: Spawner) {
+    let p = embassy_stm32::init(Default::default());
+    let mut led = Output::new(p.PA5, Level::Low, Speed::Low);
+
+    loop {
+        led.toggle();
+        Timer::after_millis(500).await;
+    }
+}
+```
 
 ---
 
-## Related Skills
+## Workflow: New Embedded Project
 
-| When | See |
-|------|-----|
-| Static memory | m02-resource |
-| Interior mutability | m03-mutability |
-| Interrupt patterns | m07-concurrency |
-| Unsafe for hardware | unsafe-checker |
+1. **Scaffold** — `#![no_std]`, `#![no_main]`, panic handler, entry point
+2. **Configure target** — `.cargo/config.toml` with target triple, runner (probe-run/espflash)
+3. **Initialize peripherals** — `Peripherals::take().unwrap()`, configure clocks
+4. **Wire HAL** — GPIO, SPI, I2C, UART via `embedded-hal` traits
+5. **Add concurrency** — Choose RTIC (interrupt-driven) or Embassy (async)
+6. **Validate** — `cargo build --release`, flash to hardware, verify with `defmt` logging
