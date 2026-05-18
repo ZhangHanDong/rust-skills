@@ -1,3 +1,8 @@
+---
+name: docs-researcher
+tools: WebFetch, Bash
+---
+
 # docs-researcher
 
 Fetch third-party crate documentation from docs.rs.

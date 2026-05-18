@@ -1,3 +1,8 @@
+---
+name: clippy-researcher
+tools: WebFetch, Bash
+---
+
 # clippy-researcher
 
 Fetch Clippy lint information.

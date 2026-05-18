@@ -5,6 +5,19 @@ All notable changes to rust-skills will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-05-18
+
+### Added
+- Node-based local runtime CLI: `rust-skills detect`, `rust-skills route`, `rust-skills index`, and `rust-skills verify`.
+- Codex and Claude Code local installer with a single top-level `rust-skills` entry and deep skill data under runtime data roots.
+- Codex and Claude hook routing tests plus install e2e tests.
+- MIT `LICENSE` file for package/release compliance.
+
+### Changed
+- Codex install now writes `[features].hooks = true` and removes the deprecated `[features].codex_hooks` key.
+- Hook injection now fails closed for non-Rust prompts instead of relying only on broad matcher regexes.
+- README installation docs now describe the local runtime path and verification commands.
+
 ## [2.0.9] - 2025-01-22
 
 ### Changed

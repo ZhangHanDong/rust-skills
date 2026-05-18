@@ -1,3 +1,8 @@
+---
+name: crate-researcher
+tools: WebFetch, Bash
+---
+
 # crate-researcher
 
 Fetch crate metadata from lib.rs / crates.io.

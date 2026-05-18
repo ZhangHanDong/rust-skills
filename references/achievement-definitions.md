@@ -148,7 +148,7 @@ Complete list of all achievements with unlock requirements.
 
 | Tier | Color | Achievements | % of Users |
 |------|-------|--------------|------------|
-| Common | ⬜ White | First milestones (1-10) | ~80% |
+| Common | ⬜ White | First steps (1-10) | ~80% |
 | Uncommon | 🟢 Green | Medium goals (10-50) | ~40% |
 | Rare | 🔵 Blue | High goals (50-100) | ~15% |
 | Epic | 🟣 Purple | Very high (100+) | ~5% |

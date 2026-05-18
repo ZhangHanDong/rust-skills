@@ -4,7 +4,7 @@
 
 > AI-powered Rust development assistant with meta-cognition framework
 
-[![Version](https://img.shields.io/badge/version-2.0.9-green.svg)](https://github.com/actionbook/rust-skills/releases)
+[![Version](https://img.shields.io/badge/version-2.1.0-green.svg)](https://github.com/actionbook/rust-skills/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Plugin-blue)](https://github.com/anthropics/claude-code)
 
@@ -46,10 +46,49 @@ AI (with Rust Skills):
 
 ## Installation
 
-Rust Skills supports two installation modes:
+Rust Skills supports three installation modes:
 
+- **Local Runtime Mode** (Codex and Claude Code): one top-level `rust-skills` entry, hook-based routing, and a local `rust-skills` CLI.
 - **Plugin Mode** (Claude Code): Full features including hooks, agents, and auto meta-cognition
 - **Skills-only Mode**: Works with any coding agent that supports skills (Claude Code, Vercel AI, etc.)
+
+---
+
+### Local Runtime Install (Codex + Claude Code)
+
+Use this when you want local hooks and a real routing command without requiring Rust/Cargo on the user machine. The installer is Node-based and copies the runtime data, one top-level skill, hooks, and a `rust-skills` command into `~/.local/bin`.
+
+```bash
+git clone https://github.com/actionbook/rust-skills.git
+cd rust-skills
+node install.js --codex --claude
+
+rust-skills route --json "Rust E0382 value moved in axum state"
+```
+
+What it installs:
+
+- `~/.codex/skills/rust-skills/SKILL.md` and/or `~/.claude/skills/rust-skills/SKILL.md`
+- Deep skill data under `~/.codex/rust-skills/` and/or `~/.claude/rust-skills/`
+- Hook scripts under `~/.codex/hooks/` and/or `~/.claude/hooks/`
+- `~/.local/bin/rust-skills` for local verification
+
+Codex installs enable the current feature flag format:
+
+```toml
+[features]
+hooks = true
+```
+
+The deprecated `[features].codex_hooks` key is removed during install.
+
+Verify locally:
+
+```bash
+npm test
+rust-skills detect --json "今天天气怎么样"
+rust-skills route --json "Rust Web API Rc cannot be sent between threads"
+```
 
 ---
 
@@ -138,14 +177,16 @@ claude --plugin-dir /path/to/rust-skills
 
 ### Feature Comparison
 
-| Feature | Plugin (Marketplace) | Plugin (Local) | Skills-only (NPX/CoWork/Manual) |
-|---------|---------------------|----------------|--------------------------------|
-| All 31 Skills | ✅ | ✅ | ✅ |
-| Auto meta-cognition trigger | ✅ | ✅ | ❌ (manual invoke) |
-| Hook-based routing | ✅ | ✅ | ❌ |
-| Background agents | ✅ | ✅ | ✅ (inline fallback) |
-| Easy updates | ✅ | ❌ | ✅ (NPX/CoWork) |
-| Works with other agents | ❌ | ❌ | ✅ |
+| Feature | Local Runtime | Plugin (Marketplace) | Plugin (Local) | Skills-only (NPX/CoWork/Manual) |
+|---------|---------------|----------------------|----------------|--------------------------------|
+| All Skills | ✅ | ✅ | ✅ | ✅ |
+| Single top-level skill | ✅ | ✅ | ✅ | ❌ |
+| Local `rust-skills` CLI | ✅ | ❌ | ✅ | ❌ |
+| Auto meta-cognition trigger | ✅ | ✅ | ✅ | ❌ (manual invoke) |
+| Hook-based routing | ✅ | ✅ | ✅ | ❌ |
+| Background agents | ✅ | ✅ | ✅ | ✅ (inline fallback) |
+| Requires Rust/Cargo to install | ❌ | ❌ | ❌ | ❌ |
+| Works with Codex | ✅ | ❌ | ❌ | ✅ |
 
 ### Permission Configuration
 

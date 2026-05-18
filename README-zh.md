@@ -4,7 +4,7 @@
 
 > 基于元认知框架的 AI Rust 开发助手
 
-[![Version](https://img.shields.io/badge/version-2.0.9-green.svg)](https://github.com/actionbook/rust-skills/releases)
+[![Version](https://img.shields.io/badge/version-2.1.0-green.svg)](https://github.com/actionbook/rust-skills/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Plugin-blue)](https://github.com/anthropics/claude-code)
 
@@ -46,10 +46,49 @@ AI (使用 Rust Skills):
 
 ## 安装
 
-Rust Skills 支持两种安装模式：
+Rust Skills 支持三种安装模式：
 
+- **本地 Runtime 模式**（Codex 和 Claude Code）：只暴露一个顶层 `rust-skills`，通过 hook 和本地 `rust-skills` CLI 做真实路由。
 - **Plugin 模式**（Claude Code）：完整功能，包含 hooks、agents 和自动元认知触发
 - **Skills-only 模式**：适用于任何支持 skills 的编码助手（Claude Code、Vercel AI 等）
+
+---
+
+### 本地 Runtime 安装（Codex + Claude Code）
+
+如果你希望本地 hook 自动触发，并且能用命令行真实验证路由，优先使用这个方式。安装器基于 Node，不要求用户机器安装 Rust/Cargo；它会复制 runtime 数据、单一顶层 skill、hook，以及 `rust-skills` 命令到 `~/.local/bin`。
+
+```bash
+git clone https://github.com/actionbook/rust-skills.git
+cd rust-skills
+node install.js --codex --claude
+
+rust-skills route --json "Rust E0382 value moved in axum state"
+```
+
+安装内容：
+
+- `~/.codex/skills/rust-skills/SKILL.md` 和/或 `~/.claude/skills/rust-skills/SKILL.md`
+- 深层 skill 数据：`~/.codex/rust-skills/` 和/或 `~/.claude/rust-skills/`
+- Hook 脚本：`~/.codex/hooks/` 和/或 `~/.claude/hooks/`
+- 本地验证命令：`~/.local/bin/rust-skills`
+
+Codex 安装会启用当前格式的 feature flag：
+
+```toml
+[features]
+hooks = true
+```
+
+安装时会移除已废弃的 `[features].codex_hooks`。
+
+本地验证：
+
+```bash
+npm test
+rust-skills detect --json "今天天气怎么样"
+rust-skills route --json "Rust Web API Rc cannot be sent between threads"
+```
 
 ---
 
@@ -138,14 +177,16 @@ claude --plugin-dir /path/to/rust-skills
 
 ### 功能对比
 
-| 功能 | Plugin（Marketplace） | Plugin（本地） | Skills-only（NPX/CoWork/手动） |
-|------|---------------------|---------------|-------------------------------|
-| 全部 31 个 Skills | ✅ | ✅ | ✅ |
-| 自动触发元认知 | ✅ | ✅ | ❌（手动调用） |
-| Hook 路由 | ✅ | ✅ | ❌ |
-| 后台 Agents | ✅ | ✅ | ✅（内联回退） |
-| 便捷更新 | ✅ | ❌ | ✅（NPX/CoWork） |
-| 兼容其他编码助手 | ❌ | ❌ | ✅ |
+| 功能 | 本地 Runtime | Plugin（Marketplace） | Plugin（本地） | Skills-only（NPX/CoWork/手动） |
+|------|--------------|---------------------|---------------|-------------------------------|
+| 全部 Skills | ✅ | ✅ | ✅ | ✅ |
+| 单一顶层 skill | ✅ | ✅ | ✅ | ❌ |
+| 本地 `rust-skills` CLI | ✅ | ❌ | ✅ | ❌ |
+| 自动触发元认知 | ✅ | ✅ | ✅ | ❌（手动调用） |
+| Hook 路由 | ✅ | ✅ | ✅ | ❌ |
+| 后台 Agents | ✅ | ✅ | ✅ | ✅（内联回退） |
+| 安装需要 Rust/Cargo | ❌ | ❌ | ❌ | ❌ |
+| 兼容 Codex | ✅ | ❌ | ❌ | ✅ |
 
 ### 权限配置
 

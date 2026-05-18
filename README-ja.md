@@ -4,7 +4,7 @@
 
 > メタ認知フレームワークを備えた AI Rust 開発アシスタント
 
-[![Version](https://img.shields.io/badge/version-2.0.9-green.svg)](https://github.com/actionbook/rust-skills/releases)
+[![Version](https://img.shields.io/badge/version-2.1.0-green.svg)](https://github.com/actionbook/rust-skills/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Plugin-blue)](https://github.com/anthropics/claude-code)
 
@@ -46,10 +46,41 @@ AI (Rust Skills 使用):
 
 ## インストール
 
-Rust Skills は2つのインストールモードをサポートしています：
+Rust Skills は3つのインストールモードをサポートしています：
 
+- **ローカル Runtime モード**（Codex と Claude Code）：単一のトップレベル `rust-skills`、hook ベースのルーティング、ローカル `rust-skills` CLI を提供
 - **Plugin モード**（Claude Code）：hooks、agents、自動メタ認知トリガーを含む完全機能
 - **Skills-only モード**：skills をサポートする任意のコーディングエージェントで動作（Claude Code、Vercel AI など）
+
+---
+
+### ローカル Runtime インストール（Codex + Claude Code）
+
+ローカル hook と実行可能なルーティングコマンドを使いたい場合に推奨します。インストーラは Node ベースで、ユーザー環境に Rust/Cargo は不要です。
+
+```bash
+git clone https://github.com/actionbook/rust-skills.git
+cd rust-skills
+node install.js --codex --claude
+
+rust-skills route --json "Rust E0382 value moved in axum state"
+```
+
+インストールされる内容：
+
+- `~/.codex/skills/rust-skills/SKILL.md` および/または `~/.claude/skills/rust-skills/SKILL.md`
+- 深い skill データ：`~/.codex/rust-skills/` および/または `~/.claude/rust-skills/`
+- Hook スクリプト：`~/.codex/hooks/` および/または `~/.claude/hooks/`
+- ローカル検証コマンド：`~/.local/bin/rust-skills`
+
+Codex インストールでは現在の feature flag 形式を使用します：
+
+```toml
+[features]
+hooks = true
+```
+
+インストール時に非推奨の `[features].codex_hooks` が存在すれば削除します。
 
 ---
 
@@ -138,14 +169,16 @@ claude --plugin-dir /path/to/rust-skills
 
 ### 機能比較
 
-| 機能 | Plugin（Marketplace） | Plugin（ローカル） | Skills-only（NPX/CoWork/手動） |
-|------|---------------------|-------------------|-------------------------------|
-| 全 31 Skills | ✅ | ✅ | ✅ |
-| 自動メタ認知トリガー | ✅ | ✅ | ❌（手動呼び出し） |
-| Hook ルーティング | ✅ | ✅ | ❌ |
-| バックグラウンドエージェント | ✅ | ✅ | ✅（インラインフォールバック） |
-| 簡単な更新 | ✅ | ❌ | ✅（NPX/CoWork） |
-| 他のエージェントとの互換性 | ❌ | ❌ | ✅ |
+| 機能 | ローカル Runtime | Plugin（Marketplace） | Plugin（ローカル） | Skills-only（NPX/CoWork/手動） |
+|------|------------------|---------------------|-------------------|-------------------------------|
+| 全 Skills | ✅ | ✅ | ✅ | ✅ |
+| 単一トップレベル skill | ✅ | ✅ | ✅ | ❌ |
+| ローカル `rust-skills` CLI | ✅ | ❌ | ✅ | ❌ |
+| 自動メタ認知トリガー | ✅ | ✅ | ✅ | ❌（手動呼び出し） |
+| Hook ルーティング | ✅ | ✅ | ✅ | ❌ |
+| バックグラウンドエージェント | ✅ | ✅ | ✅ | ✅（インラインフォールバック） |
+| インストールに Rust/Cargo が必要 | ❌ | ❌ | ❌ | ❌ |
+| Codex 対応 | ✅ | ❌ | ❌ | ✅ |
 
 ### 権限設定
 

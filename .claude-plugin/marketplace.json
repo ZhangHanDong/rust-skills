@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "rust-skills",
-  "version": "2.0.8",
+  "version": "2.1.0",
   "description": "Comprehensive Rust development assistant with meta-question routing, coding guidelines, version queries, and ecosystem support",
   "owner": {
     "name": "ZhangHanDong",

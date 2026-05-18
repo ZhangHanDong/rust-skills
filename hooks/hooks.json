@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/.claude/hooks/rust-skill-eval-hook.sh"
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/.claude/hooks/rust-skill-eval-hook.js"
           }
         ]
       }

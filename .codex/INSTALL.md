@@ -2,7 +2,37 @@
 
 ## Installation
 
-### Option 1: Copy AGENTS.md
+### Option 1: Full Local Runtime
+
+This installs one top-level Codex skill plus the local router CLI and hook. It
+does not require Rust/Cargo; Node 18+ is enough.
+
+```bash
+git clone https://github.com/actionbook/rust-skills.git
+cd rust-skills
+node install.js --codex
+
+rust-skills route --json "Rust E0382 value moved"
+```
+
+Installed layout:
+
+- `~/.codex/skills/rust-skills/SKILL.md`
+- `~/.codex/rust-skills/skills/<skill-id>/SKILL.md`
+- `~/.codex/hooks/rust-skill-router-hook.js`
+- `~/.codex/bin/rust-skills`
+- `~/.local/bin/rust-skills`
+
+The installer writes the current Codex feature flag:
+
+```toml
+[features]
+hooks = true
+```
+
+It removes the deprecated `[features].codex_hooks` key if present.
+
+### Option 2: Copy AGENTS.md
 
 Copy the main agent instructions to your project:
 
@@ -11,7 +41,7 @@ Copy the main agent instructions to your project:
 cp AGENTS.md /path/to/your/project/AGENTS.md
 ```
 
-### Option 2: Reference as Submodule
+### Option 3: Reference as Submodule
 
 ```bash
 cd your-project
