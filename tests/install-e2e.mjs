@@ -27,9 +27,90 @@ function run(command, args, options = {}) {
 
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), "rust-skills-install-"));
 try {
+  const dryRunTemp = path.join(temp, "dry-run");
+  const dryRunCodexDir = path.join(dryRunTemp, ".codex");
+  fs.mkdirSync(dryRunCodexDir, { recursive: true });
+  const dryRunConfigPath = path.join(dryRunCodexDir, "config.toml");
+  const dryRunConfig = [
+    "[features]",
+    "codex_hooks = true",
+    ""
+  ].join("\n");
+  fs.writeFileSync(dryRunConfigPath, dryRunConfig);
+  run(process.execPath, [
+    path.join(root, "install.js"),
+    "--codex",
+    "--dry-run",
+    "--home",
+    dryRunTemp,
+    "--codex-dir",
+    dryRunCodexDir
+  ]);
+  assert(fs.readFileSync(dryRunConfigPath, "utf8") === dryRunConfig, "dry-run should not rewrite config");
+  assert(!fs.existsSync(path.join(dryRunCodexDir, "skills")), "dry-run should not create skills");
+  assert(!fs.existsSync(path.join(dryRunCodexDir, "hooks")), "dry-run should not create hooks");
+  assert(!fs.existsSync(path.join(dryRunCodexDir, "bin")), "dry-run should not create bin");
+  assert(!fs.existsSync(path.join(dryRunTemp, ".local")), "dry-run should not create user bin");
+
+  const pruneDir = path.join(temp, "prune", ".codex");
+  const pruneSkill = path.join(pruneDir, "skills", "m01-ownership", "SKILL.md");
+  fs.mkdirSync(path.dirname(pruneSkill), { recursive: true });
+  fs.writeFileSync(pruneSkill, "legacy or user top-level ownership skill\n");
+  run(process.execPath, [
+    path.join(root, "install.js"),
+    "--codex",
+    "--home",
+    path.join(temp, "prune"),
+    "--codex-dir",
+    pruneDir,
+    "--no-hooks",
+    "--no-user-bin",
+    "--prune-legacy-top-level-skills"
+  ]);
+  assert(!fs.existsSync(pruneSkill), "prune should move legacy top-level skill out of top-level namespace");
+  const backupRoot = path.join(pruneDir, "rust-skills-legacy-top-level-backup");
+  const backups = fs.readdirSync(backupRoot);
+  assert(backups.some((entry) => entry.startsWith("m01-ownership-")), "legacy backup missing");
+  const backupSkill = backups
+    .map((entry) => path.join(backupRoot, entry, "SKILL.md"))
+    .find((candidate) => fs.existsSync(candidate));
+  assert(
+    backupSkill && fs.readFileSync(backupSkill, "utf8") === "legacy or user top-level ownership skill\n",
+    "legacy backup should preserve original skill content"
+  );
+
+  const quotedHome = path.join(temp, "home with spaces");
+  const quotedCodexDir = path.join(quotedHome, ".codex");
+  run(process.execPath, [
+    path.join(root, "install.js"),
+    "--codex",
+    "--home",
+    quotedHome,
+    "--codex-dir",
+    quotedCodexDir,
+    "--no-hooks"
+  ]);
+  const quotedUserBin = path.join(
+    quotedHome,
+    ".local",
+    "bin",
+    process.platform === "win32" ? "rust-skills.cmd" : "rust-skills"
+  );
+  const quotedRoute = run(quotedUserBin, ["detect", "--json", "Rust E0382 value moved"]);
+  assert(JSON.parse(quotedRoute.stdout).should_inject === true, "quoted user bin shim should work");
+  if (process.platform !== "win32") {
+    assert(
+      fs.readFileSync(quotedUserBin, "utf8").includes("exec '"),
+      "POSIX user bin shim should single-quote the target path"
+    );
+  }
+
   const codexDir = path.join(temp, ".codex");
   const claudeDir = path.join(temp, ".claude");
   fs.mkdirSync(codexDir, { recursive: true });
+  const preservedSkill = path.join(codexDir, "skills", "m01-ownership", "SKILL.md");
+  fs.mkdirSync(path.dirname(preservedSkill), { recursive: true });
+  fs.writeFileSync(preservedSkill, "user custom ownership skill\n");
   fs.writeFileSync(
     path.join(codexDir, "config.toml"),
     [
@@ -58,10 +139,16 @@ try {
   ]);
 
   assert(fs.existsSync(path.join(codexDir, "skills", "rust-skills", "SKILL.md")), "Codex top-level skill missing");
-  assert(!fs.existsSync(path.join(codexDir, "skills", "m01-ownership")), "Codex should not expose deep skills at top level");
+  assert(
+    fs.readFileSync(preservedSkill, "utf8") === "user custom ownership skill\n",
+    "installer should not prune pre-existing top-level skills by default"
+  );
   assert(fs.existsSync(path.join(codexDir, "rust-skills", "skills", "m01-ownership", "SKILL.md")), "Codex deep skill missing");
   assert(fs.existsSync(path.join(claudeDir, "skills", "rust-skills", "SKILL.md")), "Claude top-level skill missing");
   assert(fs.existsSync(path.join(claudeDir, "rust-skills", "skills", "domain-web", "SKILL.md")), "Claude deep skill missing");
+  assert(!fs.existsSync(path.join(codexDir, "AGENTS.md")), "installer should not overwrite global Codex AGENTS.md");
+  assert(!fs.existsSync(path.join(claudeDir, "agents")), "installer should not write global Claude agents");
+  assert(!fs.existsSync(path.join(claudeDir, "commands")), "installer should not write global Claude commands");
 
   const config = fs.readFileSync(path.join(codexDir, "config.toml"), "utf8");
   assert(config.includes("[other]\nhooks = false"), "installer should preserve unrelated hooks key");
@@ -80,6 +167,7 @@ try {
 
   const userBin = path.join(temp, ".local", "bin", process.platform === "win32" ? "rust-skills.cmd" : "rust-skills");
   assert(fs.existsSync(userBin), "user PATH bin missing");
+  assert(!fs.existsSync(path.join(temp, ".local", "bin", "lib")), "user PATH bin should not contain a generic lib directory");
 
   const route = run(userBin, ["route", "--json", "Rust axum handler Rc cannot be sent"]);
   const routeJson = JSON.parse(route.stdout);

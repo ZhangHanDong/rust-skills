@@ -14,7 +14,13 @@ Use the `rust-skills` CLI as the executable routing contract:
 rust-skills detect --json "<user prompt>"
 rust-skills route --json "<user prompt>"
 rust-skills index query <skill-id> --json
+rust-skills verify --json
 ```
+
+Runtime hooks are two-stage. A hook matcher may start the router as a cheap
+candidate filter, but `rust-skills route --json` is the source of truth. Do not
+inject Rust-specific reasoning unless the route JSON returns
+`should_inject: true`.
 
 If `detect` returns `no-op`, do not inject Rust-specific reasoning.
 
@@ -24,3 +30,5 @@ If `route` returns `inject`, load `rust-router` first, then load the matched ski
 - Claude Code: `~/.claude/rust-skills/skills/<skill-id>/SKILL.md`
 
 When a route includes Layer 1 and Layer 3 skills, trace from language mechanics up to domain constraints, then back down to the concrete Rust design.
+
+Set `RUST_SKILLS_DEBUG=1` when diagnosing hook discovery or runtime failures.

@@ -56,7 +56,14 @@ Rust Skills は3つのインストールモードをサポートしています�
 
 ### ローカル Runtime インストール（Codex + Claude Code）
 
-ローカル hook と実行可能なルーティングコマンドを使いたい場合に推奨します。インストーラは Node ベースで、ユーザー環境に Rust/Cargo は不要です。
+ローカル hook と実行可能なルーティングコマンドを使いたい場合に推奨します。インストーラは Node ベースで、ユーザー環境に Rust/Cargo は不要です。`~/.local/bin/rust-skills` には、インストール済み runtime CLI へ転送する軽量 shim を配置します。
+
+Runtime hook は 2 段階のトリガーガードを使います：
+
+1. 低コストの hook matcher は、ルーターを実行する候補かどうかだけを判断します。
+2. `route --json` が `should_inject: true` を返した場合にだけ、Rust コンテキストを注入します。
+
+これにより、`cargo`、`ownership`、`lifetime`、`Rocket`、`Tower`、`unsafe` などの曖昧な語を含む非 Rust 作業を静かに扱えます。
 
 ```bash
 git clone https://github.com/actionbook/rust-skills.git
@@ -71,7 +78,10 @@ rust-skills route --json "Rust E0382 value moved in axum state"
 - `~/.codex/skills/rust-skills/SKILL.md` および/または `~/.claude/skills/rust-skills/SKILL.md`
 - 深い skill データ：`~/.codex/rust-skills/` および/または `~/.claude/rust-skills/`
 - Hook スクリプト：`~/.codex/hooks/` および/または `~/.claude/hooks/`
-- ローカル検証コマンド：`~/.local/bin/rust-skills`
+- Runtime CLI：`~/.codex/bin/` および/または `~/.claude/bin/`
+- 任意の PATH shim：`~/.local/bin/rust-skills`
+
+インストーラはグローバル `AGENTS.md`、Claude `agents/`、Claude `commands/` を上書きしません。古いトップレベル deep skills をバックアップへ移動するのは、`--prune-legacy-top-level-skills` を明示した場合のみです。
 
 Codex インストールでは現在の feature flag 形式を使用します：
 
@@ -81,6 +91,15 @@ hooks = true
 ```
 
 インストール時に非推奨の `[features].codex_hooks` が存在すれば削除します。
+
+ローカル検証：
+
+```bash
+npm test
+rust-skills verify --json
+rust-skills detect --json "今天天気怎么样"
+rust-skills route --json "Rust Web API Rc cannot be sent between threads"
+```
 
 ---
 
@@ -331,7 +350,8 @@ cd my-rust-project
      ▼
 ┌─────────────────────────────────────────┐
 │           Hook レイヤー                  │
-│  400+ キーワードでメタ認知をトリガー      │
+│  低コストの候補トリガー                  │
+│  CLI が should_inject を確認してから読込 │
 └─────────────────────────────────────────┘
      │
      ▼

@@ -7,6 +7,9 @@
 This installs one top-level Codex skill plus the local router CLI and hook. It
 does not require Rust/Cargo; Node 18+ is enough.
 
+The hook is a two-stage guard: the hook starts the router, and the router must
+return `should_inject: true` from `route --json` before Rust context is injected.
+
 ```bash
 git clone https://github.com/actionbook/rust-skills.git
 cd rust-skills
@@ -21,7 +24,11 @@ Installed layout:
 - `~/.codex/rust-skills/skills/<skill-id>/SKILL.md`
 - `~/.codex/hooks/rust-skill-router-hook.js`
 - `~/.codex/bin/rust-skills`
-- `~/.local/bin/rust-skills`
+- `~/.local/bin/rust-skills` shim, unless `--no-user-bin` is used
+
+The installer does not overwrite global `AGENTS.md`. Use `--dry-run` to preview
+actions without writing files. Legacy top-level deep skills are not moved into
+a backup folder unless `--prune-legacy-top-level-skills` is passed.
 
 The installer writes the current Codex feature flag:
 
@@ -78,8 +85,9 @@ After installation, ask Codex about:
 
 ## Requirements
 
-- Rust 1.85+ (edition 2024 recommended)
-- Cargo
+- Node 18+ for the installer and local runtime.
+- Rust/Cargo are not required to install Rust Skills.
+- Rust 1.85+ and Cargo are recommended for Rust projects that use the guidance below.
 
 ## Default Project Settings
 

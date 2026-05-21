@@ -54,7 +54,7 @@ Hook 触发:
 │        "matcher": "(?i)(rust|Web API|Send|...)",            │
 │        "hooks": [{                                           │
 │          "type": "command",                                  │
-│          "command": "...rust-skill-eval-hook.sh"            │
+│          "command": "...rust-skill-eval-hook.js"            │
 │        }]                                                    │
 │      }]                                                      │
 │    }                                                         │
@@ -65,7 +65,7 @@ Hook 触发:
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│           .claude/hooks/rust-skill-eval-hook.sh             │
+│           .claude/hooks/rust-skill-eval-hook.js             │
 │                                                              │
 │  输出元认知指令:                                             │
 │  - 强制识别层级和领域                                        │
@@ -99,7 +99,7 @@ Hook 触发:
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/.claude/hooks/rust-skill-eval-hook.sh"
+            "command": "${CLAUDE_PLUGIN_ROOT}/.claude/hooks/rust-skill-eval-hook.js"
           }
         ]
       }
@@ -157,7 +157,7 @@ Hook 触发:
 )
 ```
 
-### 3. rust-skill-eval-hook.sh (强制脚本)
+### 3. rust-skill-eval-hook.js (强制脚本)
 
 ```bash
 #!/bin/bash
@@ -333,7 +333,7 @@ rust-skills/
 │   └── hooks.json           ← Hook 触发配置
 ├── .claude/
 │   └── hooks/
-│       └── rust-skill-eval-hook.sh  ← 强制脚本
+│       └── rust-skill-eval-hook.js  ← 强制脚本
 └── .claude-plugin/
     └── plugin.json          ← 引用 hooks
 ```
@@ -506,7 +506,7 @@ for case in test_cases:
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/.claude/hooks/rust-skill-eval-hook.sh"
+            "command": "${CLAUDE_PLUGIN_ROOT}/.claude/hooks/rust-skill-eval-hook.js"
           }
         ]
       }
@@ -515,7 +515,7 @@ for case in test_cases:
 }
 ```
 
-### .claude/hooks/rust-skill-eval-hook.sh
+### .claude/hooks/rust-skill-eval-hook.js
 
 ```bash
 #!/bin/bash

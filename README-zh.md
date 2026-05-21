@@ -56,7 +56,14 @@ Rust Skills 支持三种安装模式：
 
 ### 本地 Runtime 安装（Codex + Claude Code）
 
-如果你希望本地 hook 自动触发，并且能用命令行真实验证路由，优先使用这个方式。安装器基于 Node，不要求用户机器安装 Rust/Cargo；它会复制 runtime 数据、单一顶层 skill、hook，以及 `rust-skills` 命令到 `~/.local/bin`。
+如果你希望本地 hook 自动触发，并且能用命令行真实验证路由，优先使用这个方式。安装器基于 Node，不要求用户机器安装 Rust/Cargo；它会复制 runtime 数据、单一顶层 skill、hook，并在 `~/.local/bin/rust-skills` 放一个指向已安装 runtime CLI 的轻量 shim。
+
+Runtime hook 使用两级触发保护：
+
+1. 低成本 hook matcher 只判断是否需要运行路由器。
+2. CLI/router 必须在 `route --json` 中返回 `should_inject: true`，才会真正注入 Rust 上下文。
+
+这样即使 prompt 里出现 `cargo`、`ownership`、`lifetime`、`Rocket`、`Tower`、`unsafe` 这类歧义词，非 Rust 工作也不会被打扰。
 
 ```bash
 git clone https://github.com/actionbook/rust-skills.git
@@ -71,7 +78,10 @@ rust-skills route --json "Rust E0382 value moved in axum state"
 - `~/.codex/skills/rust-skills/SKILL.md` 和/或 `~/.claude/skills/rust-skills/SKILL.md`
 - 深层 skill 数据：`~/.codex/rust-skills/` 和/或 `~/.claude/rust-skills/`
 - Hook 脚本：`~/.codex/hooks/` 和/或 `~/.claude/hooks/`
-- 本地验证命令：`~/.local/bin/rust-skills`
+- Runtime CLI：`~/.codex/bin/` 和/或 `~/.claude/bin/`
+- 可选 PATH shim：`~/.local/bin/rust-skills`
+
+安装器不会覆盖全局 `AGENTS.md`、Claude `agents/` 或 Claude `commands/`。它也不会默认移动旧的顶层 deep skills；只有显式传入 `--prune-legacy-top-level-skills` 才会移动到备份目录。
 
 Codex 安装会启用当前格式的 feature flag：
 
@@ -86,8 +96,17 @@ hooks = true
 
 ```bash
 npm test
+rust-skills verify --json
 rust-skills detect --json "今天天气怎么样"
 rust-skills route --json "Rust Web API Rc cannot be sent between threads"
+```
+
+常用安装参数：
+
+```bash
+node install.js --codex --dry-run        # 只打印计划，不写入文件
+node install.js --codex --no-user-bin    # 不安装 ~/.local/bin shim
+RUST_SKILLS_DEBUG=1 rust-skills route --json "Rust E0382"
 ```
 
 ---
@@ -339,7 +358,8 @@ cd my-rust-project
      ▼
 ┌─────────────────────────────────────────┐
 │           Hook 触发层                    │
-│  400+ 关键词触发元认知流程               │
+│  低成本候选触发                          │
+│  CLI 确认 should_inject 后才加载         │
 └─────────────────────────────────────────┘
      │
      ▼

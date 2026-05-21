@@ -5,7 +5,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 
-const { copyRecursive, ensureDir, removeDir } = require("./lib/routing");
+const { copyRecursive, ensureDir } = require("./lib/routing");
 
 const root = __dirname;
 const argv = process.argv.slice(2);
@@ -17,6 +17,7 @@ const installClaude = args.has("--claude") || installAll;
 const noHooks = args.has("--no-hooks");
 const noUserBin = args.has("--no-user-bin");
 const legacyTopLevelSkills = args.has("--legacy-top-level-skills");
+const shouldPruneLegacyTopLevelSkills = args.has("--prune-legacy-top-level-skills");
 
 function usage() {
   process.stdout.write(`Rust Skills installer
@@ -34,6 +35,8 @@ Options:
   --home <path>           Override user home for ~/.local/bin linking.
   --no-hooks              Copy runtime and CLI only; do not merge hook settings.
   --no-user-bin           Do not copy rust-skills into ~/.local/bin.
+  --prune-legacy-top-level-skills
+                           Move old top-level deep skills into a backup folder.
   --legacy-top-level-skills
                            Expose every deep skill as top-level skill.
 `);
@@ -46,11 +49,22 @@ function valueAfter(flag, fallback = null) {
 }
 
 function homePath(...parts) {
-  return path.join(valueAfter("--home", process.env.HOME || process.env.USERPROFILE || os.homedir()), ...parts);
+  const fallbackHome = process.platform === "win32"
+    ? (process.env.USERPROFILE || os.homedir() || process.env.HOME)
+    : (process.env.HOME || os.homedir() || process.env.USERPROFILE);
+  return path.join(valueAfter("--home", fallbackHome), ...parts);
+}
+
+function shellQuote(value) {
+  return `'${String(value).replace(/'/g, "'\\''")}'`;
+}
+
+function cmdQuote(value) {
+  return `"${String(value).replace(/"/g, '""')}"`;
 }
 
 function commandQuote(value) {
-  return `"${String(value).replace(/(["\\])/g, "\\$1")}"`;
+  return process.platform === "win32" ? cmdQuote(value) : shellQuote(value);
 }
 
 function readJson(filePath) {
@@ -79,6 +93,10 @@ function writeJson(filePath, value, actions, action) {
   }
 }
 
+function copyInstall(source, target, actions, options = {}) {
+  actions.push(...copyRecursive(source, target, { ...options, dryRun }));
+}
+
 function readClaudeHookMatcher() {
   const hooksConfig = readJson(path.join(root, "hooks", "hooks.json"));
   return hooksConfig.hooks?.UserPromptSubmit?.[0]?.matcher || "(?i)(rust|cargo|rustc|Cargo\\.toml|E0\\d{3,4})";
@@ -87,10 +105,10 @@ function readClaudeHookMatcher() {
 function copyRuntimeData(targetRoot, actions) {
   const dataRoot = path.join(targetRoot, "rust-skills");
   for (const entry of ["index", "skills", "cache", "agents", "commands", "templates", "_meta", "docs"]) {
-    actions.push(...copyRecursive(path.join(root, entry), path.join(dataRoot, entry)));
+    copyInstall(path.join(root, entry), path.join(dataRoot, entry), actions);
   }
   for (const file of ["VERSION", "metadata.json", "README.md", "README-zh.md", "README-ja.md"]) {
-    actions.push(...copyRecursive(path.join(root, file), path.join(dataRoot, file)));
+    copyInstall(path.join(root, file), path.join(dataRoot, file), actions);
   }
 }
 
@@ -105,32 +123,44 @@ function packageSkillIds() {
 
 function pruneLegacyTopLevelSkills(targetRoot, actions) {
   const topLevelSkillsRoot = path.join(targetRoot, "skills");
+  const backupRoot = path.join(targetRoot, "rust-skills-legacy-top-level-backup");
+  const timestamp = Date.now();
   for (const skillId of packageSkillIds()) {
     if (skillId === "rust-skills") continue;
     const target = path.join(topLevelSkillsRoot, skillId);
     if (!fs.existsSync(target)) continue;
-    actions.push({ action: "remove-legacy-top-level-skill", target });
-    if (!dryRun) removeDir(target);
+    let backup = path.join(backupRoot, `${skillId}-${timestamp}`);
+    let suffix = 1;
+    while (!dryRun && fs.existsSync(backup)) {
+      backup = path.join(backupRoot, `${skillId}-${timestamp}-${suffix}`);
+      suffix += 1;
+    }
+    actions.push({ action: "backup-legacy-top-level-skill", source: target, target: backup });
+    if (!dryRun) {
+      ensureDir(path.dirname(backup));
+      fs.renameSync(target, backup);
+    }
   }
 }
 
 function installTopLevelSkills(targetRoot, actions) {
   if (legacyTopLevelSkills) {
-    actions.push(...copyRecursive(path.join(root, "skills"), path.join(targetRoot, "skills")));
+    copyInstall(path.join(root, "skills"), path.join(targetRoot, "skills"), actions);
     return;
   }
-  pruneLegacyTopLevelSkills(targetRoot, actions);
-  actions.push(...copyRecursive(
+  if (shouldPruneLegacyTopLevelSkills) pruneLegacyTopLevelSkills(targetRoot, actions);
+  copyInstall(
     path.join(root, "installer", "skills", "rust-skills"),
-    path.join(targetRoot, "skills", "rust-skills")
-  ));
+    path.join(targetRoot, "skills", "rust-skills"),
+    actions
+  );
 }
 
 function installRuntimeCli(targetRoot, actions) {
   const binDir = path.join(targetRoot, "bin");
   const targetBin = path.join(binDir, process.platform === "win32" ? "rust-skills.js" : "rust-skills");
-  actions.push(...copyRecursive(path.join(root, "rust-skills.js"), targetBin, { executable: true }));
-  actions.push(...copyRecursive(path.join(root, "lib"), path.join(binDir, "lib")));
+  copyInstall(path.join(root, "rust-skills.js"), targetBin, actions, { executable: true });
+  copyInstall(path.join(root, "lib"), path.join(binDir, "lib"), actions);
   if (!dryRun && process.platform !== "win32") fs.chmodSync(targetBin, 0o755);
 
   if (process.platform === "win32") {
@@ -148,12 +178,15 @@ function installUserBin(sourceBin, actions) {
   if (noUserBin) return;
   const userBinDir = homePath(".local", "bin");
   const target = path.join(userBinDir, process.platform === "win32" ? "rust-skills.cmd" : "rust-skills");
-  actions.push({ action: "install-user-bin", source: sourceBin, target });
+  actions.push({ action: "install-user-bin-shim", source: sourceBin, target });
   if (dryRun) return;
   ensureDir(userBinDir);
-  fs.copyFileSync(sourceBin, target);
-  if (process.platform !== "win32") fs.chmodSync(target, 0o755);
-  copyRecursive(path.join(path.dirname(sourceBin), "lib"), path.join(userBinDir, "lib"));
+  if (process.platform === "win32") {
+    fs.writeFileSync(target, `@echo off\r\ncall ${cmdQuote(sourceBin)} %*\r\n`);
+  } else {
+    fs.writeFileSync(target, `#!/bin/sh\nexec ${shellQuote(sourceBin)} "$@"\n`);
+    fs.chmodSync(target, 0o755);
+  }
 }
 
 function updateFeaturesToml(content) {
@@ -301,8 +334,7 @@ function writeClaudeHookSettings(targetRoot, actions) {
 function installCodexTarget(actions) {
   const targetRoot = valueAfter("--codex-dir", homePath(".codex"));
   installTopLevelSkills(targetRoot, actions);
-  actions.push(...copyRecursive(path.join(root, "AGENTS.md"), path.join(targetRoot, "AGENTS.md")));
-  actions.push(...copyRecursive(path.join(root, ".codex", "hooks"), path.join(targetRoot, "hooks")));
+  copyInstall(path.join(root, ".codex", "hooks"), path.join(targetRoot, "hooks"), actions);
   copyRuntimeData(targetRoot, actions);
   const bin = installRuntimeCli(targetRoot, actions);
   installUserBin(bin, actions);
@@ -312,9 +344,7 @@ function installCodexTarget(actions) {
 function installClaudeTarget(actions) {
   const targetRoot = valueAfter("--claude-dir", homePath(".claude"));
   installTopLevelSkills(targetRoot, actions);
-  actions.push(...copyRecursive(path.join(root, "agents"), path.join(targetRoot, "agents")));
-  actions.push(...copyRecursive(path.join(root, "commands"), path.join(targetRoot, "commands")));
-  actions.push(...copyRecursive(path.join(root, ".claude", "hooks"), path.join(targetRoot, "hooks")));
+  copyInstall(path.join(root, ".claude", "hooks"), path.join(targetRoot, "hooks"), actions);
   copyRuntimeData(targetRoot, actions);
   const bin = installRuntimeCli(targetRoot, actions);
   installUserBin(bin, actions);

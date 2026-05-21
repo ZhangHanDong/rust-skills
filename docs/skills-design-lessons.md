@@ -176,7 +176,7 @@ skills/core-actionbook/SKILL.md
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/.claude/hooks/rust-skill-eval-hook.sh"
+            "command": "${CLAUDE_PLUGIN_ROOT}/.claude/hooks/rust-skill-eval-hook.js"
           }
         ]
       }
@@ -364,7 +364,7 @@ Solution: [follows Web best practices]
 | `skills/m0x-*/SKILL.md` | Layer 1 skills |
 | `skills/m1x-*/SKILL.md` | Layer 2 skills |
 | `skills/domain-*/SKILL.md` | Layer 3 skills |
-| `.claude/hooks/rust-skill-eval-hook.sh` | Hook script |
+| `.claude/hooks/rust-skill-eval-hook.js` | Hook script |
 | `hooks/hooks.json` | Plugin hook config |
 | `.claude-plugin/plugin.json` | Plugin manifest |
 | `_meta/reasoning-framework.md` | Core reasoning docs |

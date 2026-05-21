@@ -22,27 +22,40 @@ print(f"Matcher loaded from: {hooks_path}\n")
 # Test cases: (input, should_match, expected_match_word)
 test_cases = [
     # Rust 技术问题 - 应该匹配
-    ("支付系统精度问题", True, "问题"),
+    ("Rust 支付系统精度问题", True, "Rust"),
     ("E0382 错误怎么解决", True, "E0382"),
     ("rust ownership问题", True, "rust"),
-    ("how to use tokio", True, "how to"),
-    ("为什么会有生命周期错误", True, "为什么"),
-    ("帮我写一个异步函数", True, "帮我写"),
-    ("最佳实践是什么", True, "最佳实践"),
+    ("how to use tokio", True, "tokio"),
+    ("Rust 生命周期错误怎么解决", True, "Rust"),
+    ("帮我写一个 Rust 异步函数", True, "Rust"),
+    ("Rust 最佳实践是什么", True, "Rust"),
     ("value moved error", True, "value moved"),
-    ("这个函数怎么用", True, "怎么用"),
-    ("解释一下这段代码", True, "解释"),
+    ("这个 Rust 函数怎么用", True, "Rust"),
+    ("解释一下这段 .rs 代码", True, ".rs"),
     ("cargo build 报错了", True, "cargo"),
-    ("async await 怎么用", True, "async"),
+    ("Rust async await 怎么用", True, "Rust"),
     ("Send Sync trait 是什么", True, "Send"),
     ("借用检查器报错", True, "借用"),
-    ("类型不匹配怎么办", True, "类型"),
+    ("所有权和借用怎么理解", True, "所有权"),
+    ("unsafe FFI raw pointer wrapper", True, "unsafe"),
+    ("Rust 类型不匹配怎么办", True, "Rust"),
 
-    # 边界情况 - 可能误匹配但可接受
-    ("今天天气怎么样", True, "怎么"),  # 包含 "怎么"
-    ("帮我订一张机票", True, "帮我"),  # 包含 "帮我"
-
-    # 纯非技术问题 - 没有关键词不应匹配
+    # 非 Rust 问题不应启动 hook
+    ("今天天气怎么样", False, None),
+    ("帮我订一张机票", False, None),
+    ("Compare Arc browser and Chrome", False, None),
+    ("Send this package by cargo shipping", False, None),
+    ("Rocket Mortgage application status", False, None),
+    ("Tower fan bedroom lighting plan", False, None),
+    ("Hyper browser tab management", False, None),
+    ("Warp terminal theme setup", False, None),
+    ("customer lifetime value model", False, None),
+    ("home ownership documents", False, None),
+    ("unsafe ladder installation guide", False, None),
+    ("生命周期营销怎么做", False, None),
+    ("房屋所有权证明怎么准备", False, None),
+    ("wooden crate documentation for packaging", False, None),
+    ("nightly skincare routine", False, None),
     ("明天几点开会", False, None),
     ("晚饭吃什么", False, None),
 ]

@@ -18,8 +18,11 @@ function run(label, command, args) {
 }
 
 run("registry verify", process.execPath, [path.join(root, "rust-skills.js"), "verify", "--json"]);
+run("hook matcher", process.execPath, [path.join(root, "tests", "hook-matcher-test.mjs")]);
 run("routing eval", process.execPath, [path.join(root, "tests", "routing-eval-test.mjs")]);
+run("routing ab", process.execPath, [path.join(root, "tests", "routing-ab-test.mjs")]);
 run("hook routing", process.execPath, [path.join(root, "tests", "hook-routing-test.mjs")]);
 run("install e2e", process.execPath, [path.join(root, "tests", "install-e2e.mjs")]);
+run("package safety", process.execPath, [path.join(root, "tests", "package-safety-test.mjs")]);
 
 console.log("verify all: PASS");

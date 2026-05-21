@@ -101,7 +101,7 @@ EVALUATE → ACTIVATE → IMPLEMENT
     "UserPromptSubmit": [
       {
         "matcher": "(?i)(rust|cargo|crate|E0\\d{3,4}|...)",
-        "command": ".claude/hooks/rust-skill-eval-hook.sh"
+        "command": ".claude/hooks/rust-skill-eval-hook.js"
       }
     ]
   }

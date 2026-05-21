@@ -175,8 +175,73 @@
     "expected": { "rust": false, "skills": [] }
   },
   {
+    "id": "non-rust-send-cargo-shipping",
+    "prompt": "Send this package by cargo shipping",
+    "expected": { "rust": false, "skills": [] }
+  },
+  {
     "id": "non-rust-wooden-crate",
     "prompt": "wooden crate dimensions and brightness labels for a lighting display",
+    "expected": { "rust": false, "skills": [] }
+  },
+  {
+    "id": "non-rust-arc-browser",
+    "prompt": "Compare Arc browser and Chrome for web research",
+    "expected": { "rust": false, "skills": [] }
+  },
+  {
+    "id": "non-rust-rocket-mortgage",
+    "prompt": "Rocket Mortgage application status",
+    "expected": { "rust": false, "skills": [] }
+  },
+  {
+    "id": "non-rust-tower-lighting",
+    "prompt": "Tower fan bedroom lighting plan",
+    "expected": { "rust": false, "skills": [] }
+  },
+  {
+    "id": "non-rust-hyper-browser",
+    "prompt": "Hyper browser tab management",
+    "expected": { "rust": false, "skills": [] }
+  },
+  {
+    "id": "non-rust-warp-terminal",
+    "prompt": "Warp terminal theme setup",
+    "expected": { "rust": false, "skills": [] }
+  },
+  {
+    "id": "non-rust-lifetime-value",
+    "prompt": "customer lifetime value model",
+    "expected": { "rust": false, "skills": [] }
+  },
+  {
+    "id": "non-rust-home-ownership",
+    "prompt": "home ownership documents",
+    "expected": { "rust": false, "skills": [] }
+  },
+  {
+    "id": "non-rust-unsafe-ladder",
+    "prompt": "unsafe ladder installation guide",
+    "expected": { "rust": false, "skills": [] }
+  },
+  {
+    "id": "non-rust-cn-lifecycle-marketing",
+    "prompt": "生命周期营销怎么做",
+    "expected": { "rust": false, "skills": [] }
+  },
+  {
+    "id": "non-rust-cn-home-ownership",
+    "prompt": "房屋所有权证明怎么准备",
+    "expected": { "rust": false, "skills": [] }
+  },
+  {
+    "id": "non-rust-wooden-crate-docs",
+    "prompt": "wooden crate documentation for packaging",
+    "expected": { "rust": false, "skills": [] }
+  },
+  {
+    "id": "non-rust-nightly-skincare",
+    "prompt": "nightly skincare routine",
     "expected": { "rust": false, "skills": [] }
   },
   {

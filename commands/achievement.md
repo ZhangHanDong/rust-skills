@@ -197,7 +197,7 @@ Learning:       ████████████░░░░ 32/50 to Knowle
 ---
 
 🏆 **Achievements:** {unlocked}/{total} unlocked
-📈 **Next Milestone:** {next_achievement}
+📈 **Next Achievement:** {next_achievement}
 ```
 
 #### For `reset`:
@@ -309,4 +309,3 @@ chmod +x ~/.claude/hooks/achievement-tracker.sh
 
 - `/rust-review` - Triggers code review achievement
 - `/unsafe-check` - Related to safety achievements
-

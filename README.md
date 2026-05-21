@@ -56,7 +56,14 @@ Rust Skills supports three installation modes:
 
 ### Local Runtime Install (Codex + Claude Code)
 
-Use this when you want local hooks and a real routing command without requiring Rust/Cargo on the user machine. The installer is Node-based and copies the runtime data, one top-level skill, hooks, and a `rust-skills` command into `~/.local/bin`.
+Use this when you want local hooks and a real routing command without requiring Rust/Cargo on the user machine. The installer is Node-based and copies the runtime data, one top-level skill, hooks, and a small `~/.local/bin/rust-skills` shim that points at the installed runtime CLI.
+
+Runtime hooks use a two-stage trigger guard:
+
+1. A low-cost hook matcher only decides whether the router should run.
+2. The CLI/router must still return `should_inject: true` from `route --json` before any Rust context is injected.
+
+This keeps non-Rust work quiet even if a prompt contains ambiguous words such as `cargo`, `ownership`, `lifetime`, `Rocket`, `Tower`, or `unsafe`.
 
 ```bash
 git clone https://github.com/actionbook/rust-skills.git
@@ -71,7 +78,10 @@ What it installs:
 - `~/.codex/skills/rust-skills/SKILL.md` and/or `~/.claude/skills/rust-skills/SKILL.md`
 - Deep skill data under `~/.codex/rust-skills/` and/or `~/.claude/rust-skills/`
 - Hook scripts under `~/.codex/hooks/` and/or `~/.claude/hooks/`
-- `~/.local/bin/rust-skills` for local verification
+- Runtime CLI under `~/.codex/bin/` and/or `~/.claude/bin/`
+- Optional PATH shim: `~/.local/bin/rust-skills`
+
+The installer does not overwrite global `AGENTS.md`, Claude `agents/`, or Claude `commands/`. It also does not move old top-level deep skills into a backup folder unless you pass `--prune-legacy-top-level-skills`.
 
 Codex installs enable the current feature flag format:
 
@@ -86,8 +96,17 @@ Verify locally:
 
 ```bash
 npm test
+rust-skills verify --json
 rust-skills detect --json "今天天气怎么样"
 rust-skills route --json "Rust Web API Rc cannot be sent between threads"
+```
+
+Useful install flags:
+
+```bash
+node install.js --codex --dry-run        # print planned actions without writing files
+node install.js --codex --no-user-bin    # skip the ~/.local/bin shim
+RUST_SKILLS_DEBUG=1 rust-skills route --json "Rust E0382"
 ```
 
 ---
@@ -339,7 +358,8 @@ User Question
      ▼
 ┌─────────────────────────────────────────┐
 │           Hook Layer                     │
-│  400+ keywords trigger meta-cognition    │
+│  Low-cost candidate trigger              │
+│  CLI confirms should_inject before load  │
 └─────────────────────────────────────────┘
      │
      ▼

@@ -103,6 +103,41 @@ function fileExists(filePath) {
   }
 }
 
+function debug(message) {
+  if (process.env.RUST_SKILLS_DEBUG === "1") {
+    process.stderr.write(`[rust-skills] ${message}\n`);
+  }
+}
+
+function routingLibraryCandidates() {
+  const candidates = [
+    process.env.RUST_SKILLS_LIB,
+    path.join(codexRoot, "bin", "lib", "routing.js"),
+    path.join(repoRoot, "lib", "routing.js")
+  ].filter(Boolean);
+
+  for (const home of homes()) {
+    candidates.push(path.join(home, ".codex", "bin", "lib", "routing.js"));
+    candidates.push(path.join(home, ".claude", "bin", "lib", "routing.js"));
+  }
+
+  return [...new Set(candidates)];
+}
+
+function routeWithLibrary(prompt) {
+  for (const candidate of routingLibraryCandidates()) {
+    if (!fileExists(candidate)) continue;
+    try {
+      const routing = require(candidate);
+      if (typeof routing.routePrompt !== "function") continue;
+      return routing.routePrompt(prompt);
+    } catch (error) {
+      debug(`direct routing failed via ${candidate}: ${error.message}`);
+    }
+  }
+  return null;
+}
+
 function executableCandidates() {
   const candidates = [
     process.env.RUST_SKILLS_BIN,
@@ -119,8 +154,15 @@ function executableCandidates() {
   return [...new Set(candidates)];
 }
 
+function pathExecutableCandidates() {
+  return String(process.env.PATH || "")
+    .split(path.delimiter)
+    .filter(Boolean)
+    .map((entry) => path.join(entry, binaryName));
+}
+
 function findRustSkillsCommand() {
-  for (const candidate of executableCandidates()) {
+  for (const candidate of [...executableCandidates(), ...pathExecutableCandidates()]) {
     if (!fileExists(candidate)) continue;
     if (candidate.endsWith(".js")) return { command: process.execPath, prefixArgs: [candidate] };
     return { command: candidate, prefixArgs: [] };
@@ -153,8 +195,17 @@ function runRustSkills(commandInfo, args, prompt) {
   const result = childProcess.spawnSync(
     commandInfo.command,
     [...commandInfo.prefixArgs, ...args, prompt],
-    { cwd: runtimeRoot || codexRoot, env, encoding: "utf8", shell: false }
+    {
+      cwd: runtimeRoot || codexRoot,
+      env,
+      encoding: "utf8",
+      shell: false,
+      timeout: 3000,
+      maxBuffer: 1024 * 1024
+    }
   );
+  if (result.error) debug(`rust-skills ${args[0]} failed: ${result.error.message}`);
+  if (result.status !== 0) debug(`rust-skills ${args[0]} exited with ${result.status ?? result.signal ?? "unknown"}`);
   return result.status === 0 ? result.stdout : "";
 }
 
@@ -196,8 +247,24 @@ function emit(value) {
 
 function main() {
   const prompt = extractPrompt(readStdin());
+  const directRoute = routeWithLibrary(prompt);
+  if (directRoute) {
+    if (directRoute.should_inject !== true) {
+      emit({});
+      return;
+    }
+    emit({
+      hookSpecificOutput: {
+        hookEventName: "UserPromptSubmit",
+        additionalContext: additionalContext(`${JSON.stringify(directRoute, null, 2)}\n`)
+      }
+    });
+    return;
+  }
+
   const commandInfo = findRustSkillsCommand();
   if (!commandInfo) {
+    debug("no routing library or rust-skills command found");
     emit({});
     return;
   }
@@ -209,6 +276,10 @@ function main() {
   }
 
   const routeOutput = runRustSkills(commandInfo, ["route", "--json"], prompt);
+  if (!routeOutput.trim() || !shouldInject(routeOutput)) {
+    emit({});
+    return;
+  }
   emit({
     hookSpecificOutput: {
       hookEventName: "UserPromptSubmit",
