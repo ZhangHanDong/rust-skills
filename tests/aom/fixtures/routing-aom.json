@@ -1,0 +1,500 @@
+[
+  {
+    "id": "rust-e0382-ownership",
+    "prompt": "Rust E0382 value moved after move",
+    "expectedInject": true,
+    "requiredSkills": ["rust-router", "m01-ownership"],
+    "forbiddenSkills": [],
+    "maxContextCost": 2,
+    "tags": ["rust", "layer1", "ownership"]
+  },
+  {
+    "id": "rust-e0597-lifetime",
+    "prompt": "Rust E0597 borrowed value does not live long enough",
+    "expectedInject": true,
+    "requiredSkills": ["rust-router", "m01-ownership"],
+    "forbiddenSkills": [],
+    "maxContextCost": 2,
+    "tags": ["rust", "layer1", "ownership"]
+  },
+  {
+    "id": "rust-e0502-mutability",
+    "prompt": "Rust E0502 cannot borrow as mutable because already borrowed",
+    "expectedInject": true,
+    "requiredSkills": ["rust-router", "m03-mutability"],
+    "forbiddenSkills": [],
+    "maxContextCost": 3,
+    "tags": ["rust", "layer1", "mutability"]
+  },
+  {
+    "id": "rust-e0277-trait",
+    "prompt": "Rust E0277 trait bound not satisfied with generic where clauses",
+    "expectedInject": true,
+    "requiredSkills": ["rust-router", "m04-zero-cost"],
+    "forbiddenSkills": [],
+    "maxContextCost": 3,
+    "tags": ["rust", "layer1", "traits"]
+  },
+  {
+    "id": "rust-result-error-handling",
+    "prompt": "Rust Result anyhow thiserror error handling in an application",
+    "expectedInject": true,
+    "requiredSkills": ["rust-router", "m06-error-handling"],
+    "forbiddenSkills": [],
+    "maxContextCost": 3,
+    "tags": ["rust", "layer1", "error"]
+  },
+  {
+    "id": "rust-question-mark-no-error-extra",
+    "prompt": "Rust 怎么学习?",
+    "expectedInject": true,
+    "requiredSkills": ["rust-router"],
+    "forbiddenSkills": ["m06-error-handling"],
+    "maxContextCost": 1,
+    "tags": ["rust", "adversarial", "over-injection"]
+  },
+  {
+    "id": "rust-async-send-sync",
+    "prompt": "Rust tokio spawn async await Send Sync bound error",
+    "expectedInject": true,
+    "requiredSkills": ["rust-router", "m07-concurrency"],
+    "forbiddenSkills": [],
+    "maxContextCost": 3,
+    "tags": ["rust", "layer1", "concurrency"]
+  },
+  {
+    "id": "rust-resource-arc-rc",
+    "prompt": "Rust Arc Rc RefCell smart pointer tradeoffs",
+    "expectedInject": true,
+    "requiredSkills": ["rust-router", "m02-resource"],
+    "forbiddenSkills": [],
+    "maxContextCost": 3,
+    "tags": ["rust", "layer1", "resource"]
+  },
+  {
+    "id": "rust-unsafe-ffi",
+    "prompt": "Rust unsafe extern C raw pointer FFI wrapper",
+    "expectedInject": true,
+    "requiredSkills": ["rust-router", "unsafe-checker"],
+    "forbiddenSkills": [],
+    "maxContextCost": 3,
+    "tags": ["rust", "unsafe"]
+  },
+  {
+    "id": "rust-type-state",
+    "prompt": "Rust type state PhantomData builder pattern",
+    "expectedInject": true,
+    "requiredSkills": ["rust-router", "m05-type-driven"],
+    "forbiddenSkills": [],
+    "maxContextCost": 2,
+    "tags": ["rust", "layer1", "type-driven"]
+  },
+  {
+    "id": "rust-domain-model-ddd",
+    "prompt": "Rust DDD aggregate entity value object repository invariant",
+    "expectedInject": true,
+    "requiredSkills": ["rust-router", "m09-domain"],
+    "forbiddenSkills": [],
+    "maxContextCost": 3,
+    "tags": ["rust", "layer2", "domain-model"]
+  },
+  {
+    "id": "rust-performance-benchmark",
+    "prompt": "Rust benchmark profiling allocation flamegraph performance optimization",
+    "expectedInject": true,
+    "requiredSkills": ["rust-router", "m10-performance"],
+    "forbiddenSkills": [],
+    "maxContextCost": 3,
+    "tags": ["rust", "layer2", "performance"]
+  },
+  {
+    "id": "rust-ecosystem-features",
+    "prompt": "Rust dependency feature flag workspace crate selection",
+    "expectedInject": true,
+    "requiredSkills": ["rust-router", "m11-ecosystem"],
+    "forbiddenSkills": [],
+    "maxContextCost": 3,
+    "tags": ["rust", "layer2", "ecosystem"]
+  },
+  {
+    "id": "rust-lifecycle-raii",
+    "prompt": "Rust Drop RAII connection pool graceful shutdown lifecycle",
+    "expectedInject": true,
+    "requiredSkills": ["rust-router", "m12-lifecycle"],
+    "forbiddenSkills": [],
+    "maxContextCost": 3,
+    "tags": ["rust", "layer2", "lifecycle"]
+  },
+  {
+    "id": "rust-domain-error-recovery",
+    "prompt": "Rust domain error retry fallback recovery strategy circuit breaker",
+    "expectedInject": true,
+    "requiredSkills": ["rust-router", "m13-domain-error"],
+    "forbiddenSkills": [],
+    "maxContextCost": 3,
+    "tags": ["rust", "layer2", "domain-error"]
+  },
+  {
+    "id": "rust-mental-model",
+    "prompt": "Rust learning mental model how to think about borrow checker",
+    "expectedInject": true,
+    "requiredSkills": ["rust-router", "m14-mental-model"],
+    "forbiddenSkills": ["domain-ml"],
+    "maxContextCost": 3,
+    "tags": ["rust", "layer2", "mental-model", "over-injection"]
+  },
+  {
+    "id": "rust-anti-pattern",
+    "prompt": "Rust anti-pattern common mistake pitfall code smell review",
+    "expectedInject": true,
+    "requiredSkills": ["rust-router", "m15-anti-pattern"],
+    "forbiddenSkills": [],
+    "maxContextCost": 3,
+    "tags": ["rust", "layer2", "anti-pattern"]
+  },
+  {
+    "id": "rust-guidelines",
+    "prompt": "Rust best practice naming rustfmt clippy lint style",
+    "expectedInject": true,
+    "requiredSkills": ["rust-router", "coding-guidelines"],
+    "forbiddenSkills": [],
+    "maxContextCost": 3,
+    "tags": ["rust", "utility", "style"]
+  },
+  {
+    "id": "rust-web-send-sync",
+    "prompt": "Rust axum Web API Rc cannot be sent between threads in shared state",
+    "expectedInject": true,
+    "requiredSkills": ["rust-router", "m02-resource", "m07-concurrency", "domain-web"],
+    "forbiddenSkills": [],
+    "maxContextCost": 4,
+    "tags": ["rust", "domain-web"]
+  },
+  {
+    "id": "rust-api-docs-not-web",
+    "prompt": "Rust API documentation for Vec",
+    "expectedInject": true,
+    "requiredSkills": ["rust-router", "rust-learner"],
+    "forbiddenSkills": ["domain-web"],
+    "maxContextCost": 2,
+    "tags": ["rust", "learner", "over-injection"]
+  },
+  {
+    "id": "rust-fintech-decimal",
+    "prompt": "Rust payment ledger decimal currency audit",
+    "expectedInject": true,
+    "requiredSkills": ["rust-router", "domain-fintech"],
+    "forbiddenSkills": [],
+    "maxContextCost": 3,
+    "tags": ["rust", "domain-fintech"]
+  },
+  {
+    "id": "rust-cli-clap",
+    "prompt": "Rust CLI clap command line subcommands and exit code",
+    "expectedInject": true,
+    "requiredSkills": ["rust-router", "domain-cli"],
+    "forbiddenSkills": [],
+    "maxContextCost": 4,
+    "tags": ["rust", "domain-cli"]
+  },
+  {
+    "id": "rust-embedded-no-std",
+    "prompt": "Rust embedded no_std firmware HAL microcontroller lifecycle",
+    "expectedInject": true,
+    "requiredSkills": ["rust-router", "domain-embedded"],
+    "forbiddenSkills": [],
+    "maxContextCost": 4,
+    "tags": ["rust", "domain-embedded"]
+  },
+  {
+    "id": "rust-cloud-native-grpc",
+    "prompt": "Rust tonic grpc microservice kubernetes observability",
+    "expectedInject": true,
+    "requiredSkills": ["rust-router", "domain-cloud-native"],
+    "forbiddenSkills": [],
+    "maxContextCost": 3,
+    "tags": ["rust", "domain-cloud-native"]
+  },
+  {
+    "id": "rust-iot-mqtt",
+    "prompt": "Rust IoT MQTT sensor telemetry edge computing",
+    "expectedInject": true,
+    "requiredSkills": ["rust-router", "domain-iot"],
+    "forbiddenSkills": [],
+    "maxContextCost": 3,
+    "tags": ["rust", "domain-iot"]
+  },
+  {
+    "id": "rust-ml-inference",
+    "prompt": "Rust machine learning tensor inference burn neural network",
+    "expectedInject": true,
+    "requiredSkills": ["rust-router", "domain-ml"],
+    "forbiddenSkills": [],
+    "maxContextCost": 3,
+    "tags": ["rust", "domain-ml"]
+  },
+  {
+    "id": "rust-latest-version",
+    "prompt": "Rust latest version",
+    "expectedInject": true,
+    "requiredSkills": ["rust-router", "rust-learner"],
+    "forbiddenSkills": [],
+    "maxContextCost": 2,
+    "tags": ["rust", "learner"]
+  },
+  {
+    "id": "rust-daily-news",
+    "prompt": "rust weekly TWIR news",
+    "expectedInject": true,
+    "requiredSkills": ["rust-router", "rust-daily"],
+    "forbiddenSkills": [],
+    "maxContextCost": 2,
+    "tags": ["rust", "news"]
+  },
+  {
+    "id": "rust-dynamic-skill-sync",
+    "prompt": "Rust Cargo.toml sync crate docs pack",
+    "expectedInject": true,
+    "requiredSkills": ["rust-router", "core-dynamic-skills"],
+    "forbiddenSkills": [],
+    "maxContextCost": 4,
+    "tags": ["rust", "dynamic-skills"]
+  },
+  {
+    "id": "rust-skill-creator",
+    "prompt": "create rust skill for serde crate docs",
+    "expectedInject": true,
+    "requiredSkills": ["rust-router", "rust-skill-creator"],
+    "forbiddenSkills": [],
+    "maxContextCost": 3,
+    "tags": ["rust", "skill-creator"]
+  },
+  {
+    "id": "rust-code-navigator",
+    "prompt": "Rust go to definition find references LSP navigation",
+    "expectedInject": true,
+    "requiredSkills": ["rust-router", "rust-code-navigator"],
+    "forbiddenSkills": [],
+    "maxContextCost": 3,
+    "tags": ["rust", "lsp"]
+  },
+  {
+    "id": "rust-call-graph",
+    "prompt": "Rust call graph incoming calls outgoing calls",
+    "expectedInject": true,
+    "requiredSkills": ["rust-router", "rust-call-graph"],
+    "forbiddenSkills": [],
+    "maxContextCost": 3,
+    "tags": ["rust", "lsp"]
+  },
+  {
+    "id": "rust-symbol-analyzer",
+    "prompt": "Rust document symbol workspace symbol analysis",
+    "expectedInject": true,
+    "requiredSkills": ["rust-router", "rust-symbol-analyzer"],
+    "forbiddenSkills": [],
+    "maxContextCost": 4,
+    "tags": ["rust", "lsp"]
+  },
+  {
+    "id": "rust-trait-explorer",
+    "prompt": "Rust trait implementation go to implementation impl lookup",
+    "expectedInject": true,
+    "requiredSkills": ["rust-router", "rust-trait-explorer"],
+    "forbiddenSkills": [],
+    "maxContextCost": 4,
+    "tags": ["rust", "lsp"]
+  },
+  {
+    "id": "rust-refactor-helper",
+    "prompt": "Rust rename symbol safe refactor extract function",
+    "expectedInject": true,
+    "requiredSkills": ["rust-router", "rust-refactor-helper"],
+    "forbiddenSkills": [],
+    "maxContextCost": 3,
+    "tags": ["rust", "lsp"]
+  },
+  {
+    "id": "rust-deps-visualizer",
+    "prompt": "Rust dependency graph cargo tree deps visualizer",
+    "expectedInject": true,
+    "requiredSkills": ["rust-router", "rust-deps-visualizer"],
+    "forbiddenSkills": [],
+    "maxContextCost": 4,
+    "tags": ["rust", "lsp"]
+  },
+  {
+    "id": "implicit-arc-rc-strict-noop",
+    "prompt": "Arc 和 Rc 什么区别",
+    "expectedInject": false,
+    "requiredSkills": [],
+    "forbiddenSkills": ["rust-router"],
+    "maxContextCost": 0,
+    "policy": "strict",
+    "tags": ["non-rust", "strict-boundary"]
+  },
+  {
+    "id": "implicit-async-await-strict-noop",
+    "prompt": "async await 怎么用",
+    "expectedInject": false,
+    "requiredSkills": [],
+    "forbiddenSkills": ["rust-router"],
+    "maxContextCost": 0,
+    "policy": "strict",
+    "tags": ["non-rust", "strict-boundary"]
+  },
+  {
+    "id": "implicit-unsafe-strict-noop",
+    "prompt": "unsafe 代码怎么写安全",
+    "expectedInject": false,
+    "requiredSkills": [],
+    "forbiddenSkills": ["rust-router"],
+    "maxContextCost": 0,
+    "policy": "strict",
+    "tags": ["non-rust", "strict-boundary"]
+  },
+  {
+    "id": "cn-ownership-rust-signal",
+    "prompt": "所有权和借用怎么理解",
+    "expectedInject": true,
+    "requiredSkills": ["rust-router", "m01-ownership"],
+    "forbiddenSkills": [],
+    "maxContextCost": 2,
+    "tags": ["rust", "cn"]
+  },
+  {
+    "id": "cn-borrow-checker",
+    "prompt": "借用检查器报错",
+    "expectedInject": true,
+    "requiredSkills": ["rust-router", "m01-ownership"],
+    "forbiddenSkills": [],
+    "maxContextCost": 2,
+    "tags": ["rust", "cn"]
+  },
+  {
+    "id": "non-rust-weather",
+    "prompt": "今天天气怎么样",
+    "expectedInject": false,
+    "requiredSkills": [],
+    "forbiddenSkills": ["rust-router"],
+    "maxContextCost": 0,
+    "tags": ["non-rust"]
+  },
+  {
+    "id": "non-rust-flight",
+    "prompt": "帮我订一张机票",
+    "expectedInject": false,
+    "requiredSkills": [],
+    "forbiddenSkills": ["rust-router"],
+    "maxContextCost": 0,
+    "tags": ["non-rust"]
+  },
+  {
+    "id": "non-rust-fastapi",
+    "prompt": "Python FastAPI HTTP API design",
+    "expectedInject": false,
+    "requiredSkills": [],
+    "forbiddenSkills": ["rust-router", "domain-web"],
+    "maxContextCost": 0,
+    "tags": ["non-rust", "api"]
+  },
+  {
+    "id": "non-rust-javascript-async",
+    "prompt": "JavaScript async await event loop 怎么理解",
+    "expectedInject": false,
+    "requiredSkills": [],
+    "forbiddenSkills": ["rust-router", "m07-concurrency"],
+    "maxContextCost": 0,
+    "tags": ["non-rust", "async"]
+  },
+  {
+    "id": "non-rust-meeting-thread",
+    "prompt": "meeting thread and action items",
+    "expectedInject": false,
+    "requiredSkills": [],
+    "forbiddenSkills": ["rust-router"],
+    "maxContextCost": 0,
+    "tags": ["non-rust", "word-conflict"]
+  },
+  {
+    "id": "non-rust-python-cli",
+    "prompt": "Python click CLI command line 参数怎么设计",
+    "expectedInject": false,
+    "requiredSkills": [],
+    "forbiddenSkills": ["rust-router", "domain-cli"],
+    "maxContextCost": 0,
+    "tags": ["non-rust", "cli"]
+  },
+  {
+    "id": "non-rust-cargo-shipping",
+    "prompt": "International cargo shipping 文档和费用",
+    "expectedInject": false,
+    "requiredSkills": [],
+    "forbiddenSkills": ["rust-router"],
+    "maxContextCost": 0,
+    "tags": ["non-rust", "cargo"]
+  },
+  {
+    "id": "non-rust-arc-browser",
+    "prompt": "Compare Arc browser and Chrome",
+    "expectedInject": false,
+    "requiredSkills": [],
+    "forbiddenSkills": ["rust-router", "m02-resource"],
+    "maxContextCost": 0,
+    "tags": ["non-rust", "arc"]
+  },
+  {
+    "id": "non-rust-home-ownership",
+    "prompt": "home ownership documents",
+    "expectedInject": false,
+    "requiredSkills": [],
+    "forbiddenSkills": ["rust-router", "m01-ownership"],
+    "maxContextCost": 0,
+    "tags": ["non-rust", "ownership"]
+  },
+  {
+    "id": "non-rust-lifetime-value",
+    "prompt": "customer lifetime value model",
+    "expectedInject": false,
+    "requiredSkills": [],
+    "forbiddenSkills": ["rust-router", "m01-ownership", "domain-ml"],
+    "maxContextCost": 0,
+    "tags": ["non-rust", "lifetime", "model"]
+  },
+  {
+    "id": "non-rust-unsafe-ladder",
+    "prompt": "unsafe ladder installation guide",
+    "expectedInject": false,
+    "requiredSkills": [],
+    "forbiddenSkills": ["rust-router", "unsafe-checker"],
+    "maxContextCost": 0,
+    "tags": ["non-rust", "unsafe"]
+  },
+  {
+    "id": "non-rust-payment-failed",
+    "prompt": "payment failed on website checkout",
+    "expectedInject": false,
+    "requiredSkills": [],
+    "forbiddenSkills": ["rust-router", "domain-fintech"],
+    "maxContextCost": 0,
+    "tags": ["non-rust", "fintech"]
+  },
+  {
+    "id": "non-rust-ml-python",
+    "prompt": "machine learning model inference with Python",
+    "expectedInject": false,
+    "requiredSkills": [],
+    "forbiddenSkills": ["rust-router", "domain-ml"],
+    "maxContextCost": 0,
+    "tags": ["non-rust", "ml"]
+  },
+  {
+    "id": "non-rust-terminal-theme",
+    "prompt": "terminal theme setup for macOS",
+    "expectedInject": false,
+    "requiredSkills": [],
+    "forbiddenSkills": ["rust-router", "domain-cli"],
+    "maxContextCost": 0,
+    "tags": ["non-rust", "cli"]
+  }
+]

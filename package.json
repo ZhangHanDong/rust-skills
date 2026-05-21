@@ -39,6 +39,9 @@
   "scripts": {
     "test": "node tests/verify-all.mjs",
     "verify": "node tests/verify-all.mjs",
+    "test:aom": "node tests/aom/run-routing-aom.mjs",
+    "test:agents": "node tests/aom/run-agent-matrix.mjs --allow-real-agents --require-real-agents",
+    "test:agents:skip": "node tests/aom/run-agent-matrix.mjs",
     "route": "node rust-skills.js route --json"
   },
   "engines": {

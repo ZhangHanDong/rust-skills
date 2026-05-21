@@ -6,3 +6,6 @@
 !.claude/settings.example.json
 
 # Keep .claude/hooks/ for distribution
+
+# Generated AOM reports and Agent evidence capsules
+tests/results/
