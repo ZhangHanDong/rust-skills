@@ -41,6 +41,11 @@ evidence-shape run that records `SKIP` capsules without quality claims, use:
 npm run test:agents:skip
 ```
 
+Codex runs default to `--ignore-user-config` and `--ignore-rules` so local
+project hooks or user-level instructions cannot contaminate isolated benchmark
+workspaces. To intentionally compare against the user's ambient Codex setup,
+pass `--codex-use-user-config` or `--codex-use-rules`.
+
 Each run writes an evidence capsule under `tests/results/agent-matrix/` with:
 
 - original and effective prompt file evidence
@@ -95,4 +100,49 @@ For a dry evidence-shape run over the same broad fixture set:
 
 ```bash
 npm run test:agents:comprehensive:skip
+```
+
+## Native Validation Harvest
+
+The harvest entrypoint is a script-only wrapper around the same Agent matrix. It
+does not invoke Aragorn workflow commands.
+
+```bash
+npm run test:harvest -- \
+  --run-id M2.3-full-native \
+  --engines codex,claude-code \
+  --profiles baseline,rust-skills \
+  --repeats 3 \
+  --concurrency 4 \
+  --timeout-ms 600000
+```
+
+For a focused local smoke:
+
+```bash
+npm run test:harvest:focused -- --run-id M2.3-native-focused
+```
+
+Optional remote execution is enabled only when an SSH host is supplied:
+
+```bash
+npm run test:harvest -- \
+  --run-id M2.3-linux-compare \
+  --remote-host user@linux-host \
+  --remote-root /tmp/rust-skills-M2.3-linux-compare
+```
+
+Remote readiness checks for `node`, `npm`, `git`, `cargo`, `tmux`, `rsync`, and
+the selected Agent binaries. If no host is provided, or the host is not ready,
+the remote leg is recorded as `SKIP`; add `--require-remote` to make that a hard
+failure. Multiple hosts may be passed as a comma-separated list.
+
+The harvest writes `tests/results/agent-harvest/<run-id>/manifest.json` and
+copies remote `report.json` files back under `tests/results/agent-matrix/`.
+Raw capsules stay ignored. Commit concise summaries instead:
+
+```bash
+npm run test:agents:report -- \
+  --report tests/results/agent-matrix/<run-id>/report.json \
+  --out docs/benchmark-evidence/<run-id>.md
 ```

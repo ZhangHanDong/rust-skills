@@ -184,7 +184,7 @@ function prepareWorkspace(caseItem, runDir) {
   return workspace;
 }
 
-function buildEngineCommand(engine, prompt, workspace, outputFile) {
+function buildEngineCommand(engine, prompt, workspace, outputFile, options = {}) {
   if (engine === "codex") {
     return {
       command: "codex",
@@ -194,6 +194,8 @@ function buildEngineCommand(engine, prompt, workspace, outputFile) {
         workspace,
         "--skip-git-repo-check",
         "--ephemeral",
+        ...(options.codexIgnoreUserConfig ? ["--ignore-user-config"] : []),
+        ...(options.codexIgnoreRules ? ["--ignore-rules"] : []),
         "-s",
         "workspace-write",
         "-o",
@@ -509,7 +511,7 @@ async function runOne(caseItem, engine, profile, repeat, runRoot, options) {
   const workspace = prepareWorkspace(caseItem, runDir);
   await initGit(workspace);
   const outputFile = path.join(runDir, "output.md");
-  const { command, args } = buildEngineCommand(engine, promptProfile.prompt, workspace, outputFile);
+  const { command, args } = buildEngineCommand(engine, promptProfile.prompt, workspace, outputFile, options);
   const processResult = await runProcess(command, args, {
     cwd: workspace,
     env: {
@@ -623,6 +625,8 @@ const maxSkillContextChars = Number.parseInt(argValue("--max-skill-context-chars
 const allowRealAgents = hasFlag("--allow-real-agents") || process.env.RUN_REAL_AGENTS === "1";
 const requireRealAgents = hasFlag("--require-real-agents");
 const benchmarkMode = hasFlag("--benchmark-mode");
+const codexIgnoreUserConfig = !hasFlag("--codex-use-user-config");
+const codexIgnoreRules = !hasFlag("--codex-use-rules");
 const caseFilter = argValue("--case-filter", null);
 const runId = argValue(
   "--run-id",
@@ -655,7 +659,9 @@ for (const caseItem of cases) {
         tasks.push(() => runOne(caseItem, engine, profile, repeat, runRoot, {
           allowRealAgents,
           timeoutMs,
-          maxSkillContextChars
+          maxSkillContextChars,
+          codexIgnoreUserConfig,
+          codexIgnoreRules
         }));
       }
     }
@@ -683,6 +689,10 @@ const report = {
   allowRealAgents,
   requireRealAgents,
   benchmarkMode,
+  codex: {
+    ignoreUserConfig: codexIgnoreUserConfig,
+    ignoreRules: codexIgnoreRules
+  },
   qualityPassed,
   requireRealAgentsPassed,
   runRoot,
