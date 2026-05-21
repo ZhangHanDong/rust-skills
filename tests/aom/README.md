@@ -129,13 +129,16 @@ Optional remote execution is enabled only when an SSH host is supplied:
 npm run test:harvest -- \
   --run-id M2.3-linux-compare \
   --remote-host user@linux-host \
-  --remote-root /tmp/rust-skills-M2.3-linux-compare
+  --remote-root /tmp
 ```
 
 Remote readiness checks for `node`, `npm`, `git`, `cargo`, `tmux`, `rsync`, and
 the selected Agent binaries. If no host is provided, or the host is not ready,
 the remote leg is recorded as `SKIP`; add `--require-remote` to make that a hard
 failure. Multiple hosts may be passed as a comma-separated list.
+`--remote-root` is treated as a parent directory; the script creates a controlled
+`rust-skills-harvest-<run-id>/` child and runs `rsync --delete` only inside that
+child.
 
 The harvest writes `tests/results/agent-harvest/<run-id>/manifest.json` and
 copies remote `report.json` files back under `tests/results/agent-matrix/`.
@@ -144,5 +147,5 @@ Raw capsules stay ignored. Commit concise summaries instead:
 ```bash
 npm run test:agents:report -- \
   --report tests/results/agent-matrix/<run-id>/report.json \
-  --out docs/benchmark-evidence/<run-id>.md
+  --out benchmark-evidence/<run-id>.md
 ```

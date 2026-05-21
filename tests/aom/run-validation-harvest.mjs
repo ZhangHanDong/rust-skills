@@ -160,6 +160,26 @@ function makeSkip(label, reason, extra = {}) {
   };
 }
 
+function safeSegment(value) {
+  return String(value)
+    .replace(/[^a-zA-Z0-9_.-]/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80) || "unnamed";
+}
+
+function remoteWorkDir(parentDir, runId, remoteHost, multiHost) {
+  const parent = String(parentDir || "").replace(/\/+$/g, "");
+  if (!parent || parent === "." || parent.includes("\0") || parent.includes("\n")) {
+    throw new Error("--remote-root must be a non-empty absolute parent directory");
+  }
+  if (!parent.startsWith("/")) {
+    throw new Error("--remote-root must be an absolute parent directory");
+  }
+  const parts = [parent, `rust-skills-harvest-${safeSegment(runId)}`];
+  if (multiHost) parts.push(safeSegment(remoteHost));
+  return path.posix.join(...parts);
+}
+
 const runId = argValue(
   "--run-id",
   `harvest-${new Date().toISOString().replace(/[-:.]/g, "").slice(0, 15)}`
@@ -182,15 +202,20 @@ if (!hasFlag("--no-local")) {
 
 const remoteHosts = splitCsv(argValue("--remote-host", ""));
 if (remoteHosts.length === 0) {
-  results.push(makeSkip("remote", "no --remote-host provided"));
+  results.push(makeSkip("remote", "no --remote-host provided", {
+    required: requireRemote,
+    status: requireRemote ? "FAIL" : "SKIP"
+  }));
 }
 
 for (const remoteHost of remoteHosts) {
-  const remoteRunId = `${runId}-remote-${remoteHost.replace(/[^a-zA-Z0-9_.-]/g, "-")}`;
-  const remoteDirBase = argValue("--remote-root", `/tmp/rust-skills-${runId}`);
-  const remoteDir = remoteHosts.length === 1
-    ? remoteDirBase
-    : path.posix.join(remoteDirBase, remoteHost.replace(/[^a-zA-Z0-9_.-]/g, "-"));
+  const remoteRunId = `${runId}-remote-${safeSegment(remoteHost)}`;
+  const remoteDir = remoteWorkDir(
+    argValue("--remote-root", "/tmp"),
+    runId,
+    remoteHost,
+    remoteHosts.length > 1
+  );
   const tools = requiredRemoteTools(engines);
   const readinessScript = [
     `tools=${shellQuote(tools.join(" "))}`,
@@ -281,10 +306,16 @@ const failed = results.filter((item) => item.status === "FAIL" && item.required 
 if (reports.length === 0) {
   failed.push(makeSkip("harvest", "no matrix report was produced", { required: true, status: "FAIL" }));
 }
+const reportStatuses = reports.map((report) => report.status);
+const manifestStatus = failed.length > 0
+  ? "FAIL"
+  : reportStatuses.includes("MEASURED")
+    ? "MEASURED"
+    : "PASS";
 const manifest = {
   runId,
   generatedAt: new Date().toISOString(),
-  status: failed.length === 0 ? "PASS" : "FAIL",
+  status: manifestStatus,
   localEnabled: !hasFlag("--no-local"),
   remoteHosts,
   requireRemote,
