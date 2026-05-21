@@ -405,6 +405,14 @@ function summarizeBase(results) {
   };
 }
 
+function summarizeGroup(results, key) {
+  const names = [...new Set(results.map((result) => result[key] || "unspecified"))].sort();
+  return Object.fromEntries(names.map((name) => [
+    name,
+    summarizeBase(results.filter((result) => (result[key] || "unspecified") === name))
+  ]));
+}
+
 function summarize(results) {
   const summary = summarizeBase(results);
   const profileNames = [...new Set(results.map((result) => result.profile || "baseline"))];
@@ -412,6 +420,8 @@ function summarize(results) {
     profile,
     summarizeBase(results.filter((result) => (result.profile || "baseline") === profile))
   ]));
+  summary.categories = summarizeGroup(results, "category");
+  summary.difficulties = summarizeGroup(results, "difficulty");
   if (summary.profiles.baseline && summary.profiles["rust-skills"]) {
     const baseline = summary.profiles.baseline;
     const rustSkills = summary.profiles["rust-skills"];
@@ -448,6 +458,9 @@ async function runOne(caseItem, engine, profile, repeat, runRoot, options) {
       reason: "real Agent execution disabled; pass --allow-real-agents or RUN_REAL_AGENTS=1",
       routing: promptProfile.routing,
       skillContext: promptProfile.skillContext,
+      category: caseItem.category,
+      difficulty: caseItem.difficulty || "unspecified",
+      tags: caseItem.tags || [],
       evidence: {
         originalPrompt: fileEvidence(originalPromptFile, runDir),
         prompt: fileEvidence(promptFile, runDir)
@@ -475,6 +488,9 @@ async function runOne(caseItem, engine, profile, repeat, runRoot, options) {
       reason: `${commandName} binary not found`,
       routing: promptProfile.routing,
       skillContext: promptProfile.skillContext,
+      category: caseItem.category,
+      difficulty: caseItem.difficulty || "unspecified",
+      tags: caseItem.tags || [],
       evidence: {
         originalPrompt: fileEvidence(originalPromptFile, runDir),
         prompt: fileEvidence(promptFile, runDir)
@@ -546,6 +562,8 @@ async function runOne(caseItem, engine, profile, repeat, runRoot, options) {
   const capsule = {
     caseId: caseItem.id,
     category: caseItem.category,
+    difficulty: caseItem.difficulty || "unspecified",
+    tags: caseItem.tags || [],
     engine,
     profile,
     repeat,
@@ -604,8 +622,16 @@ const timeoutMs = Number.parseInt(argValue("--timeout-ms", "300000"), 10);
 const maxSkillContextChars = Number.parseInt(argValue("--max-skill-context-chars", "6000"), 10);
 const allowRealAgents = hasFlag("--allow-real-agents") || process.env.RUN_REAL_AGENTS === "1";
 const requireRealAgents = hasFlag("--require-real-agents");
+const benchmarkMode = hasFlag("--benchmark-mode");
 const caseFilter = argValue("--case-filter", null);
-const runId = argValue("--run-id", new Date().toISOString().replace(/[-:.]/g, "").slice(0, 15));
+const runId = argValue(
+  "--run-id",
+  [
+    new Date().toISOString().replace(/[-:.]/g, "").slice(0, 15),
+    process.pid,
+    Math.random().toString(16).slice(2, 8)
+  ].join("-")
+);
 const runRoot = path.resolve(argValue(
   "--run-root",
   path.join(root, "tests", "results", "agent-matrix", runId)
@@ -639,8 +665,14 @@ for (const caseItem of cases) {
 const results = await runQueue(tasks, concurrency);
 const summary = summarize(results);
 const requireRealAgentsPassed = !requireRealAgents || (summary.runnable > 0 && summary.skipped === 0);
+const qualityPassed = summary.failed === 0;
+const reportStatus = requireRealAgentsPassed && qualityPassed
+  ? "PASS"
+  : requireRealAgentsPassed && benchmarkMode
+    ? "MEASURED"
+    : "FAIL";
 const report = {
-  status: summary.failed === 0 && requireRealAgentsPassed ? "PASS" : "FAIL",
+  status: reportStatus,
   runId,
   generatedAt: new Date().toISOString(),
   casesPath,
@@ -650,6 +682,9 @@ const report = {
   concurrency,
   allowRealAgents,
   requireRealAgents,
+  benchmarkMode,
+  qualityPassed,
+  requireRealAgentsPassed,
   runRoot,
   summary,
   results
@@ -662,4 +697,4 @@ console.log(JSON.stringify({
   summary
 }, null, 2));
 
-if (report.status !== "PASS") process.exit(1);
+if (report.status === "FAIL") process.exit(1);

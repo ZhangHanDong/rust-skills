@@ -21,6 +21,7 @@ run("registry verify", process.execPath, [path.join(root, "rust-skills.js"), "ve
 run("hook matcher", process.execPath, [path.join(root, "tests", "hook-matcher-test.mjs")]);
 run("routing eval", process.execPath, [path.join(root, "tests", "routing-eval-test.mjs")]);
 run("routing aom", process.execPath, [path.join(root, "tests", "aom", "run-routing-aom.mjs")]);
+run("agent fixture audit", process.execPath, [path.join(root, "tests", "aom", "run-agent-fixture-audit.mjs")]);
 run("routing ab", process.execPath, [path.join(root, "tests", "routing-ab-test.mjs")]);
 run("hook routing", process.execPath, [path.join(root, "tests", "hook-routing-test.mjs")]);
 run("install e2e", process.execPath, [path.join(root, "tests", "install-e2e.mjs")]);

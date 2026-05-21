@@ -1,0 +1,248 @@
+[
+  {
+    "id": "answer-ownership-api-e0382",
+    "category": "answer-quality",
+    "difficulty": "medium",
+    "prompt": "A Rust library API returns E0382 after a value is moved into a helper and then reused by the caller. Explain the root cause and give a production-safe redesign without recommending clone-everywhere.",
+    "expected": {
+      "minResponseChars": 500,
+      "mustMention": ["E0382", "ownership", "borrow", "API"],
+      "mustNotMention": ["clone everything", "just clone"]
+    },
+    "tags": ["answer", "ownership", "api-design"]
+  },
+  {
+    "id": "answer-async-backpressure-cancel",
+    "category": "answer-quality",
+    "difficulty": "hard",
+    "prompt": "A Rust async service using Tokio accepts unlimited jobs and has no cancellation path during shutdown. Propose a robust design for backpressure, cancellation, and graceful shutdown.",
+    "expected": {
+      "minResponseChars": 600,
+      "mustMention": ["tokio", "backpressure", "cancellation", "shutdown"]
+    },
+    "tags": ["answer", "async", "concurrency", "service-design"]
+  },
+  {
+    "id": "answer-unsafe-ffi-slice-contract",
+    "category": "answer-quality",
+    "difficulty": "expert",
+    "prompt": "Review the safety contract for exposing a Rust slice over a raw C pointer and length. Explain what must be documented before creating a safe wrapper.",
+    "expected": {
+      "minResponseChars": 600,
+      "mustMention": ["SAFETY", "pointer", "length", "alignment", "lifetime"]
+    },
+    "tags": ["answer", "unsafe", "ffi", "api-design"]
+  },
+  {
+    "id": "answer-library-error-boundary",
+    "category": "answer-quality",
+    "difficulty": "medium",
+    "prompt": "A Rust library currently exposes anyhow::Error from public functions. Explain when to keep anyhow internally and when to expose typed errors to callers.",
+    "expected": {
+      "minResponseChars": 500,
+      "mustMention": ["anyhow", "thiserror", "typed errors", "library"]
+    },
+    "tags": ["answer", "error-handling", "api-design"]
+  },
+  {
+    "id": "answer-performance-allocation-plan",
+    "category": "answer-quality",
+    "difficulty": "hard",
+    "prompt": "A Rust text-processing pipeline is slow and allocates heavily. Give a measurement-first optimization plan that avoids premature micro-optimization.",
+    "expected": {
+      "minResponseChars": 550,
+      "mustMention": ["measure", "benchmark", "allocation", "criterion"]
+    },
+    "tags": ["answer", "performance", "benchmarking"]
+  },
+  {
+    "id": "answer-trait-object-safety",
+    "category": "answer-quality",
+    "difficulty": "hard",
+    "prompt": "A plugin registry wants Vec<Box<dyn Plugin>>, but the Plugin trait has generic methods and returns Self. Explain why this is not object safe and outline fixes.",
+    "expected": {
+      "minResponseChars": 550,
+      "mustMention": ["object safe", "dyn", "Self", "generic"]
+    },
+    "tags": ["answer", "traits", "api-design"]
+  },
+  {
+    "id": "answer-embedded-no-std-logging",
+    "category": "answer-quality",
+    "difficulty": "medium",
+    "prompt": "A Rust firmware module must run with no_std and cannot allocate. Explain how to design logging and buffering without using Vec or String.",
+    "expected": {
+      "minResponseChars": 450,
+      "mustMention": ["no_std", "heapless", "allocation", "embedded"]
+    },
+    "tags": ["answer", "embedded", "no-std", "resource-management"]
+  },
+  {
+    "id": "answer-web-shared-state-rc",
+    "category": "answer-quality",
+    "difficulty": "medium",
+    "prompt": "A Rust web server stores Rc<Config> in shared application state and fails Send and Sync bounds under a multithreaded runtime. Explain the fix.",
+    "expected": {
+      "minResponseChars": 450,
+      "mustMention": ["Rc", "Arc", "Send", "Sync"]
+    },
+    "tags": ["answer", "web", "concurrency"]
+  },
+  {
+    "id": "artifact-review-checklist",
+    "category": "artifact-generation",
+    "difficulty": "medium",
+    "prompt": "Create REVIEW.md with a concise Rust code review checklist covering error handling, ownership, concurrency, and unsafe code. Include the exact phrase: mechanically checked review gates.",
+    "expected": {
+      "files": ["REVIEW.md"],
+      "mustMentionInFiles": [
+        {
+          "path": "REVIEW.md",
+          "text": "mechanically checked review gates"
+        }
+      ]
+    },
+    "tags": ["artifact", "review", "ownership", "concurrency", "unsafe", "error-handling"]
+  },
+  {
+    "id": "artifact-api-adr",
+    "category": "artifact-generation",
+    "difficulty": "medium",
+    "prompt": "Create ADR.md documenting a decision for a Rust public API to return a typed error enum instead of a type-erased error. Include the exact phrase: callers need stable error contracts.",
+    "expected": {
+      "files": ["ADR.md"],
+      "mustMentionInFiles": [
+        {
+          "path": "ADR.md",
+          "text": "callers need stable error contracts"
+        }
+      ]
+    },
+    "tags": ["artifact", "api-design", "error-handling"]
+  },
+  {
+    "id": "artifact-async-migration-plan",
+    "category": "artifact-generation",
+    "difficulty": "hard",
+    "prompt": "Create MIGRATION.md with a staged plan to move a blocking Rust worker pool to Tokio while preserving observability and graceful shutdown. Include the exact phrase: migration must preserve operational behavior.",
+    "expected": {
+      "files": ["MIGRATION.md"],
+      "mustMentionInFiles": [
+        {
+          "path": "MIGRATION.md",
+          "text": "migration must preserve operational behavior"
+        }
+      ]
+    },
+    "tags": ["artifact", "async", "concurrency", "operations"]
+  },
+  {
+    "id": "artifact-unsafe-safety-contract",
+    "category": "artifact-generation",
+    "difficulty": "hard",
+    "prompt": "Create SAFETY.md for a Rust wrapper around a C buffer pointer. It must list caller obligations, wrapper invariants, and test strategy. Include the exact phrase: safe wrappers need explicit invariants.",
+    "expected": {
+      "files": ["SAFETY.md"],
+      "mustMentionInFiles": [
+        {
+          "path": "SAFETY.md",
+          "text": "safe wrappers need explicit invariants"
+        }
+      ]
+    },
+    "tags": ["artifact", "unsafe", "ffi", "review"]
+  },
+  {
+    "id": "review-debug-async-lock-await",
+    "category": "review-debugging",
+    "difficulty": "hard",
+    "prompt": "A Rust async handler locks a std::sync::Mutex, performs network I/O while holding the guard, and occasionally stalls under load. Diagnose the likely bug and propose a safer design.",
+    "expected": {
+      "minResponseChars": 500,
+      "mustMention": ["Mutex", "await", "deadlock", "scope"]
+    },
+    "tags": ["review", "async", "concurrency", "debugging"]
+  },
+  {
+    "id": "review-debug-error-swallowing",
+    "category": "review-debugging",
+    "difficulty": "medium",
+    "prompt": "A Rust command line tool catches every error, prints a generic message, and exits 0. Review the failure mode and propose concrete fixes for users and automation.",
+    "expected": {
+      "minResponseChars": 450,
+      "mustMention": ["exit code", "error", "context", "automation"]
+    },
+    "tags": ["review", "cli", "error-handling", "debugging"]
+  },
+  {
+    "id": "review-debug-unsafe-transmute",
+    "category": "review-debugging",
+    "difficulty": "expert",
+    "prompt": "A Rust parser uses transmute to reinterpret bytes as a header struct for speed. Review the soundness risks and suggest a safe or measured alternative.",
+    "expected": {
+      "minResponseChars": 550,
+      "mustMention": ["transmute", "alignment", "endianness", "unsafe"]
+    },
+    "tags": ["review", "unsafe", "performance", "debugging"]
+  },
+  {
+    "id": "codegen-owned-index",
+    "category": "code-generation",
+    "difficulty": "medium",
+    "fixtureDir": "tests/aom/fixtures/workspaces/owned-index",
+    "prompt": "Implement the missing Rust function in src/lib.rs. It should return the first string that appears exactly once while borrowing from the input slice. Do not change the public signature.",
+    "expected": {
+      "files": ["src/lib.rs"]
+    },
+    "verifyCommands": ["cargo test --quiet"],
+    "tags": ["codegen", "ownership", "borrowing"]
+  },
+  {
+    "id": "codegen-duration-parser",
+    "category": "code-generation",
+    "difficulty": "medium",
+    "fixtureDir": "tests/aom/fixtures/workspaces/duration-parser",
+    "prompt": "Implement parse_duration_seconds in src/lib.rs. It must parse compact h, m, and s components such as 1h30m15s and reject empty or malformed input.",
+    "expected": {
+      "files": ["src/lib.rs"]
+    },
+    "verifyCommands": ["cargo test --quiet"],
+    "tags": ["codegen", "parser", "error-handling"]
+  },
+  {
+    "id": "codegen-cli-args",
+    "category": "code-generation",
+    "difficulty": "medium",
+    "fixtureDir": "tests/aom/fixtures/workspaces/cli-args",
+    "prompt": "Implement parse_args in src/lib.rs for a small Rust command line parser. It must support --verbose, --output <path>, positional inputs, and useful errors.",
+    "expected": {
+      "files": ["src/lib.rs"]
+    },
+    "verifyCommands": ["cargo test --quiet"],
+    "tags": ["codegen", "cli", "error-handling"]
+  },
+  {
+    "id": "codegen-state-machine",
+    "category": "code-generation",
+    "difficulty": "hard",
+    "fixtureDir": "tests/aom/fixtures/workspaces/state-machine",
+    "prompt": "Implement the Rust order state transition function in src/lib.rs. It must reject invalid transitions and keep terminal states terminal.",
+    "expected": {
+      "files": ["src/lib.rs"]
+    },
+    "verifyCommands": ["cargo test --quiet"],
+    "tags": ["codegen", "type-state", "domain-model"]
+  },
+  {
+    "id": "codegen-no-std-ring-buffer",
+    "category": "code-generation",
+    "difficulty": "hard",
+    "fixtureDir": "tests/aom/fixtures/workspaces/ring-buffer",
+    "prompt": "Implement the no_std fixed-capacity byte ring buffer in src/lib.rs. It must not allocate and must preserve FIFO order across wraparound.",
+    "expected": {
+      "files": ["src/lib.rs"]
+    },
+    "verifyCommands": ["cargo test --quiet"],
+    "tags": ["codegen", "embedded", "no-std", "resource-management"]
+  }
+]

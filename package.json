@@ -40,7 +40,11 @@
     "test": "node tests/verify-all.mjs",
     "verify": "node tests/verify-all.mjs",
     "test:aom": "node tests/aom/run-routing-aom.mjs",
+    "test:aom:fixtures": "node tests/aom/run-agent-fixture-audit.mjs",
     "test:agents": "node tests/aom/run-agent-matrix.mjs --allow-real-agents --require-real-agents",
+    "test:agents:comprehensive": "node tests/aom/run-agent-matrix.mjs --cases tests/aom/fixtures/agent-matrix-comprehensive.json --allow-real-agents --require-real-agents",
+    "test:agents:comprehensive:benchmark": "node tests/aom/run-agent-matrix.mjs --cases tests/aom/fixtures/agent-matrix-comprehensive.json --benchmark-mode --allow-real-agents --require-real-agents",
+    "test:agents:comprehensive:skip": "node tests/aom/run-agent-matrix.mjs --cases tests/aom/fixtures/agent-matrix-comprehensive.json --benchmark-mode",
     "test:agents:skip": "node tests/aom/run-agent-matrix.mjs",
     "route": "node rust-skills.js route --json"
   },
