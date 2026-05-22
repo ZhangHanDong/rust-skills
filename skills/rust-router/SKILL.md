@@ -1,18 +1,6 @@
 ---
 name: rust-router
-description: "CRITICAL: Use for ALL Rust questions including errors, design, and coding.
-HIGHEST PRIORITY for: 比较, 对比, compare, vs, versus, 区别, difference, 最佳实践, best practice,
-tokio vs, async-std vs, 比较 tokio, 比较 async,
-Triggers on: Rust, cargo, rustc, crate, Cargo.toml,
-意图分析, 问题分析, 语义分析, analyze intent, question analysis,
-compile error, borrow error, lifetime error, ownership error, type error, trait error,
-value moved, cannot borrow, does not live long enough, mismatched types, not satisfied,
-E0382, E0597, E0277, E0308, E0499, E0502, E0596,
-async, await, Send, Sync, tokio, concurrency, error handling,
-编译错误, compile error, 所有权, ownership, 借用, borrow, 生命周期, lifetime, 类型错误, type error,
-异步, async, 并发, concurrency, 错误处理, error handling,
-问题, problem, question, 怎么用, how to use, 如何, how to, 为什么, why,
-什么是, what is, 帮我写, help me write, 实现, implement, 解释, explain"
+description: "CRITICAL: Use for Rust question routing and semantic analysis. Triggers on Rust, cargo, rustc, Cargo.toml, compile errors, ownership/borrow/lifetime, traits, async/Send/Sync, unsafe/FFI, error handling, performance, design, best practices, comparisons, and Chinese Rust questions."
 globs: ["**/Cargo.toml", "**/*.rs"]
 ---
 
@@ -23,6 +11,25 @@ globs: ["**/Cargo.toml", "**/*.rs"]
 > **Version:** 2.0.0 | **Last Updated:** 2025-01-22
 >
 > **v2.0:** Context optimized - detailed examples moved to sub-files
+
+## Routing Calibration
+
+Route by semantic intent. Keep leaf skills general; this table only identifies
+the skills and concept anchors that should emerge for underspecified prompts.
+Matched concept anchors are coverage points, not fixed wording. Cover Rust and
+domain term anchors by name when they carry the meaning.
+
+| Prompt Signal | Route Intent | Concept Anchors |
+|---------------|--------------|-----------------|
+| moved value, API still needs original data | `m01-ownership` | ownership transfer, borrow-based API, public API contract |
+| raw C pointer plus length, safe wrapper, `from_raw_parts`, FFI contract | `unsafe-checker` | SAFETY, pointer validity, length, alignment requirements, lifetime, aliasing |
+| slow pipeline, heavy allocation, optimization plan | `m10-performance` | measure first, benchmark, allocation, criterion |
+| CLI exits 0 after failure, catches every error | `m06-error-handling` + `domain-cli` when CLI is present | exit code, error context, automation |
+| trait object, plugin registry, `dyn`, generic methods, returns `Self` | `m04-zero-cost` | object safe, dyn dispatch, generic method, Self |
+| `no_std`, embedded firmware, cannot allocate, fixed buffers | `domain-embedded` | no_std, embedded target, heapless buffers, no allocation |
+| async handler holds a mutex across I/O | `m07-concurrency` + `domain-web` when handler/web is present | Mutex, await, deadlock risk, lock scope |
+
+---
 
 ## Meta-Cognition Framework
 
@@ -69,8 +76,6 @@ Layer 1: Language Mechanics (HOW)
 | CLI, terminal, clap | m07-concurrency | **domain-cli** |
 | kubernetes, grpc, microservice | m07-concurrency | **domain-cloud-native** |
 | embedded, no_std, MCU | m02-resource | **domain-embedded** |
-
----
 
 ## INSTRUCTIONS FOR CLAUDE
 
