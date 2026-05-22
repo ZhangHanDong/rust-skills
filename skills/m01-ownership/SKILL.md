@@ -25,6 +25,10 @@ Before fixing ownership errors, understand the data's role:
   ownership for later use.
 - For mutation, choose between exclusive borrow (`&mut T`), ownership transfer,
   or a redesigned return value instead of reflexive cloning.
+- Clone only when intentional. Avoid clone-everywhere fixes that hide an API
+  contract problem.
+- E0716 and temporary-drop errors are lifetime boundary problems; name the
+  temporary owner and the reference lifetime before suggesting a binding.
 
 ---
 

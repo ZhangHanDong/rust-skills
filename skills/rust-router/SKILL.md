@@ -20,6 +20,7 @@ domain term anchors by name when they carry the meaning.
 | Prompt Signal | Route Intent | Concept Anchors |
 |---------------|--------------|-----------------|
 | moved value, API still needs original data | `m01-ownership` | ownership transfer, borrow-based API, public API contract |
+| MSRV, stabilized API, deprecation, crate upgrade behavior change | `m11-ecosystem` | MSRV, semver, release notes, fallback, regression tests |
 | raw C pointer plus length, safe wrapper, `from_raw_parts`, FFI contract | `unsafe-checker` | SAFETY, pointer validity, length, alignment requirements, lifetime, aliasing |
 | slow pipeline, heavy allocation, optimization plan | `m10-performance` | measure first, benchmark, allocation, criterion |
 | CLI exits 0 after failure, catches every error | `m06-error-handling` + `domain-cli` when CLI is present | exit code, error context, automation |
@@ -161,6 +162,7 @@ pedantic = "warn"
 | E0499 | m03-mutability | Multiple mutable borrows |
 | E0502 | m03-mutability | Borrow conflict |
 | E0277 | m04/m07 | Trait bound not satisfied |
+| E0282 | m04-zero-cost | Type inference needs an annotation |
 | E0308 | m04-zero-cost | Type mismatch |
 | E0599 | m04-zero-cost | No method found |
 | E0038 | m04-zero-cost | Trait not object-safe |
@@ -194,6 +196,7 @@ pedantic = "warn"
 |---------|------------|
 | `unsafe` | **unsafe-checker** (more specific than m11) |
 | `error` | **m06** for general, **m13** for domain-specific |
+| `MSRV` / `deprecated` / `semver` | **m11** for API evolution and compatibility |
 | `RAII` | **m12** for design, **m01** for implementation |
 | `crate` | **rust-learner** for version, **m11** for integration |
 | `tokio` | **tokio-*** for API, **m07** for concepts |

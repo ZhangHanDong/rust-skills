@@ -23,6 +23,23 @@ Before adding dependencies:
 - What's the maintenance status?
 - What's the API stability?
 
+## API Evolution Calibration
+
+When a Rust API changes across compiler or crate versions, treat it as a
+compatibility problem before treating it as a syntax problem:
+
+- Check MSRV, semver impact, release notes, and changelog entries.
+- Separate stabilized APIs, signature changes, behavior changes, and
+  deprecations.
+- For stabilization questions, keep the version context explicit: identify the
+  API as stabilized before deciding whether to use it.
+- For downstream users, choose between a fallback, feature-gated path, or an
+  explicit MSRV/major-version bump.
+- Preserve behavior with regression tests, especially when signatures stay the
+  same but edge-case behavior changes.
+- When advising an MSRV change, explicitly call out the semver decision and
+  the release notes or changelog update.
+
 ---
 
 ## Integration Decision → Implementation

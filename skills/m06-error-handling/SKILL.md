@@ -28,6 +28,14 @@ Before choosing error handling strategy:
 | Lost error context | "Add .context()" | What does the caller need to know? |
 | Too many error variants | "Use Box<dyn Error>" | Is error granularity right? |
 
+## Calibration Anchors
+
+- E0308 around `Result<T, AppError>` usually means the error boundary is
+  unclear. Convert with `From` or `map_err`, and preserve the source chain when
+  the lower-level error matters.
+- In library APIs, prefer typed errors with `thiserror`; in applications, add
+  context at the call site without erasing recoverability.
+
 ---
 
 ## Thinking Prompt

@@ -1,6 +1,6 @@
 ---
 name: m04-zero-cost
-description: "CRITICAL: Use for generics, traits, zero-cost abstraction. Triggers: E0277, E0308, E0599, generic, trait, impl, dyn, where, monomorphization, static dispatch, dynamic dispatch, impl Trait, trait bound not satisfied, 泛型, 特征, 零成本抽象, 单态化"
+description: "CRITICAL: Use for generics, traits, zero-cost abstraction. Triggers: E0277, E0282, E0308, E0599, generic, trait, impl, dyn, where, monomorphization, static dispatch, dynamic dispatch, impl Trait, trait bound not satisfied, type inference, 泛型, 特征, 零成本抽象, 单态化"
 user-invocable: false
 ---
 
@@ -24,9 +24,16 @@ Before choosing between generics and trait objects:
 | Error | Don't Just Say | Ask Instead |
 |-------|----------------|-------------|
 | E0277 | "Add trait bound" | Is this abstraction at the right level? |
+| E0282 | "Add a type" | Where should the type boundary be explicit? |
 | E0308 | "Fix the type" | Should types be unified or distinct? |
 | E0599 | "Import the trait" | Is the trait the right abstraction? |
 | E0038 | "Make object-safe" | Do we really need dynamic dispatch? |
+
+## Calibration Anchors
+
+- E0282 means inference ran out of constraints. Add the explicit type at the
+  boundary that communicates intent: variable annotation, turbofish, channel
+  item type, or enum/error type.
 
 ---
 
@@ -116,6 +123,7 @@ fn process(x: Box<dyn Display>) { }  // owned
 | Error | Cause | Quick Fix |
 |-------|-------|-----------|
 | E0277 | Type doesn't impl trait | Add impl or change bound |
+| E0282 | Type inference ambiguous | Add annotation, turbofish, or explicit boundary |
 | E0308 | Type mismatch | Check generic params |
 | E0599 | No method found | Import trait with `use` |
 | E0038 | Trait not object-safe | Use generics or redesign |
