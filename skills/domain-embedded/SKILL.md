@@ -27,6 +27,13 @@ user-invocable: false
 | Hardware safety | Safe peripheral access | HAL + ownership |
 | Interrupt safe | No blocking in ISR | Atomic, critical sections |
 
+## Calibration Anchors
+
+- For `no_std` logging and buffering, name heapless or fixed-capacity
+  structures instead of heap-backed `String`/`Vec`.
+- Common choices are `heapless::String`, `heapless::Vec`, static arrays, and
+  ring buffers with explicit overflow behavior.
+
 ---
 
 ## Critical Constraints

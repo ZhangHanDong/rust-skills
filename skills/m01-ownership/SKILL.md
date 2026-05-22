@@ -17,6 +17,15 @@ Before fixing ownership errors, understand the data's role:
 - Is it short-lived or long-lived?
 - Is it transformed or just read?
 
+## Calibration Anchors
+
+- E0382 in a public API is often a contract issue: did the callee need to
+  consume the value, or should it borrow it?
+- For read-only helpers, prefer borrowed access (`&T`) so the caller keeps
+  ownership for later use.
+- For mutation, choose between exclusive borrow (`&mut T`), ownership transfer,
+  or a redesigned return value instead of reflexive cloning.
+
 ---
 
 ## Error → Design Question

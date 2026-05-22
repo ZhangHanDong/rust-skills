@@ -41,6 +41,13 @@ unsafe { ... }
 pub unsafe fn dangerous() { ... }
 ```
 
+## Calibration Anchors
+
+- For `from_raw_parts` and raw pointer plus length APIs, surface the full
+  pointer contract: validity, non-null handling, alignment, initialization,
+  lifetime, aliasing, allocation bounds, and maximum size.
+- Treat alignment as an invariant, not a cosmetic detail.
+
 ## Quick Reference
 
 | Operation | Safety Requirements |
