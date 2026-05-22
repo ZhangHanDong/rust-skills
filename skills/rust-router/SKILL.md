@@ -1,9 +1,7 @@
 ---
 name: rust-router
-description: "CRITICAL: Use for Rust question routing and semantic analysis. Triggers on Rust, cargo, rustc, Cargo.toml, compile errors, ownership/borrow/lifetime, traits, async/Send/Sync, unsafe/FFI, error handling, performance, design, best practices, comparisons, and Chinese Rust questions."
+description: "Use when: routing Rust questions before loading deeper skills. Keywords: Rust, cargo, rustc, Cargo.toml, compiler errors, ownership, borrow, lifetime, trait, async, Send, Sync, unsafe, FFI, Result, error handling, performance, no_std, embedded, CLI, web, best practices, comparisons, Chinese Rust questions."
 globs: ["**/Cargo.toml", "**/*.rs"]
----
-
 ---
 
 # Rust Question Router
@@ -39,79 +37,56 @@ domain term anchors by name when they carry the meaning.
 
 ```
 Layer 3: Domain Constraints (WHY)
-├── Business rules, regulatory requirements
-├── domain-fintech, domain-web, domain-cli, etc.
-└── "Why is it designed this way?"
+- Business rules, regulatory requirements
+- domain-fintech, domain-web, domain-cli, etc.
+- "Why is it designed this way?"
 
 Layer 2: Design Choices (WHAT)
-├── Architecture patterns, DDD concepts
-├── m09-m15 skills
-└── "What pattern should I use?"
+- Architecture patterns, DDD concepts
+- m09-m15 skills
+- "What pattern should I use?"
 
 Layer 1: Language Mechanics (HOW)
-├── Ownership, borrowing, lifetimes, traits
-├── m01-m07 skills
-└── "How do I implement this in Rust?"
+- Ownership, borrowing, lifetimes, traits
+- m01-m07 skills
+- "How do I implement this in Rust?"
 ```
 
 ### Routing by Entry Point
 
 | User Signal | Entry Layer | Direction | First Skill |
 |-------------|-------------|-----------|-------------|
-| E0xxx error | Layer 1 | Trace UP ↑ | m01-m07 |
-| Compile error | Layer 1 | Trace UP ↑ | Error table below |
-| "How to design..." | Layer 2 | Check L3, then DOWN ↓ | m09-domain |
-| "Building [domain] app" | Layer 3 | Trace DOWN ↓ | domain-* |
+| E0xxx error | Layer 1 | Trace up | m01-m07 |
+| Compile error | Layer 1 | Trace up | Error table below |
+| "How to design..." | Layer 2 | Check L3, then trace down | m09-domain |
+| "Building [domain] app" | Layer 3 | Trace down | domain-* |
 | "Best practice..." | Layer 2 | Both directions | m09-m15 |
-| Performance issue | Layer 1 → 2 | UP then DOWN | m10-performance |
+| Performance issue | Layer 1 to 2 | Up then down | m10-performance |
 
-### CRITICAL: Dual-Skill Loading
+### Domain Pairing
 
-**When domain keywords are present, you MUST load BOTH skills:**
+When domain keywords are present, pair the language-mechanic skill with the
+domain skill:
 
 | Domain Keywords | L1 Skill | L3 Skill |
 |-----------------|----------|----------|
 | Web API, HTTP, axum, handler | m07-concurrency | **domain-web** |
-| 交易, 支付, trading, payment | m01-ownership | **domain-fintech** |
+| trading, payment | m01-ownership | **domain-fintech** |
 | CLI, terminal, clap | m07-concurrency | **domain-cli** |
 | kubernetes, grpc, microservice | m07-concurrency | **domain-cloud-native** |
 | embedded, no_std, MCU | m02-resource | **domain-embedded** |
 
-## INSTRUCTIONS FOR CLAUDE
+## Comparative Routing
 
-### CRITICAL: Negotiation Protocol Trigger
+Use negotiation for comparative, best-practice, cross-domain, or ambiguous
+Rust prompts. Keep it as a confidence and gap disclosure layer, not a separate
+answer template. See `patterns/negotiation.md` for the full protocol.
 
-**BEFORE answering, check if negotiation is required:**
+## Must Produce
 
-| Query Contains | Action |
-|----------------|--------|
-| "比较", "对比", "compare", "vs", "versus" | **MUST use negotiation** |
-| "最佳实践", "best practice" | **MUST use negotiation** |
-| Domain + error (e.g., "交易系统 E0382") | **MUST use negotiation** |
-| Ambiguous scope (e.g., "tokio 性能") | **SHOULD use negotiation** |
-
-**When negotiation is required, include:**
-
-```markdown
-## Negotiation Analysis
-
-**Query Type:** [Comparative | Cross-domain | Synthesis | Ambiguous]
-**Negotiation:** Enabled
-
-### Source: [Agent/Skill Name]
-**Confidence:** HIGH | MEDIUM | LOW | UNCERTAIN
-**Gaps:** [What's missing]
-
-## Synthesized Answer
-[Answer]
-
-**Overall Confidence:** [Level]
-**Disclosed Gaps:** [Gaps user should know]
-```
-
-> **详细协议见:** `patterns/negotiation.md`
-
----
+- Route from prompt signal to layer intent and skill IDs.
+- Preserve matched concept anchors when they carry the meaning.
+- Load referenced sub-files only when the prompt needs that detail.
 
 ### Default Project Settings
 
@@ -226,11 +201,11 @@ pedantic = "warn"
 **Priority Hierarchy:**
 
 ```
-1. Error codes (E0xxx) → Direct lookup, highest priority
-2. Negotiation triggers (compare, vs, best practice) → Enable negotiation
-3. Domain keywords + error → Load BOTH domain + error skills
-4. Specific crate keywords → Route to crate-specific skill if exists
-5. General concept keywords → Route to meta-question skill
+1. Error codes (E0xxx): direct lookup, highest priority
+2. Negotiation triggers (compare, vs, best practice): enable negotiation
+3. Domain keywords + error: load both domain and error skills
+4. Specific crate keywords: route to crate-specific skill if it exists
+5. General concept keywords: route to meta-question skill
 ```
 
 ---
