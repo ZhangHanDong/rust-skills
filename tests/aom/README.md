@@ -59,7 +59,32 @@ profiles by default:
 - `baseline`: original prompt only
 - `rust-skills`: same prompt plus routed rust-skills context from `lib/routing.js`
 
-The report includes per-profile metrics and `rust-skills_vs_baseline` deltas.
+The report includes per-profile metrics and pairwise deltas such as
+`rust-skills_vs_baseline`.
+
+To compare the current branch against another rust-skills checkout, add a
+profile root. When the external checkout has `lib/routing.js` and
+`index/routes.json`, that profile uses its own runtime and routed skill files.
+For legacy main checkouts without the new runtime, the runner uses the current
+router selector over that checkout's skill files and records
+`routingMode=current-router-profile-skills` in each capsule:
+
+```bash
+node tests/aom/run-agent-matrix.mjs \
+  --cases tests/aom/fixtures/agent-matrix-comprehensive.json \
+  --benchmark-mode \
+  --profiles baseline,rust-main,rust-skills \
+  --profile-root rust-main=/path/to/rust-skills-main \
+  --allow-real-agents \
+  --require-real-agents
+```
+
+This makes the comparison three-way:
+
+- `baseline`: no injected skill context
+- `rust-main`: routed context from the main checkout passed by `--profile-root`
+- `rust-skills`: routed context from the current branch
+
 `npm run test:agents` is strict and requires real Agent execution. For a dry
 evidence-shape run that records `SKIP` capsules without quality claims, use:
 
@@ -89,7 +114,8 @@ Each run writes an evidence capsule under `tests/results/agent-matrix/` with:
 npm run test:aom:fixtures
 npm run test:agents:comprehensive -- \
   --engines codex,claude-code \
-  --profiles baseline,rust-skills \
+  --profiles baseline,rust-main,rust-skills \
+  --profile-root rust-main=/path/to/rust-skills-main \
   --repeats 3 \
   --concurrency 2
 ```
@@ -137,7 +163,8 @@ does not invoke Aragorn workflow commands.
 npm run test:harvest -- \
   --run-id M2.3-full-native \
   --engines codex,claude-code \
-  --profiles baseline,rust-skills \
+  --profiles baseline,rust-main,rust-skills \
+  --profile-root rust-main=/path/to/rust-skills-main \
   --repeats 3 \
   --concurrency 4 \
   --timeout-ms 600000
@@ -165,6 +192,8 @@ failure. Multiple hosts may be passed as a comma-separated list.
 `--remote-root` is treated as a parent directory; the script creates a controlled
 `rust-skills-harvest-<run-id>/` child and runs `rsync --delete` only inside that
 child.
+External `--profile-root` paths are passed through to the remote matrix. Use
+remote-absolute paths when running a main-checkout comparison on SSH hosts.
 
 The harvest writes `tests/results/agent-harvest/<run-id>/manifest.json` and
 copies remote `report.json` files back under `tests/results/agent-matrix/`.

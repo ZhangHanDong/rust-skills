@@ -1,21 +1,8 @@
 ---
 name: unsafe-checker
-description: "CRITICAL: Use for unsafe Rust code review and FFI. Triggers on: unsafe, raw pointer, FFI, extern, transmute, *mut, *const, union, #[repr(C)], libc, std::ffi, MaybeUninit, NonNull, SAFETY comment, soundness, undefined behavior, UB, safe wrapper, memory layout, bindgen, cbindgen, CString, CStr, 安全抽象, 裸指针, 外部函数接口, 内存布局, 不安全代码, FFI 绑定, 未定义行为"
+description: "Use when: reviewing unsafe Rust, FFI, raw pointers, layout-sensitive conversions, or safe wrappers. Keywords: unsafe, raw pointer, pointer, length, alignment, lifetime, aliasing, initialization, FFI, extern, transmute, from_raw_parts, repr(C), MaybeUninit, NonNull, CString, CStr, SAFETY."
 globs: ["**/*.rs"]
 allowed-tools: ["Read", "Grep", "Glob"]
----
-
-Display the following ASCII art exactly as shown. Do not modify spaces or line breaks:
-```text
-⚠️ **Unsafe Rust Checker Loaded**
-
-     *  ^  *
-    /◉\_~^~_/◉\
- ⚡/     o     \⚡
-   '_        _'
-   / '-----' \
-```
-
 ---
 
 # Unsafe Rust Checker
@@ -44,9 +31,17 @@ pub unsafe fn dangerous() { ... }
 ## Calibration Anchors
 
 - For `from_raw_parts` and raw pointer plus length APIs, surface the full
-  pointer contract: validity, non-null handling, alignment, initialization,
-  lifetime, aliasing, allocation bounds, and maximum size.
-- Treat alignment as an invariant, not a cosmetic detail.
+  pointer contract: pointer validity, length bounds, alignment,
+  initialization, lifetime, aliasing, allocation bounds, and maximum size.
+- Use stable contract terms in the prose summary: `pointer`, `length`,
+  `alignment`, and `lifetime`. Code may use `ptr` and `len`, but the review
+  should still name the concepts.
+- A safe wrapper needs an explicit caller contract before it can be called
+  safe. Name what the caller must guarantee and what the wrapper checks.
+- Name `alignment` as its own invariant, not only as an adjective on the
+  pointer.
+- Prefer safe parsing or typed layout helpers when they can preserve behavior
+  at acceptable measured cost.
 
 ## Quick Reference
 
@@ -70,7 +65,7 @@ pub unsafe fn dangerous() { ... }
 | Invalid bit pattern | Use `MaybeUninit` |
 | Missing SAFETY comment | Add `// SAFETY:` |
 
-## Deprecated → Better
+## Deprecated / Better
 
 | Deprecated | Use Instead |
 |------------|-------------|
@@ -90,4 +85,5 @@ pub unsafe fn dangerous() { ... }
 | Python | PyO3 |
 | Node.js | napi-rs |
 
-Claude knows unsafe Rust. Focus on SAFETY comments and soundness.
+Focus on the soundness contract first, then the smallest unsafe block that can
+enforce it.

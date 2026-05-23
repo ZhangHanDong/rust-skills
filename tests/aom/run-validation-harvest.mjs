@@ -14,6 +14,17 @@ function argValue(name, fallback = null) {
   return value;
 }
 
+function argValues(name) {
+  const values = [];
+  for (let index = 0; index < process.argv.length; index += 1) {
+    if (process.argv[index] !== name) continue;
+    const value = process.argv[index + 1];
+    if (!value || value.startsWith("--")) throw new Error(`${name} requires a value`);
+    values.push(value);
+  }
+  return values;
+}
+
 function hasFlag(name) {
   return process.argv.includes(name);
 }
@@ -88,6 +99,10 @@ function requiredRemoteTools(engines) {
 }
 
 function matrixArgs(runId, baseRoot = root) {
+  const profileRootArgs = argValues("--profile-root").flatMap((value) => [
+    "--profile-root",
+    value
+  ]);
   const args = [
     path.join(baseRoot, "tests", "aom", "run-agent-matrix.mjs"),
     "--cases",
@@ -99,6 +114,7 @@ function matrixArgs(runId, baseRoot = root) {
     argValue("--engines", "codex,claude-code"),
     "--profiles",
     argValue("--profiles", "baseline,rust-skills"),
+    ...profileRootArgs,
     "--repeats",
     argValue("--repeats", "3"),
     "--concurrency",
@@ -322,6 +338,7 @@ const manifest = {
   matrix: {
     engines,
     profiles: splitCsv(argValue("--profiles", "baseline,rust-skills")),
+    profileRoots: argValues("--profile-root"),
     repeats: Number.parseInt(argValue("--repeats", "3"), 10),
     concurrency: Number.parseInt(argValue("--concurrency", "4"), 10),
     timeoutMs: Number.parseInt(argValue("--timeout-ms", "600000"), 10),

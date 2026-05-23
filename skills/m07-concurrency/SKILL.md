@@ -1,6 +1,6 @@
 ---
 name: m07-concurrency
-description: "CRITICAL: Use for concurrency/async. Triggers: E0277 Send Sync, cannot be sent between threads, thread, spawn, channel, mpsc, Mutex, RwLock, Atomic, async, await, Future, tokio, deadlock, race condition, 并发, 线程, 异步, 死锁"
+description: "Use when: reasoning about Rust concurrency, async, thread safety, shared state, or Send/Sync failures. Keywords: E0277, Send, Sync, thread, spawn, channel, mpsc, Mutex, RwLock, Atomic, async, await, Future, tokio, deadlock, starvation, lock scope."
 user-invocable: false
 ---
 
@@ -24,6 +24,9 @@ Before choosing concurrency primitives:
   hold shared state while suspended.
 - Keep the lock scope small: copy or take the needed data, drop the guard, then
   await I/O and reacquire the lock only to update shared state.
+- For shared state that must cross runtime worker threads, `Rc` and `RefCell`
+  usually indicate a single-thread design; use `Arc`, `Mutex`, `RwLock`, or
+  message passing only after deciding the ownership model.
 
 ---
 
@@ -59,9 +62,10 @@ Before adding concurrency:
 
 ---
 
-## Trace Up ↑ (MANDATORY)
+## Trace Up
 
-**CRITICAL**: Don't just fix the error. Trace UP to find domain constraints.
+Use domain constraints to decide whether the primitive is appropriate before
+changing bounds or lock types.
 
 ### Domain Detection Table
 
@@ -101,7 +105,7 @@ Before adding concurrency:
 
 ---
 
-## Trace Down ↓
+## Trace Down
 
 From design to implementation:
 

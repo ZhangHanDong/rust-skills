@@ -62,10 +62,19 @@ function markdown(report) {
     "|---------|-------|----------|---------|----------|----------|-------|---------|---------|"
   ];
   for (const row of profileRows(report.summary)) lines.push(`| ${row.join(" | ")} |`);
-  lines.push("", "## Comparison", "");
-  const comparison = report.summary.comparisons?.["rust-skills_vs_baseline"] || {};
-  for (const [key, value] of Object.entries(comparison)) {
-    lines.push(`- ${key}: ${value}`);
+  lines.push("", "## Comparisons", "");
+  for (const [name, comparison] of Object.entries(report.summary.comparisons || {})) {
+    lines.push(`### ${name}`, "");
+    for (const [key, value] of Object.entries(comparison)) {
+      lines.push(`- ${key}: ${value}`);
+    }
+    lines.push("");
+  }
+  if (report.profileRoots && Object.keys(report.profileRoots).length > 0) {
+    lines.push("## Profile Roots", "");
+    for (const [profile, evidence] of Object.entries(report.profileRoots)) {
+      lines.push(`- ${profile}: ${evidence?.path || "none"}`);
+    }
   }
   lines.push("", "## Source Report", "", `\`${report.report || report.runRoot || report.runId}\``);
   return `${lines.join("\n")}\n`;

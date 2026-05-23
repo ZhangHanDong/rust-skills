@@ -89,6 +89,61 @@
     "tags": ["answer", "web", "concurrency"]
   },
   {
+    "id": "answer-msrv-api-evolution",
+    "category": "answer-quality",
+    "difficulty": "hard",
+    "prompt": "A Rust crate wants to replace an older API with a newly stabilized standard library API. Explain how to decide whether this is an MSRV bump, a semver break, or a fallback compatibility path.",
+    "expected": {
+      "minResponseChars": 600,
+      "mustMention": ["MSRV", "semver", "release notes", "fallback"]
+    },
+    "tags": ["answer", "ecosystem", "api-evolution", "compatibility"]
+  },
+  {
+    "id": "answer-type-inference-e0282",
+    "category": "answer-quality",
+    "difficulty": "medium",
+    "prompt": "A Rust function using iterators and collect fails with E0282 because the compiler cannot infer the output collection type. Explain the cause and production-safe fixes.",
+    "expected": {
+      "minResponseChars": 500,
+      "mustMention": ["E0282", "type annotation", "turbofish", "collect"]
+    },
+    "tags": ["answer", "traits", "type-inference", "compiler-error"]
+  },
+  {
+    "id": "answer-temporary-lifetime-e0716",
+    "category": "answer-quality",
+    "difficulty": "medium",
+    "prompt": "A Rust helper stores a reference to a value produced by format! and then gets E0716 about a temporary value being dropped. Explain the lifetime problem and a robust redesign.",
+    "expected": {
+      "minResponseChars": 500,
+      "mustMention": ["E0716", "temporary", "lifetime", "owned"]
+    },
+    "tags": ["answer", "ownership", "lifetime", "compiler-error"]
+  },
+  {
+    "id": "review-debug-rc-refcell-thread-state",
+    "category": "review-debugging",
+    "difficulty": "hard",
+    "prompt": "Review a Rust service that shares Rc<RefCell<State>> between tasks and then tries to move those tasks onto a multithreaded Tokio runtime. Diagnose the design issue and propose a safer state model.",
+    "expected": {
+      "minResponseChars": 550,
+      "mustMention": ["Rc", "RefCell", "Arc", "Mutex", "Send"]
+    },
+    "tags": ["review", "async", "concurrency", "state-management"]
+  },
+  {
+    "id": "review-debug-cli-error-automation",
+    "category": "review-debugging",
+    "difficulty": "medium",
+    "prompt": "Review a Rust deployment CLI that logs failures as warnings and still returns success to the shell. Explain why this breaks automation and how to design errors and exit status.",
+    "expected": {
+      "minResponseChars": 500,
+      "mustMention": ["CLI", "exit status", "error", "automation"]
+    },
+    "tags": ["review", "cli", "error-handling", "automation"]
+  },
+  {
     "id": "artifact-review-checklist",
     "category": "artifact-generation",
     "difficulty": "medium",
@@ -151,6 +206,22 @@
       ]
     },
     "tags": ["artifact", "unsafe", "ffi", "review"]
+  },
+  {
+    "id": "artifact-msrv-policy",
+    "category": "artifact-generation",
+    "difficulty": "hard",
+    "prompt": "Create MSRV.md for a Rust library that needs a policy for compiler version support, dependency upgrades, fallback paths, and changelog entries. Include the exact phrase: compatibility policy must be explicit.",
+    "expected": {
+      "files": ["MSRV.md"],
+      "mustMentionInFiles": [
+        {
+          "path": "MSRV.md",
+          "text": "compatibility policy must be explicit"
+        }
+      ]
+    },
+    "tags": ["artifact", "ecosystem", "api-evolution", "compatibility"]
   },
   {
     "id": "review-debug-async-lock-await",
