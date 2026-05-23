@@ -47,6 +47,7 @@
     "test:agents:comprehensive:benchmark": "node tests/aom/run-agent-matrix.mjs --cases tests/aom/fixtures/agent-matrix-comprehensive.json --benchmark-mode --allow-real-agents --require-real-agents",
     "test:agents:comprehensive:skip": "node tests/aom/run-agent-matrix.mjs --cases tests/aom/fixtures/agent-matrix-comprehensive.json --benchmark-mode",
     "test:agents:skip": "node tests/aom/run-agent-matrix.mjs",
+    "test:regeneration-compare": "node tests/aom/run-clean-regeneration-compare.mjs",
     "test:harvest": "node tests/aom/run-validation-harvest.mjs",
     "test:harvest:focused": "node tests/aom/run-validation-harvest.mjs --case-filter codegen-owned-index --repeats 1 --concurrency 2",
     "test:harvest:remote": "node tests/aom/run-validation-harvest.mjs --no-local --case-filter codegen-owned-index --repeats 1 --concurrency 2",

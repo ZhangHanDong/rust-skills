@@ -1,6 +1,6 @@
 ---
 name: m11-ecosystem
-description: "Use when: integrating Rust crates, Cargo features, dependency changes, interop, or API evolution. Keywords: E0425, E0433, E0603, crate, cargo, dependency, feature flag, workspace, MSRV, semver, stabilized, deprecated, release notes, PyO3, wasm, bindgen, cbindgen, napi-rs."
+description: "Use when integrating crates or ecosystem questions. Keywords: E0425, E0433, E0603, crate, cargo, dependency, feature flag, workspace, which crate to use, using external C libraries, creating Python extensions, PyO3, wasm, WebAssembly, bindgen, cbindgen, napi-rs, cannot find, private, crate recommendation, best crate for, Cargo.toml, features, crate 推荐, 依赖管理, 特性标志, 工作空间, Python 绑定"
 user-invocable: false
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: m04-zero-cost
-description: "Use when: reasoning about Rust generics, traits, trait objects, object safety, type inference, or dispatch choices. Keywords: E0277, E0282, E0308, E0599, E0038, generic, trait, impl, dyn, where, monomorphization, type annotation, turbofish, object safe."
+description: "CRITICAL: Use for generics, traits, zero-cost abstraction. Triggers: E0277, E0282, E0308, E0599, generic, trait, impl, dyn, where, monomorphization, static dispatch, dynamic dispatch, impl Trait, trait bound not satisfied, type inference, 泛型, 特征, 零成本抽象, 单态化"
 user-invocable: false
 ---
 

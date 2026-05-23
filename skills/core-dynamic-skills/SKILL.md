@@ -27,8 +27,12 @@ Generated skills follow the skill generation contract:
 - concise English `SKILL.md`
 - `Use when:` and `Keywords:` frontmatter description
 - relevant calibration anchors selected from crate docs
+- stable Rust failure terminology in anchors when relevant: `pointer`,
+  `length`, `alignment`, `lifetime`, `deadlock`, `scope`, `MSRV`, `semver`
 - long API detail in `references/`
 - strict skill generation quality gate for newly generated output
+- benchmark improvement work must clean and regenerate skills, not patch
+  generated output by hand
 
 ## Trigger Scenarios
 
@@ -95,6 +99,10 @@ For each crate:
    - If missing (or --force): generate skill
    - Run the skill generation quality gate for regenerated output
 3. Report results
+
+For comparative benchmarks, run the sync command with `--force` in both the
+main checkout and the current checkout after deleting their generated output
+roots. Compare only the regenerated roots.
 
 ---
 
@@ -179,6 +187,10 @@ rm -rf ~/.claude/skills/{crate_name}
 # Clean all generated skills
 rm -rf ~/.claude/skills/*
 ```
+
+For benchmark evidence, record the clean command and regeneration command for
+both compared roots. Evidence from a hand-patched generated skill is diagnostic
+only and must not be used as proof that generation improved.
 
 ### Update Command (Inline)
 

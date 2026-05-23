@@ -1,6 +1,6 @@
 ---
 name: m01-ownership
-description: "Use when: reasoning about Rust ownership, borrowing, lifetimes, moved values, or temporary-drop errors. Keywords: E0382, E0597, E0506, E0507, E0515, E0716, E0106, ownership, borrow, lifetime, move, clone, Copy, API contract."
+description: "CRITICAL: Use for ownership/borrow/lifetime issues. Triggers: E0382, E0597, E0506, E0507, E0515, E0716, E0106, value moved, borrowed value does not live long enough, cannot move out of, use of moved value, ownership, borrow, lifetime, 'a, 'static, move, clone, Copy, 所有权, 借用, 生命周期"
 user-invocable: false
 ---
 

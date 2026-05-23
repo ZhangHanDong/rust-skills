@@ -88,6 +88,10 @@ Generated skills must follow the skill generation contract:
 - long API details in `references/`
 - no prompt-like role setup
 - strict quality gate before accepting output
+- no hand patching generated skills to improve benchmark metrics; update the
+  generator inputs and regenerate from a clean directory instead
+- use stable Rust failure terms in anchors when relevant, including `pointer`,
+  `length`, `alignment`, `lifetime`, `deadlock`, `scope`, `MSRV`, and `semver`
 
 ### Step 1: Identify Target and Construct URL
 
@@ -199,6 +203,10 @@ node tests/aom/run-skill-generation-gate.mjs \
   --strict-generated \
   --json
 ```
+
+For benchmark work, delete the generated skill directory before regeneration.
+Do not edit the generated `SKILL.md` after the fact and then claim generator
+quality improved.
 
 ---
 

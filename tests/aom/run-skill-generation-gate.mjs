@@ -20,7 +20,7 @@ const ANCHOR_FAMILIES = {
   inference: ["E0282", "type inference", "turbofish", "type annotation"],
   errors: ["E0308", "Result", "thiserror", "error boundary"],
   apiEvolution: ["MSRV", "semver", "deprecation", "stabilized"],
-  unsafeFfi: ["SAFETY", "pointer", "alignment", "aliasing"],
+  unsafeFfi: ["SAFETY", "pointer", "length", "alignment", "lifetime", "aliasing"],
   quality: ["cargo fmt", "clippy", "cargo test", "doc test"]
 };
 

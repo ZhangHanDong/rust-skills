@@ -30,6 +30,8 @@ Generated skills follow the skill generation contract:
 - Templates go in `assets/`; deterministic helpers go in `scripts/`.
 - The generated skill must pass the skill generation quality gate:
   `node tests/aom/run-skill-generation-gate.mjs --skills <generated-dir> --strict-generated --json`
+- Benchmark improvements must come from this contract and generated output,
+  not from hand-editing generated leaf skills after the run.
 
 Select calibration anchors that match the crate documentation and user need.
 Do not paste every anchor into every generated skill.
@@ -42,7 +44,15 @@ Do not paste every anchor into every generated skill.
 | Type inference | generic constructors, `collect`, `parse`, channels, turbofish |
 | Error boundaries | `Result`, custom errors, `thiserror`, application/library split |
 | API evolution | MSRV, semver, stabilization, deprecation, release notes |
-| Unsafe/FFI | pointer validity, alignment, aliasing, lifetime, caller contract |
+| Unsafe/FFI | stable terms `pointer`, `length`, `alignment`, `lifetime`; initialization, aliasing, allocation bounds, caller contract |
+
+### Generated Artifact Boundary
+
+When improving benchmark performance, do not patch generated `skills/m*`,
+`skills/domain-*`, `skills/unsafe-checker`, or dynamic crate skills directly.
+Update this generation contract or the generation inputs, then delete the
+generated output directory and run generation again. A regenerated skill should
+make the desired calibration emerge naturally from its anchors.
 
 ## Skill Quality Standards
 
@@ -221,6 +231,8 @@ For each skill:
 - [ ] Code examples use latest Rust idioms
 - [ ] No redundant documentation files (README.md, etc.)
 - [ ] Generated output passes the skill generation quality gate in strict mode
+- [ ] Output was produced from a clean generated directory, not manually patched
+      after generation
 - [ ] Skills created directly in `~/.claude/skills/` for auto-discovery
 
 ---

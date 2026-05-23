@@ -39,10 +39,43 @@ regeneration protocol is:
 
 1. freeze benchmark prompts and scoring,
 2. update generation sources,
-3. generate skills into a temporary directory,
-4. run the strict generation gate,
-5. runtime install,
-6. run deterministic gates and real Agent before/after evidence.
+3. delete both compared generated output roots,
+4. regenerate main and current roots from their own generation sources,
+5. run the strict generation gate on both regenerated roots,
+6. runtime install,
+7. run deterministic gates and real Agent before/after evidence.
+
+Do not hand-edit generated leaf skills to improve metrics. If a regenerated
+skill misses a benchmark concept, update the generation contract, generation
+source, or routing source and regenerate.
+
+For a deterministic comparison preflight over regenerated roots:
+
+```bash
+npm run test:regeneration-compare -- \
+  --main-root /tmp/rust-skills-main-regenerated \
+  --current-root /tmp/rust-skills-current-regenerated \
+  --main-prepare-command 'rm -rf "$REGENERATION_ROOT" && <main generation command>' \
+  --current-prepare-command 'rm -rf "$REGENERATION_ROOT" && <current generation command>' \
+  --strict-generated \
+  --skip-agent-matrix
+```
+
+Prepare commands are optional. When supplied, the script records them and runs
+them before the strict generation gates. `REGENERATION_ROOT` and
+`REGENERATION_PROFILE` are available to each prepare command.
+
+To run the same regenerated roots through real Agents:
+
+```bash
+npm run test:regeneration-compare -- \
+  --main-root /tmp/rust-skills-main-regenerated \
+  --current-root /tmp/rust-skills-current-regenerated \
+  --strict-generated \
+  --allow-real-agents \
+  --require-real-agents \
+  --engines codex,claude-code
+```
 
 ## Real Agent Matrix
 
@@ -84,6 +117,10 @@ This makes the comparison three-way:
 - `baseline`: no injected skill context
 - `rust-main`: routed context from the main checkout passed by `--profile-root`
 - `rust-skills`: routed context from the current branch
+
+For benchmark claims about generated skill quality, prefer
+`test:regeneration-compare` and pass regenerated roots. Direct profile-root
+comparison against hand-edited source trees is diagnostic only.
 
 `npm run test:agents` is strict and requires real Agent execution. For a dry
 evidence-shape run that records `SKIP` capsules without quality claims, use:
