@@ -31,6 +31,39 @@ function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
 }
 
+function readManifestSummary(rootPath) {
+  const manifestPath = path.join(rootPath, "generation-manifest.json");
+  if (!fs.existsSync(manifestPath)) {
+    return null;
+  }
+  const manifest = readJson(manifestPath);
+  return {
+    path: manifestPath,
+    label: manifest.label,
+    generatedAt: manifest.generatedAt,
+    policyMode: manifest.policy?.mode,
+    sourceGitCommit: manifest.source?.gitCommit,
+    sourceGitBranch: manifest.source?.gitBranch,
+    sourceGitStatusShort: manifest.source?.gitStatusShort,
+    fileCount: manifest.output?.fileCount,
+    copied: manifest.output?.copied,
+    skipped: manifest.output?.skipped,
+    generationContract: manifest.output?.generationContract
+      ? {
+          status: manifest.output.generationContract.status,
+          path: manifest.output.generationContract.path,
+          schemaVersion: manifest.output.generationContract.schemaVersion,
+          overlays: (manifest.output.generationContract.overlays || []).map((overlay) => ({
+            skillId: overlay.skillId,
+            status: overlay.status,
+            anchors: overlay.anchors,
+            reason: overlay.reason
+          }))
+        }
+      : null
+  };
+}
+
 function splitCsv(value) {
   return String(value || "")
     .split(",")
@@ -252,8 +285,14 @@ const report = {
     skipAgentMatrix
   },
   roots: {
-    main: mainRoot,
-    current: currentRoot
+    main: {
+      ...mainRoot,
+      manifest: readManifestSummary(mainRoot.root)
+    },
+    current: {
+      ...currentRoot,
+      manifest: readManifestSummary(currentRoot.root)
+    }
   },
   prepare,
   gates: {

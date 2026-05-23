@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "skillOverlays": {
+    "unsafe-checker": {
+      "anchors": [
+        "FFI slice wrappers use invariant labels: pointer, length, alignment, lifetime, aliasing.",
+        "For `from_raw_parts`, treat alignment as a documented caller obligation."
+      ]
+    },
+    "m07-concurrency": {
+      "anchors": [
+        "Async lock reviews should name deadlock risk and lock scope before code changes.",
+        "Drop lock guards before `.await`; reacquire only after I/O when needed."
+      ]
+    },
+    "m11-ecosystem": {
+      "anchors": [
+        "API evolution reviews should name MSRV, semver, release notes, fallback, and regression tests."
+      ]
+    },
+    "m05-type-driven": {
+      "anchors": [
+        "E0282 means inference lacks constraints; add a boundary type, turbofish, or local annotation."
+      ]
+    },
+    "m01-ownership": {
+      "anchors": [
+        "E0382 fixes should preserve ownership intent; borrow before consume and clone last."
+      ]
+    }
+  }
+}

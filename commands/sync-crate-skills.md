@@ -27,6 +27,9 @@ All generated skills must follow the skill generation contract:
 - detailed API material in `references/`,
 - no generated README or changelog files,
 - strict skill generation quality gate before accepting regenerated output.
+- regeneration benchmark roots apply
+  `commands/skill-generation-contract.json` overlays when present, so repeated
+  runs use source-controlled guidance instead of hand-patched leaf skills.
 
 Run the quality gate on newly generated skills:
 

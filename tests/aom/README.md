@@ -41,7 +41,8 @@ regeneration protocol is:
 2. update generation sources,
 3. delete both compared generated output roots,
 4. regenerate main and current roots from their own generation sources,
-5. run the strict generation gate on both regenerated roots,
+5. run the strict generation gate on generated-only roots, or the normal gate
+   on full runtime roots that also contain legacy/core skills,
 6. runtime install,
 7. run deterministic gates and real Agent before/after evidence.
 
@@ -49,21 +50,37 @@ Do not hand-edit generated leaf skills to improve metrics. If a regenerated
 skill misses a benchmark concept, update the generation contract, generation
 source, or routing source and regenerate.
 
+To materialize a clean runtime root for benchmark comparison:
+
+```bash
+npm run materialize:regenerated-root -- \
+  --source-root /path/to/rust-skills-checkout \
+  --out-root /tmp/rust-skills-regenerated \
+  --force \
+  --label rust-skills-regenerated
+```
+
+The materializer clears `--out-root`, copies the runtime/generation surface,
+and writes `generation-manifest.json` with source commit, status, copied paths,
+file hashes, and any applied generation contract overlays. If the source
+checkout contains `commands/skill-generation-contract.json`, overlays are
+applied only inside the temporary regenerated root. The repository's generated
+leaf skills are not patched by hand.
+
 For a deterministic comparison preflight over regenerated roots:
 
 ```bash
 npm run test:regeneration-compare -- \
   --main-root /tmp/rust-skills-main-regenerated \
   --current-root /tmp/rust-skills-current-regenerated \
-  --main-prepare-command 'rm -rf "$REGENERATION_ROOT" && <main generation command>' \
-  --current-prepare-command 'rm -rf "$REGENERATION_ROOT" && <current generation command>' \
-  --strict-generated \
   --skip-agent-matrix
 ```
 
 Prepare commands are optional. When supplied, the script records them and runs
 them before the strict generation gates. `REGENERATION_ROOT` and
-`REGENERATION_PROFILE` are available to each prepare command.
+`REGENERATION_PROFILE` are available to each prepare command. Add
+`--strict-generated` only when each compared root is a generated-only skill
+directory or contains no legacy/core warnings.
 
 To run the same regenerated roots through real Agents:
 

@@ -30,6 +30,8 @@ Generated skills follow the skill generation contract:
 - Templates go in `assets/`; deterministic helpers go in `scripts/`.
 - The generated skill must pass the skill generation quality gate:
   `node tests/aom/run-skill-generation-gate.mjs --skills <generated-dir> --strict-generated --json`
+- Machine-readable contract overlays live in
+  `commands/skill-generation-contract.json` for benchmark regeneration roots.
 - Benchmark improvements must come from this contract and generated output,
   not from hand-editing generated leaf skills after the run.
 
