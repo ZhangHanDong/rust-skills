@@ -1,6 +1,6 @@
 ---
 name: rust-skill-creator
-description: "Use when creating skills for Rust crates or std library documentation. Keywords: create rust skill, create crate skill, create std skill, 创建 rust skill, 创建 crate skill, 创建 std skill, 动态 rust skill, 动态 crate skill, skill for tokio, skill for serde, skill for axum, generate rust skill, rust 技能, crate 技能, 从文档创建skill, from docs create skill"
+description: "Use when: creating generated skills for Rust crates, std modules, or Rust documentation URLs. Keywords: create rust skill, create crate skill, create std skill, dynamic rust skill, skill for tokio, skill for serde, skill for axum, generate rust skill, from docs create skill."
 argument-hint: "<crate_name|std::module>"
 context: fork
 agent: general-purpose
@@ -21,7 +21,8 @@ This skill handles requests to create skills for:
 
 ## Execution Mode Detection
 
-**CRITICAL: Check if related commands/skills are available.**
+Check whether related commands and skills are available before choosing the
+execution path.
 
 This skill relies on:
 - `/create-llms-for-skills` command
@@ -78,6 +79,16 @@ After llms.txt is generated, use:
 
 **When the commands above are NOT available, create skills manually:**
 
+Generated skills must follow the skill generation contract:
+
+- English only in generated repo-owned skill text
+- concise `Use when:` and `Keywords:` description
+- scope, documentation boundary, calibration anchors, and key patterns in
+  `SKILL.md`
+- long API details in `references/`
+- no prompt-like role setup
+- strict quality gate before accepting output
+
 ### Step 1: Identify Target and Construct URL
 
 | Target | URL Template |
@@ -116,16 +127,28 @@ Create `~/.claude/skills/{crate_name}/SKILL.md` with this template:
 ```markdown
 ---
 name: {crate_name}
-description: "Documentation for {crate_name} crate. Keywords: {keywords}"
+description: "Use when: working with {crate_name} APIs or troubleshooting {crate_name}-specific Rust integration. Keywords: {keywords}."
 ---
 
 # {Crate Name}
 
 > **Version:** {version} | **Source:** docs.rs
 
-## Overview
+## Scope
 
 {Brief description from documentation}
+
+## Documentation
+
+Load these references only when the task needs their detail:
+
+- `./references/overview.md` - Main overview
+- `./references/{module}.md` - Module documentation
+
+## Documentation Boundary
+
+If a needed reference file is missing or empty, say the local generated
+documentation is incomplete and recommend regenerating the skill.
 
 ## Key Types
 
@@ -145,15 +168,11 @@ description: "Documentation for {crate_name} crate. Keywords: {keywords}"
 {Example code from documentation}
 ```
 
-## Documentation
+## Calibration Anchors
 
-- `./references/overview.md` - Main overview
-- `./references/{module}.md` - Module documentation
-
-## Links
-
-- [docs.rs](https://docs.rs/{crate})
-- [crates.io](https://crates.io/crates/{crate})
+- {crate-specific decision anchor}
+- {crate-specific failure-mode anchor}
+- {boundary that prevents over-applying this skill}
 ```
 
 ### Step 5: Generate Reference Files
@@ -173,6 +192,12 @@ agent-browser close
 # Check skill structure
 ls -la ~/.claude/skills/{crate_name}/
 cat ~/.claude/skills/{crate_name}/SKILL.md
+
+# Run the generation quality gate when the rust-skills repository is available
+node tests/aom/run-skill-generation-gate.mjs \
+  --skills ~/.claude/skills/{crate_name} \
+  --strict-generated \
+  --json
 ```
 
 ---

@@ -18,6 +18,32 @@ The routing AOM gate checks:
 - over-injection rate
 - average context cost
 
+## Skill Generation Gate
+
+```bash
+npm run test:skill-generation
+node tests/aom/run-skill-generation-gate.mjs --skills /tmp/generated-rust-skills --strict-generated --json
+```
+
+The skill generation gate enforces the skill generation contract in two layers:
+
+- hard failures for missing frontmatter, missing `name` or `description`, hard
+  size limits, and missing referenced local files
+- soft warnings for legacy style, verbose descriptions, non-ASCII text,
+  prompt-like phrases, and missing early calibration anchors
+
+Use `--strict-generated` for newly generated sample skills; it promotes soft
+warnings to hard failures. This lets the repository keep legacy skills visible
+while making regenerated skills prove that they follow the new contract. The
+regeneration protocol is:
+
+1. freeze benchmark prompts and scoring,
+2. update generation sources,
+3. generate skills into a temporary directory,
+4. run the strict generation gate,
+5. runtime install,
+6. run deterministic gates and real Agent before/after evidence.
+
 ## Real Agent Matrix
 
 ```bash

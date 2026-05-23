@@ -22,6 +22,14 @@ Dynamic skills are:
 - Versioned and updatable
 - Not committed to the rust-skills repository
 
+Generated skills follow the skill generation contract:
+
+- concise English `SKILL.md`
+- `Use when:` and `Keywords:` frontmatter description
+- relevant calibration anchors selected from crate docs
+- long API detail in `references/`
+- strict skill generation quality gate for newly generated output
+
 ## Trigger Scenarios
 
 ### Prompt-on-Open
@@ -41,7 +49,8 @@ When entering a directory with Cargo.toml:
 
 ## Execution Mode Detection
 
-**CRITICAL: Check if agent and command infrastructure is available.**
+Check whether agent and command infrastructure is available before selecting
+agent mode or inline mode.
 
 Try to read: `../../agents/` directory
 Check if `/create-llms-for-skills` and `/create-skills-via-llms` commands work.
@@ -64,6 +73,7 @@ For each crate:
   ├─ If missing: Check actionbook for llms.txt
   │     ├─ Found: /create-skills-via-llms
   │     └─ Not found: /create-llms-for-skills first
+  ├─ Run generation quality gate
   └─ Load skill
 ```
 
@@ -83,6 +93,7 @@ For each crate:
 2. For each dependency:
    - Check if skill exists at `~/.claude/skills/{crate}/`
    - If missing (or --force): generate skill
+   - Run the skill generation quality gate for regenerated output
 3. Report results
 
 ---

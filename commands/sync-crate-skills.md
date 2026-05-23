@@ -15,6 +15,26 @@ Arguments: $ARGUMENTS
 
 ---
 
+## Generation Contract
+
+All generated skills must follow the skill generation contract:
+
+- concise English `SKILL.md`,
+- `Use when:` and `Keywords:` frontmatter description,
+- relevant calibration anchors instead of broad prompt templates,
+- detailed API material in `references/`,
+- no generated README or changelog files,
+- strict skill generation quality gate before accepting regenerated output.
+
+Run the quality gate on newly generated skills:
+
+```bash
+node tests/aom/run-skill-generation-gate.mjs \
+  --skills ~/.claude/skills/{crate_name} \
+  --strict-generated \
+  --json
+```
+
 ## Instructions
 
 ### 0. Check for --from-source Flag
@@ -108,6 +128,9 @@ If not found in actionbook:
 ```
 /create-skills-via-llms {crate_name} {llms_path} {version}
 ```
+
+After creation, run the quality gate for the generated skill. If the gate fails,
+regenerate or repair the generation source, not the benchmark tests.
 
 ### 5. Report Results
 
