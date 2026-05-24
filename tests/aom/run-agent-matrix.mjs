@@ -164,6 +164,17 @@ function commandExists(command) {
   );
 }
 
+function isApiEngine(engine) {
+  return engine === "openai-api" || engine === "anthropic-api";
+}
+
+function engineCommandName(engine) {
+  if (engine === "codex") return "codex";
+  if (engine === "claude-code") return "claude";
+  if (isApiEngine(engine)) return null;
+  throw new Error(`unsupported engine: ${engine}`);
+}
+
 function runProcess(command, args, options = {}) {
   return new Promise((resolve) => {
     const startedAt = Date.now();
@@ -293,6 +304,138 @@ function buildEngineCommand(engine, prompt, workspace, outputFile, options = {})
     };
   }
   throw new Error(`unsupported engine: ${engine}`);
+}
+
+function apiConfig(engine, options) {
+  if (engine === "openai-api") {
+    return {
+      apiKey: process.env.OPENAI_API_KEY || "",
+      baseUrl: options.openaiBaseUrl,
+      model: options.openaiModel,
+      maxOutputTokens: options.apiMaxOutputTokens
+    };
+  }
+  if (engine === "anthropic-api") {
+    return {
+      apiKey: process.env.ANTHROPIC_API_KEY || "",
+      baseUrl: options.anthropicBaseUrl,
+      model: options.anthropicModel,
+      maxOutputTokens: options.apiMaxOutputTokens
+    };
+  }
+  throw new Error(`unsupported API engine: ${engine}`);
+}
+
+function apiSkipReason(engine, options) {
+  const config = apiConfig(engine, options);
+  if (!config.apiKey) {
+    return engine === "openai-api" ? "OPENAI_API_KEY is not set" : "ANTHROPIC_API_KEY is not set";
+  }
+  if (!config.model) {
+    return engine === "openai-api"
+      ? "--openai-model or AOM_OPENAI_MODEL is required"
+      : "--anthropic-model or AOM_ANTHROPIC_MODEL is required";
+  }
+  return null;
+}
+
+function extractOpenAiText(payload) {
+  if (typeof payload.output_text === "string") return payload.output_text;
+  const chunks = [];
+  for (const item of payload.output || []) {
+    for (const content of item.content || []) {
+      if (content.type === "output_text" && typeof content.text === "string") {
+        chunks.push(content.text);
+      } else if (typeof content.text === "string") {
+        chunks.push(content.text);
+      }
+    }
+  }
+  return chunks.join("\n");
+}
+
+function extractAnthropicText(payload) {
+  return (payload.content || [])
+    .map((item) => item.type === "text" ? item.text : "")
+    .filter(Boolean)
+    .join("\n");
+}
+
+async function runApiEngine(engine, prompt, outputFile, options) {
+  const startedAt = Date.now();
+  const config = apiConfig(engine, options);
+  const requestTimeout = AbortSignal.timeout(options.timeoutMs || 300000);
+  try {
+    const response = engine === "openai-api"
+      ? await fetch(`${config.baseUrl.replace(/\/+$/u, "")}/responses`, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${config.apiKey}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            model: config.model,
+            input: prompt,
+            max_output_tokens: config.maxOutputTokens
+          }),
+          signal: requestTimeout
+        })
+      : await fetch(`${config.baseUrl.replace(/\/+$/u, "")}/messages`, {
+          method: "POST",
+          headers: {
+            "x-api-key": config.apiKey,
+            "anthropic-version": "2023-06-01",
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            model: config.model,
+            max_tokens: config.maxOutputTokens,
+            messages: [{ role: "user", content: prompt }]
+          }),
+          signal: requestTimeout
+        });
+    const raw = await response.text();
+    if (!response.ok) {
+      return {
+        status: "FAIL",
+        code: response.status,
+        signal: null,
+        stdout: "",
+        stderr: `${engine} request failed: HTTP ${response.status} ${raw.slice(0, 2000)}`,
+        error: null,
+        durationMs: Date.now() - startedAt
+      };
+    }
+    const payload = raw.trim() ? JSON.parse(raw) : {};
+    const outputText = engine === "openai-api"
+      ? extractOpenAiText(payload)
+      : extractAnthropicText(payload);
+    writeText(outputFile, outputText);
+    return {
+      status: "PASS",
+      code: 0,
+      signal: null,
+      stdout: outputText,
+      stderr: "",
+      error: null,
+      durationMs: Date.now() - startedAt,
+      api: {
+        engine,
+        model: config.model,
+        baseUrl: config.baseUrl
+      }
+    };
+  } catch (error) {
+    return {
+      status: error.name === "TimeoutError" ? "TIMEOUT" : "ERROR",
+      code: null,
+      signal: null,
+      stdout: "",
+      stderr: error.message,
+      error: error.message,
+      durationMs: Date.now() - startedAt
+    };
+  }
 }
 
 function summarizeRouting(route) {
@@ -574,8 +717,9 @@ async function runOne(caseItem, engine, profile, repeat, runRoot, options) {
     return skipped;
   }
 
-  const commandName = engine === "codex" ? "codex" : "claude";
-  if (!commandExists(commandName)) {
+  const commandName = engineCommandName(engine);
+  const apiSkip = isApiEngine(engine) ? apiSkipReason(engine, options) : null;
+  if (apiSkip || (commandName && !commandExists(commandName))) {
     const skipped = {
       caseId: caseItem.id,
       engine,
@@ -583,7 +727,7 @@ async function runOne(caseItem, engine, profile, repeat, runRoot, options) {
       repeat,
       status: "SKIP",
       hardGate: "SKIP",
-      reason: `${commandName} binary not found`,
+      reason: apiSkip || `${commandName} binary not found`,
       routing: promptProfile.routing,
       profileRoot: promptProfile.profileRoot,
       skillContext: promptProfile.skillContext,
@@ -608,8 +752,22 @@ async function runOne(caseItem, engine, profile, repeat, runRoot, options) {
   const workspace = prepareWorkspace(caseItem, runDir);
   await initGit(workspace);
   const outputFile = path.join(runDir, "output.md");
-  const { command, args } = buildEngineCommand(engine, promptProfile.prompt, workspace, outputFile, options);
-  const processResult = await runProcess(command, args, {
+  const { command, args, processResult } = isApiEngine(engine)
+    ? {
+        command: engine,
+        args: [
+          "--model",
+          apiConfig(engine, options).model,
+          "--base-url",
+          apiConfig(engine, options).baseUrl
+        ],
+        processResult: await runApiEngine(engine, promptProfile.prompt, outputFile, options)
+      }
+    : {
+        ...buildEngineCommand(engine, promptProfile.prompt, workspace, outputFile, options),
+        processResult: null
+      };
+  const finalProcessResult = processResult || await runProcess(command, args, {
     cwd: workspace,
     env: {
       ...process.env,
@@ -621,9 +779,9 @@ async function runOne(caseItem, engine, profile, repeat, runRoot, options) {
 
   const outputText = fs.existsSync(outputFile)
     ? fs.readFileSync(outputFile, "utf8")
-    : processResult.stdout;
-  writeText(path.join(runDir, "stdout.txt"), processResult.stdout);
-  writeText(path.join(runDir, "stderr.txt"), processResult.stderr);
+    : finalProcessResult.stdout;
+  writeText(path.join(runDir, "stdout.txt"), finalProcessResult.stdout);
+  writeText(path.join(runDir, "stderr.txt"), finalProcessResult.stderr);
   if (!fs.existsSync(outputFile)) writeText(outputFile, outputText);
 
   const diff = await gitDiff(workspace);
@@ -642,8 +800,12 @@ async function runOne(caseItem, engine, profile, repeat, runRoot, options) {
     ...fileFailures,
     ...verificationFailures
   ];
-  if (processResult.status !== "PASS") {
-    failures.push({ kind: "agent_process_failed", status: processResult.status, code: processResult.code });
+  if (finalProcessResult.status !== "PASS") {
+    failures.push({
+      kind: "agent_process_failed",
+      status: finalProcessResult.status,
+      code: finalProcessResult.code
+    });
   }
 
   const metrics = {
@@ -666,13 +828,13 @@ async function runOne(caseItem, engine, profile, repeat, runRoot, options) {
     engine,
     profile,
     repeat,
-    status: processResult.status,
     hardGate: failures.length === 0 ? "PASS" : "FAIL",
     command,
     args,
     workspace,
     outputFile,
-    durationMs: processResult.durationMs,
+    status: finalProcessResult.status,
+    durationMs: finalProcessResult.durationMs,
     routing: promptProfile.routing,
     profileRoot: promptProfile.profileRoot,
     skillContext: promptProfile.skillContext,
@@ -721,6 +883,17 @@ const repeats = Number.parseInt(argValue("--repeats", "1"), 10);
 const concurrency = Number.parseInt(argValue("--concurrency", "1"), 10);
 const timeoutMs = Number.parseInt(argValue("--timeout-ms", "300000"), 10);
 const maxSkillContextChars = Number.parseInt(argValue("--max-skill-context-chars", "6000"), 10);
+const apiMaxOutputTokens = Number.parseInt(argValue("--api-max-output-tokens", "4096"), 10);
+const openaiModel = argValue("--openai-model", process.env.AOM_OPENAI_MODEL || process.env.OPENAI_MODEL || null);
+const openaiBaseUrl = argValue("--openai-base-url", process.env.OPENAI_BASE_URL || "https://api.openai.com/v1");
+const anthropicModel = argValue(
+  "--anthropic-model",
+  process.env.AOM_ANTHROPIC_MODEL || process.env.ANTHROPIC_MODEL || null
+);
+const anthropicBaseUrl = argValue(
+  "--anthropic-base-url",
+  process.env.ANTHROPIC_BASE_URL || "https://api.anthropic.com/v1"
+);
 const allowRealAgents = hasFlag("--allow-real-agents") || process.env.RUN_REAL_AGENTS === "1";
 const requireRealAgents = hasFlag("--require-real-agents");
 const benchmarkMode = hasFlag("--benchmark-mode");
@@ -768,6 +941,11 @@ for (const caseItem of cases) {
           allowRealAgents,
           timeoutMs,
           maxSkillContextChars,
+          apiMaxOutputTokens,
+          openaiModel,
+          openaiBaseUrl,
+          anthropicModel,
+          anthropicBaseUrl,
           profileRoots,
           codexIgnoreUserConfig,
           codexIgnoreRules
@@ -802,6 +980,21 @@ const report = {
   allowRealAgents,
   requireRealAgents,
   benchmarkMode,
+  api: {
+    openai: {
+      enabled: engines.includes("openai-api"),
+      model: openaiModel,
+      baseUrl: openaiBaseUrl,
+      apiKeyPresent: Boolean(process.env.OPENAI_API_KEY)
+    },
+    anthropic: {
+      enabled: engines.includes("anthropic-api"),
+      model: anthropicModel,
+      baseUrl: anthropicBaseUrl,
+      apiKeyPresent: Boolean(process.env.ANTHROPIC_API_KEY)
+    },
+    maxOutputTokens: apiMaxOutputTokens
+  },
   caseFilter,
   categoryFilter,
   codex: {

@@ -125,6 +125,25 @@ profiles by default:
 The report includes per-profile metrics and pairwise deltas such as
 `rust-skills_vs_baseline`.
 
+The matrix also supports direct API engines for environments where CLI agents
+are unavailable or unstable:
+
+```bash
+node tests/aom/run-agent-matrix.mjs \
+  --cases tests/aom/fixtures/agent-matrix-comprehensive.json \
+  --benchmark-mode \
+  --engines openai-api,anthropic-api \
+  --openai-model "$AOM_OPENAI_MODEL" \
+  --anthropic-model "$AOM_ANTHROPIC_MODEL" \
+  --allow-real-agents \
+  --require-real-agents
+```
+
+`openai-api` requires `OPENAI_API_KEY` and `--openai-model` or
+`AOM_OPENAI_MODEL`. `anthropic-api` requires `ANTHROPIC_API_KEY` and
+`--anthropic-model` or `AOM_ANTHROPIC_MODEL`. API keys are not written to
+reports; missing credentials or models are recorded as skipped runs.
+
 To compare the current branch against another rust-skills checkout, add a
 profile root. When the external checkout has `lib/routing.js` and
 `index/routes.json`, that profile uses its own runtime and routed skill files.

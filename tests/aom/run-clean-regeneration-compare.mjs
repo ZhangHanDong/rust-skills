@@ -184,6 +184,13 @@ function runAgentMatrix(mainRoot, currentRoot, reportDir, options) {
   if (options.allowRealAgents) args.push("--allow-real-agents");
   if (options.requireRealAgents) args.push("--require-real-agents");
   if (options.categoryFilter) args.push("--category-filter", options.categoryFilter);
+  if (options.openaiModel) args.push("--openai-model", options.openaiModel);
+  if (options.openaiBaseUrl) args.push("--openai-base-url", options.openaiBaseUrl);
+  if (options.anthropicModel) args.push("--anthropic-model", options.anthropicModel);
+  if (options.anthropicBaseUrl) args.push("--anthropic-base-url", options.anthropicBaseUrl);
+  if (options.apiMaxOutputTokens) {
+    args.push("--api-max-output-tokens", String(options.apiMaxOutputTokens));
+  }
   const result = runCommand("agent-matrix", process.execPath, args, {
     timeoutMs: options.matrixTimeoutMs
   });
@@ -248,6 +255,17 @@ const options = {
   matrixRunId: argValue("--matrix-run-id", `${runId}-agent-matrix`),
   caseFilter: argValue("--case-filter", null),
   categoryFilter: argValue("--category-filter", null),
+  openaiModel: argValue("--openai-model", process.env.AOM_OPENAI_MODEL || process.env.OPENAI_MODEL || null),
+  openaiBaseUrl: argValue("--openai-base-url", process.env.OPENAI_BASE_URL || "https://api.openai.com/v1"),
+  anthropicModel: argValue(
+    "--anthropic-model",
+    process.env.AOM_ANTHROPIC_MODEL || process.env.ANTHROPIC_MODEL || null
+  ),
+  anthropicBaseUrl: argValue(
+    "--anthropic-base-url",
+    process.env.ANTHROPIC_BASE_URL || "https://api.anthropic.com/v1"
+  ),
+  apiMaxOutputTokens: Number.parseInt(argValue("--api-max-output-tokens", "4096"), 10),
   allowRealAgents,
   requireRealAgents
 };

@@ -126,8 +126,20 @@ function matrixArgs(runId, baseRoot = root) {
   ];
   const caseFilter = argValue("--case-filter", null);
   if (caseFilter) args.push("--case-filter", caseFilter);
+  const categoryFilter = argValue("--category-filter", null);
+  if (categoryFilter) args.push("--category-filter", categoryFilter);
   const maxSkillContextChars = argValue("--max-skill-context-chars", null);
   if (maxSkillContextChars) args.push("--max-skill-context-chars", maxSkillContextChars);
+  const openaiModel = argValue("--openai-model", null);
+  if (openaiModel) args.push("--openai-model", openaiModel);
+  const openaiBaseUrl = argValue("--openai-base-url", null);
+  if (openaiBaseUrl) args.push("--openai-base-url", openaiBaseUrl);
+  const anthropicModel = argValue("--anthropic-model", null);
+  if (anthropicModel) args.push("--anthropic-model", anthropicModel);
+  const anthropicBaseUrl = argValue("--anthropic-base-url", null);
+  if (anthropicBaseUrl) args.push("--anthropic-base-url", anthropicBaseUrl);
+  const apiMaxOutputTokens = argValue("--api-max-output-tokens", null);
+  if (apiMaxOutputTokens) args.push("--api-max-output-tokens", apiMaxOutputTokens);
   if (hasFlag("--codex-use-user-config")) args.push("--codex-use-user-config");
   if (hasFlag("--codex-use-rules")) args.push("--codex-use-rules");
   return args;
@@ -342,7 +354,8 @@ const manifest = {
     repeats: Number.parseInt(argValue("--repeats", "3"), 10),
     concurrency: Number.parseInt(argValue("--concurrency", "4"), 10),
     timeoutMs: Number.parseInt(argValue("--timeout-ms", "600000"), 10),
-    caseFilter: argValue("--case-filter", null)
+    caseFilter: argValue("--case-filter", null),
+    categoryFilter: argValue("--category-filter", null)
   },
   reports,
   results: results.map(({ stdout, stderr, ...item }) => ({
