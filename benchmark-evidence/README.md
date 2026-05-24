@@ -18,3 +18,15 @@ node tests/aom/summarize-agent-report.mjs \
   --report tests/results/agent-matrix/<run-id>/report.json \
   --out benchmark-evidence/<run-id>.md
 ```
+
+Generate a controlled category rollup from real Agent reports:
+
+```bash
+npm run test:controlled-rollup -- \
+  --category-report answer-quality=tests/results/agent-matrix/<answer-run>/report.json \
+  --category-report review-debugging=tests/results/agent-matrix/<review-run>/report.json \
+  --category-report artifact-generation=tests/results/agent-matrix/<artifact-run>/report.json \
+  --category-report code-generation=tests/results/agent-matrix/<codegen-run>/report.json \
+  --out benchmark-evidence/<rollup>.md \
+  --json-out tests/results/controlled-rollup/<rollup>.json
+```

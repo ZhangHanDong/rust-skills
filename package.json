@@ -53,6 +53,7 @@
     "test:harvest:focused": "node tests/aom/run-validation-harvest.mjs --case-filter codegen-owned-index --repeats 1 --concurrency 2",
     "test:harvest:remote": "node tests/aom/run-validation-harvest.mjs --no-local --case-filter codegen-owned-index --repeats 1 --concurrency 2",
     "test:agents:report": "node tests/aom/summarize-agent-report.mjs",
+    "test:controlled-rollup": "node tests/aom/summarize-controlled-rollup.mjs",
     "route": "node rust-skills.js route --json"
   },
   "engines": {

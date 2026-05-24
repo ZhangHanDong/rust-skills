@@ -727,6 +727,7 @@ const benchmarkMode = hasFlag("--benchmark-mode");
 const codexIgnoreUserConfig = !hasFlag("--codex-use-user-config");
 const codexIgnoreRules = !hasFlag("--codex-use-rules");
 const caseFilter = argValue("--case-filter", null);
+const categoryFilter = argValue("--category-filter", null);
 const runId = argValue(
   "--run-id",
   [
@@ -744,9 +745,16 @@ const reportPath = path.resolve(argValue(
   path.join(runRoot, "report.json")
 ));
 const cases = readJson(casesPath)
-  .filter((caseItem) => !caseFilter || caseItem.id === caseFilter || (caseItem.tags || []).includes(caseFilter));
+  .filter((caseItem) => !caseFilter || caseItem.id === caseFilter || (caseItem.tags || []).includes(caseFilter))
+  .filter((caseItem) => !categoryFilter || caseItem.category === categoryFilter);
 
-if (cases.length === 0) throw new Error(`no Agent matrix cases matched ${casesPath}`);
+if (cases.length === 0) {
+  const filters = [
+    caseFilter ? `case-filter=${caseFilter}` : null,
+    categoryFilter ? `category-filter=${categoryFilter}` : null
+  ].filter(Boolean).join(", ");
+  throw new Error(`no Agent matrix cases matched ${casesPath}${filters ? ` (${filters})` : ""}`);
+}
 if (!Number.isFinite(repeats) || repeats < 1) throw new Error("repeats must be >= 1");
 if (profiles.length === 0) throw new Error("profiles must not be empty");
 for (const profile of profiles) resolveProfileRoot(profile, { profileRoots });
@@ -794,6 +802,8 @@ const report = {
   allowRealAgents,
   requireRealAgents,
   benchmarkMode,
+  caseFilter,
+  categoryFilter,
   codex: {
     ignoreUserConfig: codexIgnoreUserConfig,
     ignoreRules: codexIgnoreRules

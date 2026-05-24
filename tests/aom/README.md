@@ -94,6 +94,19 @@ npm run test:regeneration-compare -- \
   --engines codex,claude-code
 ```
 
+Use `--category-filter <category>` for category-controlled evidence slices
+without changing the fixture file:
+
+```bash
+npm run test:regeneration-compare -- \
+  --main-root /tmp/rust-skills-main-regenerated \
+  --current-root /tmp/rust-skills-current-regenerated \
+  --allow-real-agents \
+  --require-real-agents \
+  --engines codex \
+  --category-filter answer-quality
+```
+
 ## Real Agent Matrix
 
 ```bash

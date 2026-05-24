@@ -183,6 +183,7 @@ function runAgentMatrix(mainRoot, currentRoot, reportDir, options) {
   if (options.caseFilter) args.push("--case-filter", options.caseFilter);
   if (options.allowRealAgents) args.push("--allow-real-agents");
   if (options.requireRealAgents) args.push("--require-real-agents");
+  if (options.categoryFilter) args.push("--category-filter", options.categoryFilter);
   const result = runCommand("agent-matrix", process.execPath, args, {
     timeoutMs: options.matrixTimeoutMs
   });
@@ -246,6 +247,7 @@ const options = {
   matrixTimeoutMs: Number.parseInt(argValue("--matrix-timeout-ms", "3600000"), 10),
   matrixRunId: argValue("--matrix-run-id", `${runId}-agent-matrix`),
   caseFilter: argValue("--case-filter", null),
+  categoryFilter: argValue("--category-filter", null),
   allowRealAgents,
   requireRealAgents
 };
