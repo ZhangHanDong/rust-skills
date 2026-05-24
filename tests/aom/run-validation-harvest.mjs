@@ -82,11 +82,15 @@ function shellQuote(value) {
 }
 
 function remoteShell(script) {
+  const pathBootstrap = [
+    "export PATH=\"$HOME/.local/bin:$HOME/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH\"",
+    script
+  ].join("\n");
   return [
     "if command -v zsh >/dev/null 2>&1; then",
-    `exec zsh -ilc ${shellQuote(script)};`,
+    `exec zsh -ilc ${shellQuote(pathBootstrap)};`,
     "else",
-    `exec sh -lc ${shellQuote(script)};`,
+    `exec sh -lc ${shellQuote(pathBootstrap)};`,
     "fi"
   ].join(" ");
 }
@@ -245,10 +249,11 @@ for (const remoteHost of remoteHosts) {
     remoteHosts.length > 1
   );
   const tools = requiredRemoteTools(engines);
+  const toolWords = tools.map(shellQuote).join(" ");
   const readinessScript = [
     `tools=${shellQuote(tools.join(" "))}`,
     "missing=''",
-    "for tool in $tools; do",
+    `for tool in ${toolWords}; do`,
     "  if ! command -v \"$tool\" >/dev/null 2>&1; then missing=\"$missing $tool\"; fi",
     "done",
     "if [ -n \"$missing\" ]; then printf 'missing:%s\\n' \"$missing\" >&2; exit 2; fi",
