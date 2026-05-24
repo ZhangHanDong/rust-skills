@@ -10,7 +10,13 @@
     "m07-concurrency": {
       "anchors": [
         "Async lock reviews should name deadlock risk and lock scope before code changes.",
-        "Drop lock guards before `.await`; reacquire only after I/O when needed."
+        "Drop lock guards before `.await`; reacquire only after I/O when needed.",
+        "For async service intake, say backpressure when using bounded queues, semaphores, or admission control."
+      ]
+    },
+    "m12-lifecycle": {
+      "anchors": [
+        "For graceful shutdown designs, connect cancellation, backpressure, and shutdown sequencing."
       ]
     },
     "m11-ecosystem": {
@@ -20,12 +26,24 @@
     },
     "m05-type-driven": {
       "anchors": [
-        "E0282 means inference lacks constraints; add a boundary type, turbofish, or local annotation."
+        "E0282 means inference lacks constraints; add a boundary type, turbofish, or type annotation."
+      ]
+    },
+    "m04-zero-cost": {
+      "anchors": [
+        "For E0282 through generic APIs, name the inference boundary and suggest a type annotation or turbofish."
       ]
     },
     "m01-ownership": {
       "anchors": [
-        "E0382 fixes should preserve ownership intent; borrow before consume and clone last."
+        "E0382 fixes should preserve ownership intent; borrow before consume and clone last.",
+        "For E0716, say lifetime when explaining the temporary boundary and bind owned storage before borrowing."
+      ]
+    },
+    "domain-embedded": {
+      "anchors": [
+        "For no_std logging, say embedded Rust and explicitly discuss dynamic allocation or no allocation.",
+        "Name heapless or fixed-capacity buffers and make overflow behavior part of the API contract."
       ]
     }
   }

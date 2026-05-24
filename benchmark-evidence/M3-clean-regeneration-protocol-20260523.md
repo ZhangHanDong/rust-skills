@@ -117,3 +117,20 @@ contract overlay and regenerating only the temporary current root, focused
 repeat-3 slices show current outperforming both baseline and regenerated main
 on the targeted weak cases. This is evidence for the generation-contract
 approach, not evidence from hand-patched generated leaf skills.
+
+## Full-Run Follow-Up
+
+On 2026-05-24, the first full clean-regeneration run showed no overall
+improvement: current scored 22/26, regenerated main scored 23/26, and baseline
+scored 25/26. The weak points were answer-quality terminology anchors.
+
+After extending only `commands/skill-generation-contract.json`, the controlled
+category rollup measured:
+
+- baseline: 20/26, 76.92%
+- rust-main-regenerated: 22/26, 84.62%
+- rust-skills: 24/26, 92.31%
+
+The monolithic full v4 run still had code-generation timeout noise, so the
+trusted comparison uses category-controlled slices. See
+`benchmark-evidence/clean-regeneration-controlled-rollup-v5-20260524.md`.
