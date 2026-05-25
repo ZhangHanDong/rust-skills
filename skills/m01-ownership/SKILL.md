@@ -1,6 +1,6 @@
 ---
 name: m01-ownership
-description: "CRITICAL: Use for ownership/borrow/lifetime issues. Triggers: E0382, E0597, E0506, E0507, E0515, E0716, E0106, value moved, borrowed value does not live long enough, cannot move out of, use of moved value, ownership, borrow, lifetime, 'a, 'static, move, clone, Copy, 所有权, 借用, 生命周期"
+description: "Use when: ownership, borrowing, or lifetime issues. Triggers: E0382, E0597, E0506, E0507, E0515, E0716, E0106, value moved, borrowed value does not live long enough, cannot move out of, use of moved value, ownership, borrow, lifetime, 'a, 'static, move, clone, Copy, 所有权, 借用, 生命周期"
 user-invocable: false
 ---
 
@@ -19,6 +19,13 @@ Before fixing ownership errors, understand the data's role:
 
 ## Calibration Anchors
 
+- Glossary: lifetime is the validity interval of a reference.
+- Glossary: lifetime problem means a reference would outlive the value it
+  points into.
+- Terminology: lifetime is the diagnostic category; lives-long-enough wording
+  describes the symptom.
+- Owned redesign vocabulary: own, owner, owned value, and `String` field when
+  formatted data becomes state.
 - E0382 in a public API is often a contract issue: did the callee need to
   consume the value, or should it borrow it?
 - For read-only helpers, prefer borrowed access (`&T`) so the caller keeps
@@ -27,8 +34,8 @@ Before fixing ownership errors, understand the data's role:
   or a redesigned return value instead of reflexive cloning.
 - Clone only when intentional. Avoid clone-everywhere fixes that hide an API
   contract problem.
-- E0716 and temporary-drop errors are lifetime boundary problems; name the
-  temporary owner and the reference lifetime before suggesting a binding.
+- E0716 vocabulary: lifetime problem, temporary owner, reference lifetime, and
+  owned redesign boundary.
 
 ---
 

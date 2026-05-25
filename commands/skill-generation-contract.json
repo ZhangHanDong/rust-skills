@@ -3,8 +3,10 @@
   "skillOverlays": {
     "unsafe-checker": {
       "anchors": [
+        "Glossary: alignment is the required memory boundary for a typed pointer or reference.",
+        "Terminology: alignment is the invariant name; aligned describes a pointer or reference that satisfies it.",
         "FFI slice wrappers use invariant labels: pointer, length, alignment, lifetime, aliasing.",
-        "For `from_raw_parts`, treat alignment as a documented caller obligation."
+        "`from_raw_parts` safety contracts include alignment as a documented caller obligation."
       ]
     },
     "m07-concurrency": {
@@ -21,6 +23,7 @@
     },
     "m11-ecosystem": {
       "anchors": [
+        "Glossary: release notes are user-facing compatibility notes; changelog entries are the detailed history.",
         "API evolution reviews should name MSRV, semver, release notes, fallback, and regression tests."
       ]
     },
@@ -31,13 +34,19 @@
     },
     "m04-zero-cost": {
       "anchors": [
-        "For E0282 through generic APIs, name the inference boundary and the stable fix terms `type annotation` and `turbofish`."
+        "Glossary: type annotation means an explicit type on a binding, return, or collection boundary.",
+        "Glossary: turbofish is Rust's `::<...>` syntax for explicit generic arguments.",
+        "E0282 through generic APIs is an inference-boundary issue; stable fix vocabulary includes `type annotation` and `turbofish`."
       ]
     },
     "m01-ownership": {
       "anchors": [
+        "Glossary: lifetime is the validity interval of a reference.",
+        "Glossary: lifetime problem means a reference would outlive the value it points into.",
+        "Terminology: lifetime is the diagnostic category; lives-long-enough wording describes the symptom.",
+        "Owned redesign vocabulary: own, owner, owned value, and `String` field when formatted data becomes state.",
         "E0382 fixes should preserve ownership intent; borrow before consume and clone last.",
-        "For E0716, use the diagnostic term `lifetime` when naming the temporary owner and owned redesign boundary.",
+        "E0716 vocabulary: lifetime problem, temporary owner, reference lifetime, and owned redesign boundary.",
         "For first-unique or index helpers over `&[String]`, count with borrowed `&str` keys and return a borrowed `&str` from the original slice."
       ]
     },
@@ -48,8 +57,20 @@
     },
     "domain-embedded": {
       "anchors": [
-        "For no_std logging, say embedded Rust and explicitly discuss allocation or no allocation.",
+        "Glossary: embedded Rust includes no_std firmware and fixed-capacity device code.",
+        "Glossary: heapless means fixed-capacity, no-allocator collections or equivalent raw-array designs.",
+        "Glossary: allocation means heap-backed dynamic storage; no allocation means no heap growth at runtime.",
+        "Embedded Rust logging vocabulary: heapless, allocation, no allocation, fixed-capacity buffers.",
+        "`no_std` logging in embedded Rust is constrained by allocation or no allocation.",
         "Name heapless or fixed-capacity buffers and make overflow behavior part of the API contract."
+      ]
+    },
+    "domain-cli": {
+      "anchors": [
+        "Glossary: dry run is the two-word safety concept for preview without mutation.",
+        "Glossary: rejected-path error means a non-zero error exit before mutation.",
+        "Secret-bearing config diagnostics: environment source, redaction, separate printable config, and non-zero error behavior without leaking values.",
+        "Destructive cleanup diagnostics: canonicalized workspace root, dry run mode, explicit confirmation, and non-zero error for rejected paths."
       ]
     }
   }

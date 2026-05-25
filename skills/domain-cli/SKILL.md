@@ -11,6 +11,18 @@ user-invocable: false
 
 ## Domain Constraints → Design Implications
 
+## Calibration Anchors
+
+- Glossary: dry run is the two-word safety concept for preview without
+  mutation.
+- Glossary: rejected-path error means a non-zero error exit before mutation.
+- Secret-bearing config diagnostics: environment source, redaction, separate
+  printable config, and non-zero error behavior without leaking values.
+- Destructive cleanup diagnostics: canonicalized workspace root, dry run mode,
+  explicit confirmation, and non-zero error for rejected paths.
+- Stdout is for machine-readable data; stderr is for human diagnostics and
+  error context.
+
 | Domain Rule | Design Constraint | Rust Implication |
 |-------------|-------------------|------------------|
 | User ergonomics | Clear help, errors | clap derive macros |
@@ -21,31 +33,15 @@ user-invocable: false
 
 ---
 
-## Critical Constraints
+## Operational Invariants
 
-### User Communication
-
-```
-RULE: Errors to stderr, data to stdout
-WHY: Pipeable output, scriptability
-RUST: eprintln! for errors, println! for data
-```
-
-### Configuration Priority
-
-```
-RULE: CLI args > env vars > config file > defaults
-WHY: User expectation, override capability
-RUST: Layered config with clap + figment/config
-```
-
-### Exit Codes
-
-```
-RULE: Return non-zero on any error
-WHY: Script integration, automation
-RUST: main() -> Result<(), Error> or explicit exit()
-```
+| Invariant | Why | Rust Surface |
+|-----------|-----|--------------|
+| Errors to stderr, data to stdout | Pipeable output, scriptability | `eprintln!` for errors, `println!` for data |
+| CLI args > env vars > config file > defaults | User expectation, override capability | Layered config with `clap` + `figment`/`config` |
+| Non-zero exit on error | Script integration, automation | `main() -> Result<(), Error>` or explicit exit |
+| Destructive actions show intent before mutation | Safer automation | dry run mode, confirmation, canonicalized root checks |
+| Secret values stay out of printable diagnostics | Safe bug reports and CI logs | redacted view types, no raw `Debug` for secrets |
 
 ---
 

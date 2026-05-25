@@ -1,6 +1,6 @@
 ---
 name: unsafe-checker
-description: "CRITICAL: Use for unsafe Rust code review and FFI. Triggers on: unsafe, raw pointer, FFI, extern, transmute, *mut, *const, union, #[repr(C)], libc, std::ffi, MaybeUninit, NonNull, SAFETY comment, soundness, undefined behavior, UB, safe wrapper, memory layout, bindgen, cbindgen, CString, CStr, 安全抽象, 裸指针, 外部函数接口, 内存布局, 不安全代码, FFI 绑定, 未定义行为"
+description: "Use when: unsafe Rust code review or FFI. Triggers on: unsafe, raw pointer, FFI, extern, transmute, *mut, *const, union, #[repr(C)], libc, std::ffi, MaybeUninit, NonNull, SAFETY comment, soundness, undefined behavior, UB, safe wrapper, memory layout, bindgen, cbindgen, CString, CStr, 安全抽象, 裸指针, 外部函数接口, 内存布局, 不安全代码, FFI 绑定, 未定义行为"
 globs: ["**/*.rs"]
 allowed-tools: ["Read", "Grep", "Glob"]
 ---
@@ -43,10 +43,14 @@ pub unsafe fn dangerous() { ... }
 
 ## Calibration Anchors
 
-- For `from_raw_parts` and raw pointer plus length APIs, surface the full
-  pointer contract: validity, non-null handling, alignment, initialization,
-  lifetime, aliasing, allocation bounds, and maximum size.
-- Treat alignment as an invariant, not a cosmetic detail.
+- Glossary: alignment is the required memory boundary for a typed pointer or
+  reference.
+- Terminology: alignment is the invariant name; aligned describes a pointer or
+  reference that satisfies it.
+- `from_raw_parts` and raw pointer plus length APIs have a full pointer
+  contract: validity, non-null handling, alignment, initialization, lifetime,
+  aliasing, allocation bounds, and maximum size.
+- Alignment is a safety invariant, not a cosmetic detail.
 
 ## Quick Reference
 

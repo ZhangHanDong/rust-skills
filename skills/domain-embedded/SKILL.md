@@ -29,7 +29,15 @@ user-invocable: false
 
 ## Calibration Anchors
 
-- For `no_std` logging and buffering, name heapless or fixed-capacity
+- Glossary: embedded Rust includes `no_std` firmware and fixed-capacity device
+  code.
+- Glossary: heapless means fixed-capacity, no-allocator collections or
+  equivalent raw-array designs.
+- Glossary: allocation means heap-backed dynamic storage; no allocation means
+  no heap growth at runtime.
+- Embedded Rust logging vocabulary: heapless, allocation, no allocation,
+  fixed-capacity buffers.
+- `no_std` logging and buffering commonly uses heapless or fixed-capacity
   structures instead of heap-backed `String`/`Vec`.
 - Common choices are `heapless::String`, `heapless::Vec`, static arrays, and
   ring buffers with explicit overflow behavior.
