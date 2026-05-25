@@ -58,6 +58,11 @@ Rust Skills supports three installation modes:
 
 Use this when you want local hooks and a real routing command. The installer uses Node for filesystem setup and builds/copies the Rust-native CLI, runtime data, one top-level skill, hooks, and a small `~/.local/bin/rust-skills` shim that points at the installed runtime CLI.
 
+Prerequisites for source installs:
+
+- Node.js for `install.js` and hook execution.
+- Rust/Cargo for building the native `rust-skills` CLI when a prebuilt binary is not already present.
+
 Runtime hooks use a two-stage trigger guard:
 
 1. A low-cost hook matcher only decides whether the router should run.
@@ -204,7 +209,7 @@ claude --plugin-dir /path/to/rust-skills
 | Auto meta-cognition trigger | ✅ | ✅ | ✅ | ❌ (manual invoke) |
 | Hook-based routing | ✅ | ✅ | ✅ | ❌ |
 | Background agents | ✅ | ✅ | ✅ | ✅ (inline fallback) |
-| Requires Rust/Cargo to install | ❌ | ❌ | ❌ | ❌ |
+| Rust/Cargo needed for source runtime install | ✅ when no prebuilt binary exists | ❌ | ✅ when building the native CLI locally | ❌ |
 | Works with Codex | ✅ | ❌ | ❌ | ✅ |
 
 ### Permission Configuration

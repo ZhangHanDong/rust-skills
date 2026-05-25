@@ -58,6 +58,11 @@ Rust Skills 支持三种安装模式：
 
 如果你希望本地 hook 自动触发，并且能用命令行真实验证路由，优先使用这个方式。安装器使用 Node 完成文件安装，并构建/复制 Rust-native CLI、runtime 数据、单一顶层 skill、hook，并在 `~/.local/bin/rust-skills` 放一个指向已安装 runtime CLI 的轻量 shim。
 
+源码安装前提：
+
+- Node.js 用于运行 `install.js` 和 hook。
+- 如果没有现成的预编译 binary，需要 Rust/Cargo 来构建 native `rust-skills` CLI。
+
 Runtime hook 使用两级触发保护：
 
 1. 低成本 hook matcher 只判断是否需要运行路由器。
@@ -204,7 +209,7 @@ claude --plugin-dir /path/to/rust-skills
 | 自动触发元认知 | ✅ | ✅ | ✅ | ❌（手动调用） |
 | Hook 路由 | ✅ | ✅ | ✅ | ❌ |
 | 后台 Agents | ✅ | ✅ | ✅ | ✅（内联回退） |
-| 安装需要 Rust/Cargo | ❌ | ❌ | ❌ | ❌ |
+| 源码 runtime 安装需要 Rust/Cargo | 没有预编译 binary 时需要 | ❌ | 本地构建 native CLI 时需要 | ❌ |
 | 兼容 Codex | ✅ | ❌ | ❌ | ✅ |
 
 ### 权限配置

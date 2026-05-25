@@ -58,6 +58,11 @@ Rust Skills は3つのインストールモードをサポートしています�
 
 ローカル hook と実行可能なルーティングコマンドを使いたい場合に推奨します。インストーラは Node でファイル配置を行い、Rust-native CLI、runtime データ、単一トップレベル skill、hook を構築/コピーします。`~/.local/bin/rust-skills` には、インストール済み runtime CLI へ転送する軽量 shim を配置します。
 
+ソースからインストールする場合の前提：
+
+- `install.js` と hook 実行用の Node.js。
+- 事前ビルド済み binary がない場合、native `rust-skills` CLI を構築するための Rust/Cargo。
+
 Runtime hook は 2 段階のトリガーガードを使います：
 
 1. 低コストの hook matcher は、ルーターを実行する候補かどうかだけを判断します。
@@ -196,7 +201,7 @@ claude --plugin-dir /path/to/rust-skills
 | 自動メタ認知トリガー | ✅ | ✅ | ✅ | ❌（手動呼び出し） |
 | Hook ルーティング | ✅ | ✅ | ✅ | ❌ |
 | バックグラウンドエージェント | ✅ | ✅ | ✅ | ✅（インラインフォールバック） |
-| インストールに Rust/Cargo が必要 | ❌ | ❌ | ❌ | ❌ |
+| ソース runtime インストールに Rust/Cargo が必要 | 事前ビルド済み binary がない場合は必要 | ❌ | native CLI をローカル構築する場合は必要 | ❌ |
 | Codex 対応 | ✅ | ❌ | ❌ | ✅ |
 
 ### 権限設定
