@@ -84,7 +84,7 @@ rust-skills route --json "Rust E0382 value moved in axum state"
 - 深い skill データ：`~/.codex/rust-skills/` および/または `~/.claude/rust-skills/`
 - Hook スクリプト：`~/.codex/hooks/` および/または `~/.claude/hooks/`
 - Rust-native Runtime CLI：`~/.codex/bin/` および/または `~/.claude/bin/`
-- 任意の PATH shim：`~/.local/bin/rust-skills`
+- 任意の PATH shim：`~/.local/bin/rust-skills`。インストール済み runtime を動的に選択します。`RUST_SKILLS_PROFILE=codex` または `RUST_SKILLS_PROFILE=claude` で固定できます。
 
 インストーラはグローバル `AGENTS.md`、Claude `agents/`、Claude `commands/` を上書きしません。古いトップレベル deep skills をバックアップへ移動するのは、`--prune-legacy-top-level-skills` を明示した場合のみです。
 

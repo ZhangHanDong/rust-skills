@@ -25,6 +25,10 @@ function run(command, args, options = {}) {
   return result;
 }
 
+function realpath(target) {
+  return fs.realpathSync(target);
+}
+
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), "rust-skills-install-"));
 try {
   const dryRunTemp = path.join(temp, "dry-run");
@@ -100,8 +104,9 @@ try {
   assert(JSON.parse(quotedRoute.stdout).should_inject === true, "quoted user bin shim should work");
   if (process.platform !== "win32") {
     assert(
-      fs.readFileSync(quotedUserBin, "utf8").includes("exec '"),
-      "POSIX user bin shim should single-quote the target path"
+      fs.readFileSync(quotedUserBin, "utf8").includes("neutral-runtime") ||
+        fs.readFileSync(quotedUserBin, "utf8").includes("RUST_SKILLS_PROFILE"),
+      "POSIX user bin shim should select an installed runtime dynamically"
     );
   }
 
@@ -174,6 +179,26 @@ try {
   assert(routeJson.skills.includes("rust-router"), "installed CLI should route rust-router");
   assert(routeJson.skills.includes("domain-web"), "installed CLI should route domain-web");
   assert(routeJson.skills.includes("m07-concurrency"), "installed CLI should route m07-concurrency");
+
+  const codexVerify = JSON.parse(
+    run(userBin, ["verify", "--json"], {
+      env: { ...process.env, RUST_SKILLS_PROFILE: "codex" }
+    }).stdout
+  );
+  assert(
+    realpath(codexVerify.runtime_root) === realpath(path.join(codexDir, "rust-skills")),
+    "shim should select Codex runtime"
+  );
+
+  const claudeVerify = JSON.parse(
+    run(userBin, ["verify", "--json"], {
+      env: { ...process.env, RUST_SKILLS_PROFILE: "claude" }
+    }).stdout
+  );
+  assert(
+    realpath(claudeVerify.runtime_root) === realpath(path.join(claudeDir, "rust-skills")),
+    "shim should select Claude runtime"
+  );
 
   console.log("install e2e: PASS");
 } finally {

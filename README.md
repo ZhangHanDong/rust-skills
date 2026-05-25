@@ -84,7 +84,7 @@ What it installs:
 - Deep skill data under `~/.codex/rust-skills/` and/or `~/.claude/rust-skills/`
 - Hook scripts under `~/.codex/hooks/` and/or `~/.claude/hooks/`
 - Rust-native runtime CLI under `~/.codex/bin/` and/or `~/.claude/bin/`
-- Optional PATH shim: `~/.local/bin/rust-skills`
+- Optional PATH shim: `~/.local/bin/rust-skills`, which selects an installed runtime dynamically. Set `RUST_SKILLS_PROFILE=codex` or `RUST_SKILLS_PROFILE=claude` to force one.
 
 The installer does not overwrite global `AGENTS.md`, Claude `agents/`, or Claude `commands/`. It also does not move old top-level deep skills into a backup folder unless you pass `--prune-legacy-top-level-skills`.
 

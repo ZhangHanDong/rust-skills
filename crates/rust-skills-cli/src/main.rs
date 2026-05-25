@@ -661,7 +661,6 @@ fn runtime_root_candidates() -> Vec<PathBuf> {
     if let Ok(root) = env::var("RUST_SKILLS_ROOT") {
         candidates.push(PathBuf::from(root));
     }
-    candidates.push(current_dir());
 
     if let Ok(exe) = env::current_exe() {
         if let Some(bin_dir) = exe.parent() {
@@ -669,6 +668,8 @@ fn runtime_root_candidates() -> Vec<PathBuf> {
             candidates.push(bin_dir.join(".."));
         }
     }
+
+    candidates.push(current_dir());
 
     for home in home_candidates() {
         candidates.push(home.join(".codex").join("rust-skills"));
@@ -706,11 +707,12 @@ fn unique_paths(paths: Vec<PathBuf>) -> Vec<PathBuf> {
 }
 
 fn normalize_path(path: &Path) -> PathBuf {
-    if path.is_absolute() {
+    let absolute = if path.is_absolute() {
         path.to_path_buf()
     } else {
         current_dir().join(path)
-    }
+    };
+    fs::canonicalize(&absolute).unwrap_or(absolute)
 }
 
 fn file_exists(path: &Path) -> bool {

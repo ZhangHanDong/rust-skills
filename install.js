@@ -106,17 +106,41 @@ function builtNativeBinaryPath(profile = "release") {
   return path.join(root, "target", profile, nativeBinaryName());
 }
 
+function latestMtimeMs(target) {
+  if (!fs.existsSync(target)) return 0;
+  const stat = fs.statSync(target);
+  if (!stat.isDirectory()) return stat.mtimeMs;
+  return fs.readdirSync(target)
+    .map((entry) => latestMtimeMs(path.join(target, entry)))
+    .reduce((latest, value) => Math.max(latest, value), stat.mtimeMs);
+}
+
+function rustSourceMtimeMs() {
+  return Math.max(
+    latestMtimeMs(path.join(root, "Cargo.toml")),
+    latestMtimeMs(path.join(root, "Cargo.lock")),
+    latestMtimeMs(path.join(root, "crates"))
+  );
+}
+
+function nativeBinaryIsFresh(binaryPath) {
+  return fs.existsSync(binaryPath) && fs.statSync(binaryPath).mtimeMs >= rustSourceMtimeMs();
+}
+
 function buildNativeCli(actions) {
   const existingRelease = builtNativeBinaryPath("release");
   const existingDebug = builtNativeBinaryPath("debug");
 
-  if (fs.existsSync(existingRelease)) {
+  if (nativeBinaryIsFresh(existingRelease)) {
     actions.push({ action: "native-cli-present", target: existingRelease });
     return existingRelease;
   }
-  if (fs.existsSync(existingDebug)) {
+  if (nativeBinaryIsFresh(existingDebug)) {
     actions.push({ action: "native-cli-present", target: existingDebug });
     return existingDebug;
+  }
+  if (fs.existsSync(existingRelease) || fs.existsSync(existingDebug)) {
+    actions.push({ action: "native-cli-stale", target: existingRelease });
   }
   if (dryRun) {
     actions.push({ action: "build-native-cli", command: "cargo build --release --workspace" });
@@ -223,17 +247,116 @@ function installRuntimeCli(targetRoot, actions) {
   return targetNative;
 }
 
+function posixUserBinShim(installedHome) {
+  const quotedHome = shellQuote(installedHome);
+  return `#!/bin/sh
+set -e
+
+installed_home=${quotedHome}
+profile=\${RUST_SKILLS_PROFILE:-}
+
+try_exec() {
+  candidate=$1
+  runtime_root=$2
+  shift 2
+  if [ -n "$candidate" ] && [ -x "$candidate" ]; then
+    if [ -n "$runtime_root" ] && [ -z "\${RUST_SKILLS_ROOT:-}" ]; then
+      RUST_SKILLS_ROOT=$runtime_root
+      export RUST_SKILLS_ROOT
+    fi
+    exec "$candidate" "$@"
+  fi
+}
+
+if [ -n "\${RUST_SKILLS_BIN:-}" ]; then
+  try_exec "$RUST_SKILLS_BIN" "\${RUST_SKILLS_ROOT:-}" "$@"
+fi
+
+if [ -n "\${RUST_SKILLS_ROOT:-}" ]; then
+  runtime_parent=$(dirname "$RUST_SKILLS_ROOT")
+  try_exec "$runtime_parent/bin/rust-skills" "$RUST_SKILLS_ROOT" "$@"
+fi
+
+case "$profile" in
+  codex)
+    try_exec "$installed_home/.codex/bin/rust-skills" "$installed_home/.codex/rust-skills" "$@"
+    try_exec "\${HOME:-}/.codex/bin/rust-skills" "\${HOME:-}/.codex/rust-skills" "$@"
+    ;;
+  claude|claude-code)
+    try_exec "$installed_home/.claude/bin/rust-skills" "$installed_home/.claude/rust-skills" "$@"
+    try_exec "\${HOME:-}/.claude/bin/rust-skills" "\${HOME:-}/.claude/rust-skills" "$@"
+    ;;
+  "")
+    try_exec "$installed_home/.codex/bin/rust-skills" "$installed_home/.codex/rust-skills" "$@"
+    try_exec "$installed_home/.claude/bin/rust-skills" "$installed_home/.claude/rust-skills" "$@"
+    try_exec "\${HOME:-}/.codex/bin/rust-skills" "\${HOME:-}/.codex/rust-skills" "$@"
+    try_exec "\${HOME:-}/.claude/bin/rust-skills" "\${HOME:-}/.claude/rust-skills" "$@"
+    ;;
+  *)
+    echo "unsupported RUST_SKILLS_PROFILE: $profile" >&2
+    exit 2
+    ;;
+esac
+
+echo "rust-skills shim could not find an installed runtime binary" >&2
+exit 127
+`;
+}
+
+function windowsUserBinShim(installedHome) {
+  const escapedHome = String(installedHome).replace(/%/g, "%%");
+  return `@echo off\r
+setlocal\r
+set "INSTALLED_HOME=${escapedHome}"\r
+if not "%RUST_SKILLS_BIN%"=="" if exist "%RUST_SKILLS_BIN%" "%RUST_SKILLS_BIN%" %* & exit /b %ERRORLEVEL%\r
+if /I "%RUST_SKILLS_PROFILE%"=="codex" goto codex\r
+if /I "%RUST_SKILLS_PROFILE%"=="claude" goto claude\r
+if /I "%RUST_SKILLS_PROFILE%"=="claude-code" goto claude\r
+if not "%RUST_SKILLS_PROFILE%"=="" goto bad_profile\r
+:default\r
+if exist "%INSTALLED_HOME%\\.codex\\bin\\rust-skills.exe" call :run "%INSTALLED_HOME%\\.codex\\bin\\rust-skills.exe" "%INSTALLED_HOME%\\.codex\\rust-skills" %* & exit /b %ERRORLEVEL%\r
+if exist "%INSTALLED_HOME%\\.claude\\bin\\rust-skills.exe" call :run "%INSTALLED_HOME%\\.claude\\bin\\rust-skills.exe" "%INSTALLED_HOME%\\.claude\\rust-skills" %* & exit /b %ERRORLEVEL%\r
+if exist "%USERPROFILE%\\.codex\\bin\\rust-skills.exe" call :run "%USERPROFILE%\\.codex\\bin\\rust-skills.exe" "%USERPROFILE%\\.codex\\rust-skills" %* & exit /b %ERRORLEVEL%\r
+if exist "%USERPROFILE%\\.claude\\bin\\rust-skills.exe" call :run "%USERPROFILE%\\.claude\\bin\\rust-skills.exe" "%USERPROFILE%\\.claude\\rust-skills" %* & exit /b %ERRORLEVEL%\r
+goto missing\r
+:codex\r
+if exist "%INSTALLED_HOME%\\.codex\\bin\\rust-skills.exe" call :run "%INSTALLED_HOME%\\.codex\\bin\\rust-skills.exe" "%INSTALLED_HOME%\\.codex\\rust-skills" %* & exit /b %ERRORLEVEL%\r
+if exist "%USERPROFILE%\\.codex\\bin\\rust-skills.exe" call :run "%USERPROFILE%\\.codex\\bin\\rust-skills.exe" "%USERPROFILE%\\.codex\\rust-skills" %* & exit /b %ERRORLEVEL%\r
+goto missing\r
+:claude\r
+if exist "%INSTALLED_HOME%\\.claude\\bin\\rust-skills.exe" call :run "%INSTALLED_HOME%\\.claude\\bin\\rust-skills.exe" "%INSTALLED_HOME%\\.claude\\rust-skills" %* & exit /b %ERRORLEVEL%\r
+if exist "%USERPROFILE%\\.claude\\bin\\rust-skills.exe" call :run "%USERPROFILE%\\.claude\\bin\\rust-skills.exe" "%USERPROFILE%\\.claude\\rust-skills" %* & exit /b %ERRORLEVEL%\r
+goto missing\r
+:bad_profile\r
+echo unsupported RUST_SKILLS_PROFILE: %RUST_SKILLS_PROFILE% 1>&2\r
+exit /b 2\r
+:missing\r
+echo rust-skills shim could not find an installed runtime binary 1>&2\r
+exit /b 127\r
+:run\r
+set "RUST_SKILLS_BIN_SELECTED=%~1"\r
+if "%RUST_SKILLS_ROOT%"=="" set "RUST_SKILLS_ROOT=%~2"\r
+shift\r
+shift\r
+"%RUST_SKILLS_BIN_SELECTED%" %*\r
+exit /b %ERRORLEVEL%\r
+`;
+}
+
 function installUserBin(sourceBin, actions) {
   if (noUserBin) return;
-  const userBinDir = homePath(".local", "bin");
+  const installHome = valueAfter("--home", process.platform === "win32"
+    ? (process.env.USERPROFILE || os.homedir() || process.env.HOME)
+    : (process.env.HOME || os.homedir() || process.env.USERPROFILE));
+  const userBinDir = path.join(installHome, ".local", "bin");
   const target = path.join(userBinDir, process.platform === "win32" ? "rust-skills.cmd" : "rust-skills");
-  actions.push({ action: "install-user-bin-shim", source: sourceBin, target });
+  actions.push({ action: "install-user-bin-shim", source: sourceBin, target, selector: "neutral-runtime" });
   if (dryRun) return;
   ensureDir(userBinDir);
   if (process.platform === "win32") {
-    fs.writeFileSync(target, `@echo off\r\ncall ${cmdQuote(sourceBin)} %*\r\n`);
+    fs.writeFileSync(target, windowsUserBinShim(installHome));
   } else {
-    fs.writeFileSync(target, `#!/bin/sh\nexec ${shellQuote(sourceBin)} "$@"\n`);
+    fs.writeFileSync(target, posixUserBinShim(installHome));
     fs.chmodSync(target, 0o755);
   }
 }

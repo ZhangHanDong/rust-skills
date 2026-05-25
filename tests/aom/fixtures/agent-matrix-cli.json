@@ -155,5 +155,17 @@
     },
     "verifyCommands": ["cargo test --quiet"],
     "tags": ["codegen", "cli", "filesystem", "cross-platform", "error-handling"]
+  },
+  {
+    "id": "cli-codegen-borrowed-unique-arg",
+    "category": "code-generation",
+    "difficulty": "hard",
+    "fixtureDir": "tests/aom/fixtures/workspaces/cli-borrowed-unique-arg",
+    "prompt": "Implement first_unique_arg in src/lib.rs for a Rust CLI argument analyzer. It should return the first argument string that appears exactly once while borrowing from the input slice. Do not change the public signature.",
+    "expected": {
+      "files": ["src/lib.rs"]
+    },
+    "verifyCommands": ["cargo test --quiet"],
+    "tags": ["codegen", "cli", "ownership", "borrowing", "automation"]
   }
 ]

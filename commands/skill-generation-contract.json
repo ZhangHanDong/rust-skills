@@ -37,7 +37,8 @@
     "m01-ownership": {
       "anchors": [
         "E0382 fixes should preserve ownership intent; borrow before consume and clone last.",
-        "For E0716, say lifetime when explaining the temporary boundary and bind owned storage before borrowing."
+        "For E0716, say lifetime when explaining the temporary boundary and bind owned storage before borrowing.",
+        "For first-unique or index helpers over `&[String]`, count with borrowed `&str` keys and return a borrowed `&str` from the original slice."
       ]
     },
     "domain-embedded": {
