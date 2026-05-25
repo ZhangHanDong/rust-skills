@@ -1,0 +1,159 @@
+[
+  {
+    "id": "cli-answer-exit-stderr-automation",
+    "category": "answer-quality",
+    "difficulty": "medium",
+    "prompt": "A Rust command line tool catches deployment errors, prints a warning, and still exits successfully. Explain the CLI contract that automation needs for exit code, stderr, and actionable error context.",
+    "expected": {
+      "minResponseChars": 500,
+      "mustMention": ["CLI", "exit code", "stderr", "automation"]
+    },
+    "tags": ["answer", "cli", "error-handling", "automation"]
+  },
+  {
+    "id": "cli-answer-config-precedence",
+    "category": "answer-quality",
+    "difficulty": "medium",
+    "prompt": "Design configuration precedence for a Rust CLI that reads defaults, a config file, environment variables, and command line flags. Explain how to make the behavior predictable and testable.",
+    "expected": {
+      "minResponseChars": 500,
+      "mustMention": ["config", "environment", "command line", "precedence"]
+    },
+    "tags": ["answer", "cli", "config", "environment", "testing"]
+  },
+  {
+    "id": "cli-answer-json-output-contract",
+    "category": "answer-quality",
+    "difficulty": "hard",
+    "prompt": "A Rust CLI supports both human output and --json for scripts. Propose a stable output contract that keeps logs separate from machine-readable JSON.",
+    "expected": {
+      "minResponseChars": 550,
+      "mustMention": ["JSON", "schema", "stdout", "stderr"]
+    },
+    "tags": ["answer", "cli", "json", "automation", "testing"]
+  },
+  {
+    "id": "cli-answer-cross-platform-paths",
+    "category": "answer-quality",
+    "difficulty": "hard",
+    "prompt": "A Rust CLI manipulates user-provided paths and must work on Unix and Windows. Explain robust path handling, UTF-8 boundaries, and safety checks for destructive operations.",
+    "expected": {
+      "minResponseChars": 550,
+      "mustMention": ["PathBuf", "UTF-8", "Windows", "Unix"]
+    },
+    "tags": ["answer", "cli", "filesystem", "cross-platform", "automation"]
+  },
+  {
+    "id": "cli-review-stdout-json-pollution",
+    "category": "review-debugging",
+    "difficulty": "medium",
+    "prompt": "Review a Rust CLI that prints progress logs to stdout while --json is enabled, causing downstream jq scripts to fail. Diagnose the contract bug and propose fixes.",
+    "expected": {
+      "minResponseChars": 450,
+      "mustMention": ["stdout", "stderr", "JSON", "automation"]
+    },
+    "tags": ["review", "cli", "json", "automation"]
+  },
+  {
+    "id": "cli-review-config-env-secret-leak",
+    "category": "review-debugging",
+    "difficulty": "hard",
+    "prompt": "Review a Rust CLI that dumps its merged configuration after reading environment variables, including token-like values. Explain the security and UX issues and a safer design.",
+    "expected": {
+      "minResponseChars": 500,
+      "mustMention": ["environment", "redact", "config", "error"]
+    },
+    "tags": ["review", "cli", "config", "environment", "error-handling"]
+  },
+  {
+    "id": "cli-review-destructive-path-safety",
+    "category": "review-debugging",
+    "difficulty": "hard",
+    "prompt": "Review a Rust cleanup CLI that recursively deletes a user-provided path without checking whether it is inside the workspace root. Explain the failure mode and safer guardrails.",
+    "expected": {
+      "minResponseChars": 500,
+      "mustMention": ["canonicalize", "dry run", "root", "error"]
+    },
+    "tags": ["review", "cli", "filesystem", "cross-platform", "error-handling"]
+  },
+  {
+    "id": "cli-artifact-test-plan",
+    "category": "artifact-generation",
+    "difficulty": "medium",
+    "prompt": "Create CLI-TESTING.md with a concise Rust CLI test plan covering help text, invalid args, stdout/stderr, JSON output, config precedence, and exit codes. Include the exact phrase: CLI contracts need executable gates.",
+    "expected": {
+      "files": ["CLI-TESTING.md"],
+      "mustMentionInFiles": [
+        {
+          "path": "CLI-TESTING.md",
+          "text": "CLI contracts need executable gates"
+        }
+      ]
+    },
+    "tags": ["artifact", "cli", "testing", "json", "automation"]
+  },
+  {
+    "id": "cli-artifact-release-checklist",
+    "category": "artifact-generation",
+    "difficulty": "medium",
+    "prompt": "Create CLI-RELEASE.md for a Rust CLI release checklist covering MSRV, cargo fmt, clippy, cargo test, doc tests, shell completion, and JSON contract compatibility. Include the exact phrase: release automation depends on stable CLI behavior.",
+    "expected": {
+      "files": ["CLI-RELEASE.md"],
+      "mustMentionInFiles": [
+        {
+          "path": "CLI-RELEASE.md",
+          "text": "release automation depends on stable CLI behavior"
+        }
+      ]
+    },
+    "tags": ["artifact", "cli", "testing", "automation", "json"]
+  },
+  {
+    "id": "cli-codegen-config-precedence",
+    "category": "code-generation",
+    "difficulty": "medium",
+    "fixtureDir": "tests/aom/fixtures/workspaces/cli-config-precedence",
+    "prompt": "Implement resolve_config in src/lib.rs for a Rust CLI. Precedence must be command line flags, then environment, then config file, then defaults. Reject invalid retry counts and empty output paths.",
+    "expected": {
+      "files": ["src/lib.rs"]
+    },
+    "verifyCommands": ["cargo test --quiet"],
+    "tags": ["codegen", "cli", "config", "environment", "error-handling"]
+  },
+  {
+    "id": "cli-codegen-json-output",
+    "category": "code-generation",
+    "difficulty": "medium",
+    "fixtureDir": "tests/aom/fixtures/workspaces/cli-json-output",
+    "prompt": "Implement render_json in src/lib.rs for a Rust CLI command report. It must produce stable compact JSON, include schemaVersion, and escape strings correctly without adding dependencies.",
+    "expected": {
+      "files": ["src/lib.rs"]
+    },
+    "verifyCommands": ["cargo test --quiet"],
+    "tags": ["codegen", "cli", "json", "automation"]
+  },
+  {
+    "id": "cli-codegen-exit-status",
+    "category": "code-generation",
+    "difficulty": "medium",
+    "fixtureDir": "tests/aom/fixtures/workspaces/cli-exit-status",
+    "prompt": "Implement exit_report in src/lib.rs for a Rust CLI. Successful commands exit 0 with no stderr, usage errors exit 2, and runtime/config errors exit 1 with useful context.",
+    "expected": {
+      "files": ["src/lib.rs"]
+    },
+    "verifyCommands": ["cargo test --quiet"],
+    "tags": ["codegen", "cli", "error-handling", "automation"]
+  },
+  {
+    "id": "cli-codegen-path-safety",
+    "category": "code-generation",
+    "difficulty": "hard",
+    "fixtureDir": "tests/aom/fixtures/workspaces/cli-path-safety",
+    "prompt": "Implement plan_delete in src/lib.rs for a Rust cleanup CLI. It must reject empty paths, workspace-root deletion, and paths outside the workspace after lexical normalization.",
+    "expected": {
+      "files": ["src/lib.rs"]
+    },
+    "verifyCommands": ["cargo test --quiet"],
+    "tags": ["codegen", "cli", "filesystem", "cross-platform", "error-handling"]
+  }
+]

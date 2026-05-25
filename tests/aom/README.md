@@ -240,6 +240,45 @@ For a dry evidence-shape run over the same broad fixture set:
 npm run test:agents:comprehensive:skip
 ```
 
+## CLI-Focused Benchmark
+
+```bash
+npm run test:aom:cli-fixtures
+npm run test:agents:cli:benchmark -- \
+  --engines codex,claude-code \
+  --profiles baseline,rust-skills \
+  --repeats 3 \
+  --concurrency 2
+```
+
+The CLI fixture suite is separate from the broad comprehensive suite so it can
+grow aggressively without changing the historical 26-case benchmark shape. It
+focuses on Rust command line behavior that tends to decide whether generated
+tools are usable in automation:
+
+- exit code and stderr contracts
+- stable `--json` output and schema compatibility
+- config file, environment, and command line precedence
+- destructive filesystem guardrails
+- cross-platform path and UTF-8 boundaries
+- Cargo-verified code generation for CLI helpers
+
+The deterministic audit profile is stricter for this suite:
+
+```bash
+node tests/aom/run-agent-fixture-audit.mjs \
+  --cases tests/aom/fixtures/agent-matrix-cli.json \
+  --profile cli
+```
+
+For local plus optional SSH collection over the CLI suite:
+
+```bash
+npm run test:harvest:cli -- \
+  --remote-host user@linux-host \
+  --remote-root /tmp
+```
+
 ## Native Validation Harvest
 
 The harvest entrypoint is a script-only wrapper around the same Agent matrix. It

@@ -43,6 +43,58 @@ function tagCounts(items) {
   return counts;
 }
 
+function coverageRequirements(profile) {
+  if (profile === "cli") {
+    return {
+      minCases: 12,
+      requiredCategories: {
+        "answer-quality": 3,
+        "artifact-generation": 2,
+        "code-generation": 4,
+        "review-debugging": 3
+      },
+      requiredTags: [
+        "cli",
+        "automation",
+        "error-handling",
+        "config",
+        "json",
+        "filesystem",
+        "cross-platform",
+        "testing",
+        "codegen"
+      ],
+      requireTagOnAllCases: "cli"
+    };
+  }
+  if (profile !== "comprehensive") {
+    throw new Error(`unsupported fixture audit profile: ${profile}`);
+  }
+  return {
+    minCases: 18,
+    requiredCategories: {
+      "answer-quality": 6,
+      "artifact-generation": 3,
+      "code-generation": 4,
+      "review-debugging": 2
+    },
+    requiredTags: [
+      "ownership",
+      "concurrency",
+      "error-handling",
+      "unsafe",
+      "performance",
+      "async",
+      "web",
+      "cli",
+      "embedded",
+      "no-std",
+      "codegen"
+    ],
+    requireTagOnAllCases: null
+  };
+}
+
 function hasExpectedSignal(testCase) {
   const expected = testCase.expected || {};
   return Boolean(
@@ -112,51 +164,50 @@ const casesPath = path.resolve(argValue(
   "--cases",
   path.join(root, "tests", "aom", "fixtures", "agent-matrix-comprehensive.json")
 ));
+const profile = argValue("--profile", "comprehensive");
 const reportPath = path.resolve(argValue(
   "--report",
   path.join(root, "tests", "results", "agent-fixture-audit-report.json")
 ));
 const cases = readJson(casesPath);
+const requirements = coverageRequirements(profile);
 const seenIds = new Set();
 const failures = cases.flatMap((testCase) => auditCase(testCase, seenIds));
 const categories = countBy(cases, "category");
 const difficulties = countBy(cases, "difficulty");
 const tags = tagCounts(cases);
 
-const requiredCategories = {
-  "answer-quality": 6,
-  "artifact-generation": 3,
-  "code-generation": 4,
-  "review-debugging": 2
-};
-for (const [category, minimum] of Object.entries(requiredCategories)) {
+for (const [category, minimum] of Object.entries(requirements.requiredCategories)) {
   if ((categories[category] || 0) < minimum) {
     failures.push({ kind: "category_undercovered", category, minimum, actual: categories[category] || 0 });
   }
 }
 
-for (const tag of [
-  "ownership",
-  "concurrency",
-  "error-handling",
-  "unsafe",
-  "performance",
-  "async",
-  "web",
-  "cli",
-  "embedded",
-  "no-std",
-  "codegen"
-]) {
+for (const tag of requirements.requiredTags) {
   if (!tags[tag]) failures.push({ kind: "tag_missing", tag });
 }
 
-if (cases.length < 18) failures.push({ kind: "too_few_cases", minimum: 18, actual: cases.length });
+if (requirements.requireTagOnAllCases) {
+  for (const testCase of cases) {
+    if (!(testCase.tags || []).includes(requirements.requireTagOnAllCases)) {
+      failures.push({
+        kind: "case_missing_required_profile_tag",
+        id: testCase.id,
+        tag: requirements.requireTagOnAllCases
+      });
+    }
+  }
+}
+
+if (cases.length < requirements.minCases) {
+  failures.push({ kind: "too_few_cases", minimum: requirements.minCases, actual: cases.length });
+}
 
 const report = {
   status: failures.length === 0 ? "PASS" : "FAIL",
   generatedAt: new Date().toISOString(),
   casesPath,
+  profile,
   summary: {
     total: cases.length,
     categories,
@@ -165,7 +216,8 @@ const report = {
   },
   fairness: {
     promptPolicy: "No prompt may mention rust-skills, baseline, this repository, or ask one profile to outperform another.",
-    productNeutral: true
+    productNeutral: true,
+    profile
   },
   failures
 };

@@ -65,6 +65,21 @@ claude -p "tokio 最新版本"                # rust-learner
 ./tests/validation/validate-skills.sh
 ```
 
+### AOM CLI Gates
+
+```bash
+npm test
+npm run test:aom
+npm run test:aom:fixtures
+npm run test:aom:cli-fixtures
+npm run test:agents:cli:skip
+```
+
+The CLI-focused AOM suite lives in `tests/aom/fixtures/agent-matrix-cli.json`.
+It adds product-neutral prompts and Cargo-backed workspaces for exit status,
+stdout/stderr, JSON output, config precedence, filesystem safety, and
+cross-platform path handling.
+
 ## Test Categories
 
 ### 1. Layer 1 - Language Mechanics (m01-m07)

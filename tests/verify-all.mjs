@@ -22,6 +22,15 @@ run("hook matcher", process.execPath, [path.join(root, "tests", "hook-matcher-te
 run("routing eval", process.execPath, [path.join(root, "tests", "routing-eval-test.mjs")]);
 run("routing aom", process.execPath, [path.join(root, "tests", "aom", "run-routing-aom.mjs")]);
 run("agent fixture audit", process.execPath, [path.join(root, "tests", "aom", "run-agent-fixture-audit.mjs")]);
+run("CLI fixture audit", process.execPath, [
+  path.join(root, "tests", "aom", "run-agent-fixture-audit.mjs"),
+  "--cases",
+  path.join(root, "tests", "aom", "fixtures", "agent-matrix-cli.json"),
+  "--profile",
+  "cli",
+  "--report",
+  path.join(root, "tests", "results", "agent-fixture-audit-cli-report.json")
+]);
 run("routing ab", process.execPath, [path.join(root, "tests", "routing-ab-test.mjs")]);
 run("hook routing", process.execPath, [path.join(root, "tests", "hook-routing-test.mjs")]);
 run("install e2e", process.execPath, [path.join(root, "tests", "install-e2e.mjs")]);

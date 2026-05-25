@@ -7,9 +7,14 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
 function argValue(name, fallback = null) {
-  const index = process.argv.indexOf(name);
-  if (index === -1) return fallback;
-  const value = process.argv[index + 1];
+  let value = null;
+  for (let index = 0; index < process.argv.length; index += 1) {
+    if (process.argv[index] !== name) continue;
+    const next = process.argv[index + 1];
+    if (!next || next.startsWith("--")) throw new Error(`${name} requires a value`);
+    value = next;
+  }
+  if (value === null) return fallback;
   if (!value || value.startsWith("--")) throw new Error(`${name} requires a value`);
   return value;
 }
@@ -107,10 +112,16 @@ function matrixArgs(runId, baseRoot = root) {
     "--profile-root",
     value
   ]);
+  const casesPath = argValue(
+    "--cases",
+    path.join(baseRoot, "tests", "aom", "fixtures", "agent-matrix-comprehensive.json")
+  );
   const args = [
     path.join(baseRoot, "tests", "aom", "run-agent-matrix.mjs"),
     "--cases",
-    path.join(baseRoot, "tests", "aom", "fixtures", "agent-matrix-comprehensive.json"),
+    casesPath.startsWith(root)
+      ? path.join(baseRoot, path.relative(root, casesPath))
+      : casesPath,
     "--benchmark-mode",
     "--allow-real-agents",
     "--require-real-agents",
@@ -354,6 +365,7 @@ const manifest = {
   requireRemote,
   matrix: {
     engines,
+    casesPath: argValue("--cases", "tests/aom/fixtures/agent-matrix-comprehensive.json"),
     profiles: splitCsv(argValue("--profiles", "baseline,rust-skills")),
     profileRoots: argValues("--profile-root"),
     repeats: Number.parseInt(argValue("--repeats", "3"), 10),
