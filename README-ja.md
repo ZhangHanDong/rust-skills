@@ -48,7 +48,7 @@ AI (Rust Skills 使用):
 
 Rust Skills は3つのインストールモードをサポートしています：
 
-- **ローカル Runtime モード**（Codex と Claude Code）：単一のトップレベル `rust-skills`、hook ベースのルーティング、ローカル `rust-skills` CLI を提供
+- **ローカル Runtime モード**（Codex と Claude Code）：単一のトップレベル `rust-skills`、hook ベースのルーティング、Rust-native `rust-skills` CLI を提供
 - **Plugin モード**（Claude Code）：hooks、agents、自動メタ認知トリガーを含む完全機能
 - **Skills-only モード**：skills をサポートする任意のコーディングエージェントで動作（Claude Code、Vercel AI など）
 
@@ -56,7 +56,7 @@ Rust Skills は3つのインストールモードをサポートしています�
 
 ### ローカル Runtime インストール（Codex + Claude Code）
 
-ローカル hook と実行可能なルーティングコマンドを使いたい場合に推奨します。インストーラは Node ベースで、ユーザー環境に Rust/Cargo は不要です。`~/.local/bin/rust-skills` には、インストール済み runtime CLI へ転送する軽量 shim を配置します。
+ローカル hook と実行可能なルーティングコマンドを使いたい場合に推奨します。インストーラは Node でファイル配置を行い、Rust-native CLI、runtime データ、単一トップレベル skill、hook を構築/コピーします。`~/.local/bin/rust-skills` には、インストール済み runtime CLI へ転送する軽量 shim を配置します。
 
 Runtime hook は 2 段階のトリガーガードを使います：
 
@@ -78,7 +78,7 @@ rust-skills route --json "Rust E0382 value moved in axum state"
 - `~/.codex/skills/rust-skills/SKILL.md` および/または `~/.claude/skills/rust-skills/SKILL.md`
 - 深い skill データ：`~/.codex/rust-skills/` および/または `~/.claude/rust-skills/`
 - Hook スクリプト：`~/.codex/hooks/` および/または `~/.claude/hooks/`
-- Runtime CLI：`~/.codex/bin/` および/または `~/.claude/bin/`
+- Rust-native Runtime CLI：`~/.codex/bin/` および/または `~/.claude/bin/`
 - 任意の PATH shim：`~/.local/bin/rust-skills`
 
 インストーラはグローバル `AGENTS.md`、Claude `agents/`、Claude `commands/` を上書きしません。古いトップレベル deep skills をバックアップへ移動するのは、`--prune-legacy-top-level-skills` を明示した場合のみです。

@@ -18,6 +18,7 @@ function run(label, command, args) {
 }
 
 run("registry verify", process.execPath, [path.join(root, "rust-skills.js"), "verify", "--json"]);
+run("rust cli parity", process.execPath, [path.join(root, "tests", "rust-cli-parity-test.mjs")]);
 run("hook matcher", process.execPath, [path.join(root, "tests", "hook-matcher-test.mjs")]);
 run("routing eval", process.execPath, [path.join(root, "tests", "routing-eval-test.mjs")]);
 run("routing aom", process.execPath, [path.join(root, "tests", "aom", "run-routing-aom.mjs")]);

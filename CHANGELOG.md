@@ -8,12 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.1.0] - 2026-05-18
 
 ### Added
-- Node-based local runtime CLI: `rust-skills detect`, `rust-skills route`, `rust-skills index`, and `rust-skills verify`.
+- Rust-native local runtime CLI: `rust-skills detect`, `rust-skills route`, `rust-skills index`, and `rust-skills verify`.
 - Codex and Claude Code local installer with a single top-level `rust-skills` entry and deep skill data under runtime data roots.
 - Codex and Claude hook routing tests plus install e2e tests.
 - MIT `LICENSE` file for package/release compliance.
 
 ### Changed
+- JavaScript runtime files now act as npm, hook, and test compatibility wrappers; route decisions are owned by the Rust CLI.
 - Codex install now writes `[features].hooks = true` and removes the deprecated `[features].codex_hooks` key.
 - Hook injection now fails closed for non-Rust prompts instead of relying only on broad matcher regexes.
 - README installation docs now describe the local runtime path and verification commands.

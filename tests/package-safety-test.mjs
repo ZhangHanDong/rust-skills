@@ -21,6 +21,9 @@ const files = new Set((pack.files || []).map((file) => file.path));
 
 for (const required of [
   "package.json",
+  "Cargo.toml",
+  "crates/rust-skills-cli/Cargo.toml",
+  "crates/rust-skills-cli/src/main.rs",
   "rust-skills.js",
   "install.js",
   "lib/routing.js",

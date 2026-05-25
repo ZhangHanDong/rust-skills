@@ -48,7 +48,7 @@ AI (with Rust Skills):
 
 Rust Skills supports three installation modes:
 
-- **Local Runtime Mode** (Codex and Claude Code): one top-level `rust-skills` entry, hook-based routing, and a local `rust-skills` CLI.
+- **Local Runtime Mode** (Codex and Claude Code): one top-level `rust-skills` entry, hook-based routing, and a Rust-native `rust-skills` CLI.
 - **Plugin Mode** (Claude Code): Full features including hooks, agents, and auto meta-cognition
 - **Skills-only Mode**: Works with any coding agent that supports skills (Claude Code, Vercel AI, etc.)
 
@@ -56,7 +56,7 @@ Rust Skills supports three installation modes:
 
 ### Local Runtime Install (Codex + Claude Code)
 
-Use this when you want local hooks and a real routing command without requiring Rust/Cargo on the user machine. The installer is Node-based and copies the runtime data, one top-level skill, hooks, and a small `~/.local/bin/rust-skills` shim that points at the installed runtime CLI.
+Use this when you want local hooks and a real routing command. The installer uses Node for filesystem setup and builds/copies the Rust-native CLI, runtime data, one top-level skill, hooks, and a small `~/.local/bin/rust-skills` shim that points at the installed runtime CLI.
 
 Runtime hooks use a two-stage trigger guard:
 
@@ -78,7 +78,7 @@ What it installs:
 - `~/.codex/skills/rust-skills/SKILL.md` and/or `~/.claude/skills/rust-skills/SKILL.md`
 - Deep skill data under `~/.codex/rust-skills/` and/or `~/.claude/rust-skills/`
 - Hook scripts under `~/.codex/hooks/` and/or `~/.claude/hooks/`
-- Runtime CLI under `~/.codex/bin/` and/or `~/.claude/bin/`
+- Rust-native runtime CLI under `~/.codex/bin/` and/or `~/.claude/bin/`
 - Optional PATH shim: `~/.local/bin/rust-skills`
 
 The installer does not overwrite global `AGENTS.md`, Claude `agents/`, or Claude `commands/`. It also does not move old top-level deep skills into a backup folder unless you pass `--prune-legacy-top-level-skills`.

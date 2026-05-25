@@ -4,6 +4,7 @@
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
+const childProcess = require("child_process");
 
 const { copyRecursive, ensureDir } = require("./lib/routing");
 
@@ -97,6 +98,48 @@ function copyInstall(source, target, actions, options = {}) {
   actions.push(...copyRecursive(source, target, { ...options, dryRun }));
 }
 
+function nativeBinaryName() {
+  return process.platform === "win32" ? "rust-skills.exe" : "rust-skills";
+}
+
+function builtNativeBinaryPath(profile = "release") {
+  return path.join(root, "target", profile, nativeBinaryName());
+}
+
+function buildNativeCli(actions) {
+  const existingRelease = builtNativeBinaryPath("release");
+  const existingDebug = builtNativeBinaryPath("debug");
+
+  if (fs.existsSync(existingRelease)) {
+    actions.push({ action: "native-cli-present", target: existingRelease });
+    return existingRelease;
+  }
+  if (fs.existsSync(existingDebug)) {
+    actions.push({ action: "native-cli-present", target: existingDebug });
+    return existingDebug;
+  }
+  if (dryRun) {
+    actions.push({ action: "build-native-cli", command: "cargo build --release --workspace" });
+    return null;
+  }
+
+  const result = childProcess.spawnSync(
+    "cargo",
+    ["build", "--release", "-p", "rust-skills-cli", "--bin", "rust-skills"],
+    {
+      cwd: root,
+      encoding: "utf8",
+      maxBuffer: 16 * 1024 * 1024
+    }
+  );
+  actions.push({ action: "build-native-cli", command: "cargo build --release -p rust-skills-cli --bin rust-skills" });
+  if (result.status !== 0) {
+    const detail = (result.stderr || result.stdout || "").trim();
+    throw new Error(`failed to build native rust-skills CLI${detail ? `: ${detail}` : ""}`);
+  }
+  return existingRelease;
+}
+
 function readClaudeHookMatcher() {
   const hooksConfig = readJson(path.join(root, "hooks", "hooks.json"));
   return hooksConfig.hooks?.UserPromptSubmit?.[0]?.matcher || "(?i)(rust|cargo|rustc|Cargo\\.toml|E0\\d{3,4})";
@@ -158,20 +201,26 @@ function installTopLevelSkills(targetRoot, actions) {
 
 function installRuntimeCli(targetRoot, actions) {
   const binDir = path.join(targetRoot, "bin");
-  const targetBin = path.join(binDir, process.platform === "win32" ? "rust-skills.js" : "rust-skills");
-  copyInstall(path.join(root, "rust-skills.js"), targetBin, actions, { executable: true });
+  const nativeSource = buildNativeCli(actions);
+  const targetNative = path.join(binDir, nativeBinaryName());
+  if (nativeSource) {
+    copyInstall(nativeSource, targetNative, actions, { executable: true });
+  } else {
+    actions.push({ action: "copy-native-cli", target: targetNative });
+  }
+  copyInstall(path.join(root, "rust-skills.js"), path.join(binDir, "rust-skills.js"), actions, { executable: true });
   copyInstall(path.join(root, "lib"), path.join(binDir, "lib"), actions);
-  if (!dryRun && process.platform !== "win32") fs.chmodSync(targetBin, 0o755);
+  if (!dryRun && process.platform !== "win32") fs.chmodSync(targetNative, 0o755);
 
   if (process.platform === "win32") {
     const cmdPath = path.join(binDir, "rust-skills.cmd");
     actions.push({ action: "write", target: cmdPath });
     if (!dryRun) {
-      fs.writeFileSync(cmdPath, `@echo off\r\nnode "%~dp0rust-skills.js" %*\r\n`);
+      fs.writeFileSync(cmdPath, `@echo off\r\n"%~dp0rust-skills.exe" %*\r\n`);
     }
     return cmdPath;
   }
-  return targetBin;
+  return targetNative;
 }
 
 function installUserBin(sourceBin, actions) {

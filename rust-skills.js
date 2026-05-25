@@ -1,98 +1,77 @@
 #!/usr/bin/env node
 "use strict";
 
-const {
-  detectPrompt,
-  listSkills,
-  querySkill,
-  routePrompt,
-  verifyRegistry
-} = require("./lib/routing");
+const fs = require("fs");
+const path = require("path");
+const childProcess = require("child_process");
 
-function printHelp() {
-  process.stdout.write(`Rust Skills local runtime
+const root = __dirname;
+const binaryName = process.platform === "win32" ? "rust-skills.exe" : "rust-skills";
 
-Usage:
-  rust-skills detect [--json] <prompt>
-  rust-skills route [--json] <prompt>
-  rust-skills index list [--json]
-  rust-skills index query <skill-id> [--json]
-  rust-skills verify [--json]
-
-Environment:
-  RUST_SKILLS_ROOT  Override runtime data root.
-`);
+function fileExists(filePath) {
+  try {
+    return fs.statSync(filePath).isFile();
+  } catch {
+    return false;
+  }
 }
 
-function hasFlag(args, flag) {
-  return args.includes(flag);
+function nativeCandidates() {
+  return [
+    process.env.RUST_SKILLS_NATIVE_BIN,
+    path.join(root, "target", "release", binaryName),
+    path.join(root, "target", "debug", binaryName),
+    path.join(root, "bin", binaryName),
+    path.join(path.dirname(process.argv[1] || root), binaryName)
+  ].filter(Boolean);
 }
 
-function stripFlags(args) {
-  return args.filter((arg) => !arg.startsWith("--"));
+function sourceCargoManifest() {
+  const manifest = path.join(root, "Cargo.toml");
+  return fileExists(manifest) ? manifest : null;
 }
 
-function promptFrom(args) {
-  return stripFlags(args).join(" ").trim();
-}
+function commandPlan(argv) {
+  for (const candidate of nativeCandidates()) {
+    if (fileExists(candidate)) return { command: candidate, args: argv, cwd: root };
+  }
 
-function writeJson(value) {
-  process.stdout.write(`${JSON.stringify(value, null, 2)}\n`);
-}
+  if (sourceCargoManifest()) {
+    return {
+      command: "cargo",
+      args: ["run", "--quiet", "-p", "rust-skills-cli", "--bin", "rust-skills", "--", ...argv],
+      cwd: root
+    };
+  }
 
-function writeText(value) {
-  process.stdout.write(`${value}\n`);
+  return null;
 }
 
 function main(argv) {
-  const [command, ...args] = argv;
-  const json = hasFlag(args, "--json");
-
-  if (!command || command === "help" || command === "--help" || command === "-h") {
-    printHelp();
-    return 0;
+  const plan = commandPlan(argv);
+  if (!plan) {
+    process.stderr.write("rust-skills native binary not found; run cargo build --workspace\n");
+    return 1;
   }
 
-  if (command === "detect") {
-    const result = detectPrompt(promptFrom(args));
-    json ? writeJson(result) : writeText(result.decision);
-    return 0;
-  }
+  const env = {
+    ...process.env,
+    RUST_SKILLS_ROOT: process.env.RUST_SKILLS_ROOT || root
+  };
+  const result = childProcess.spawnSync(plan.command, plan.args, {
+    cwd: plan.cwd,
+    env,
+    encoding: "utf8",
+    maxBuffer: 16 * 1024 * 1024
+  });
 
-  if (command === "route") {
-    const result = routePrompt(promptFrom(args));
-    json ? writeJson(result) : writeText(result.skills.join("\n"));
-    return 0;
+  if (result.stdout) process.stdout.write(result.stdout);
+  if (result.stderr) process.stderr.write(result.stderr);
+  if (result.error) {
+    process.stderr.write(`${result.error.message}\n`);
+    return 1;
   }
-
-  if (command === "index") {
-    const [subcommand, ...rest] = args;
-    if (subcommand === "list") {
-      const result = listSkills();
-      json ? writeJson(result) : writeText(result.skills.map((skill) => skill.id).join("\n"));
-      return 0;
-    }
-    if (subcommand === "query") {
-      const [skillId] = stripFlags(rest);
-      if (!skillId) {
-        process.stderr.write("Missing skill id\n");
-        return 2;
-      }
-      const result = querySkill(skillId);
-      json ? writeJson(result) : writeText(result.found ? result.path : "not found");
-      return result.found ? 0 : 1;
-    }
-  }
-
-  if (command === "verify") {
-    const result = verifyRegistry();
-    json ? writeJson(result) : writeText(result.status);
-    return result.status === "PASS" ? 0 : 1;
-  }
-
-  process.stderr.write(`Unknown command: ${command}\n\n`);
-  printHelp();
-  return 2;
+  return result.status ?? 1;
 }
 
 process.exitCode = main(process.argv.slice(2));

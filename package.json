@@ -10,6 +10,8 @@
   "files": [
     "AGENTS.md",
     "CHANGELOG.md",
+    "Cargo.lock",
+    "Cargo.toml",
     "LICENSE",
     "README.md",
     "README-ja.md",
@@ -27,6 +29,7 @@
     "agents/",
     "cache/",
     "commands/",
+    "crates/",
     "docs/",
     "hooks/hooks.json",
     "index/",
@@ -39,6 +42,7 @@
   "scripts": {
     "test": "node tests/verify-all.mjs",
     "verify": "node tests/verify-all.mjs",
+    "test:rust-cli-parity": "node tests/rust-cli-parity-test.mjs",
     "test:aom": "node tests/aom/run-routing-aom.mjs",
     "test:skill-generation": "node tests/aom/run-skill-generation-gate.mjs --skills skills --json",
     "test:aom:fixtures": "node tests/aom/run-agent-fixture-audit.mjs",

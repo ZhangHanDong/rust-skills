@@ -48,7 +48,7 @@ AI (使用 Rust Skills):
 
 Rust Skills 支持三种安装模式：
 
-- **本地 Runtime 模式**（Codex 和 Claude Code）：只暴露一个顶层 `rust-skills`，通过 hook 和本地 `rust-skills` CLI 做真实路由。
+- **本地 Runtime 模式**（Codex 和 Claude Code）：只暴露一个顶层 `rust-skills`，通过 hook 和 Rust-native `rust-skills` CLI 做真实路由。
 - **Plugin 模式**（Claude Code）：完整功能，包含 hooks、agents 和自动元认知触发
 - **Skills-only 模式**：适用于任何支持 skills 的编码助手（Claude Code、Vercel AI 等）
 
@@ -56,7 +56,7 @@ Rust Skills 支持三种安装模式：
 
 ### 本地 Runtime 安装（Codex + Claude Code）
 
-如果你希望本地 hook 自动触发，并且能用命令行真实验证路由，优先使用这个方式。安装器基于 Node，不要求用户机器安装 Rust/Cargo；它会复制 runtime 数据、单一顶层 skill、hook，并在 `~/.local/bin/rust-skills` 放一个指向已安装 runtime CLI 的轻量 shim。
+如果你希望本地 hook 自动触发，并且能用命令行真实验证路由，优先使用这个方式。安装器使用 Node 完成文件安装，并构建/复制 Rust-native CLI、runtime 数据、单一顶层 skill、hook，并在 `~/.local/bin/rust-skills` 放一个指向已安装 runtime CLI 的轻量 shim。
 
 Runtime hook 使用两级触发保护：
 
@@ -78,7 +78,7 @@ rust-skills route --json "Rust E0382 value moved in axum state"
 - `~/.codex/skills/rust-skills/SKILL.md` 和/或 `~/.claude/skills/rust-skills/SKILL.md`
 - 深层 skill 数据：`~/.codex/rust-skills/` 和/或 `~/.claude/rust-skills/`
 - Hook 脚本：`~/.codex/hooks/` 和/或 `~/.claude/hooks/`
-- Runtime CLI：`~/.codex/bin/` 和/或 `~/.claude/bin/`
+- Rust-native Runtime CLI：`~/.codex/bin/` 和/或 `~/.claude/bin/`
 - 可选 PATH shim：`~/.local/bin/rust-skills`
 
 安装器不会覆盖全局 `AGENTS.md`、Claude `agents/` 或 Claude `commands/`。它也不会默认移动旧的顶层 deep skills；只有显式传入 `--prune-legacy-top-level-skills` 才会移动到备份目录。
