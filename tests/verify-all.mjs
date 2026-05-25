@@ -22,6 +22,7 @@ run("rust cli parity", process.execPath, [path.join(root, "tests", "rust-cli-par
 run("hook matcher", process.execPath, [path.join(root, "tests", "hook-matcher-test.mjs")]);
 run("routing eval", process.execPath, [path.join(root, "tests", "routing-eval-test.mjs")]);
 run("routing aom", process.execPath, [path.join(root, "tests", "aom", "run-routing-aom.mjs")]);
+run("aom evaluator", process.execPath, [path.join(root, "tests", "aom", "run-evaluator-self-test.mjs")]);
 run("agent fixture audit", process.execPath, [path.join(root, "tests", "aom", "run-agent-fixture-audit.mjs")]);
 run("CLI fixture audit", process.execPath, [
   path.join(root, "tests", "aom", "run-agent-fixture-audit.mjs"),

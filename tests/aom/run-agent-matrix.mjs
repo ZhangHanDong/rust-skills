@@ -6,6 +6,11 @@ import path from "node:path";
 import { spawn } from "node:child_process";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
+import {
+  evaluateSemanticText,
+  evaluateText,
+  summarize
+} from "./evaluation.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const require = createRequire(import.meta.url);
@@ -551,28 +556,6 @@ function buildProfilePrompt(caseItem, profile, options) {
   };
 }
 
-function evaluateText(text, expected = {}) {
-  const failures = [];
-  if (text.length < (expected.minResponseChars || 0)) {
-    failures.push({
-      kind: "response_too_short",
-      expected: expected.minResponseChars || 0,
-      actual: text.length
-    });
-  }
-  for (const phrase of expected.mustMention || []) {
-    if (!text.toLowerCase().includes(String(phrase).toLowerCase())) {
-      failures.push({ kind: "missing_phrase", phrase });
-    }
-  }
-  for (const phrase of expected.mustNotMention || []) {
-    if (text.toLowerCase().includes(String(phrase).toLowerCase())) {
-      failures.push({ kind: "forbidden_phrase", phrase });
-    }
-  }
-  return failures;
-}
-
 function normalizedIncludes(text, expected) {
   const compactText = String(text).replace(/\s+/g, " ").trim();
   const compactExpected = String(expected).replace(/\s+/g, " ").trim();
@@ -609,75 +592,6 @@ async function runVerificationCommands(caseItem, workspace) {
   return results;
 }
 
-function summarizeBase(results) {
-  const runnable = results.filter((result) => result.status !== "SKIP");
-  const generatedResponses = runnable.filter((result) => result.metrics.responseGenerated).length;
-  const generatedArtifacts = runnable.filter((result) => result.metrics.artifactGenerated).length;
-  const generatedPatches = runnable.filter((result) => result.metrics.patchGenerated).length;
-  const gatePasses = runnable.filter((result) => result.hardGate === "PASS").length;
-  return {
-    total: results.length,
-    runnable: runnable.length,
-    skipped: results.length - runnable.length,
-    passed: gatePasses,
-    failed: runnable.length - gatePasses,
-    responseGenerationRate: Number((generatedResponses / Math.max(1, runnable.length)).toFixed(4)),
-    artifactGenerationRate: Number((generatedArtifacts / Math.max(1, runnable.length)).toFixed(4)),
-    patchGenerationRate: Number((generatedPatches / Math.max(1, runnable.length)).toFixed(4)),
-    qualityGatePassRate: Number((gatePasses / Math.max(1, runnable.length)).toFixed(4)),
-    timeoutRate: Number((runnable.filter((result) => result.status === "TIMEOUT").length / Math.max(1, runnable.length)).toFixed(4))
-  };
-}
-
-function summarizeGroup(results, key) {
-  const names = [...new Set(results.map((result) => result[key] || "unspecified"))].sort();
-  return Object.fromEntries(names.map((name) => [
-    name,
-    summarizeBase(results.filter((result) => (result[key] || "unspecified") === name))
-  ]));
-}
-
-function summarize(results) {
-  const summary = summarizeBase(results);
-  const profileNames = [...new Set(results.map((result) => result.profile || "baseline"))];
-  summary.profiles = Object.fromEntries(profileNames.map((profile) => [
-    profile,
-    summarizeBase(results.filter((result) => (result.profile || "baseline") === profile))
-  ]));
-  summary.categories = summarizeGroup(results, "category");
-  summary.difficulties = summarizeGroup(results, "difficulty");
-  const comparisonFor = (target, base) => ({
-    responseGenerationRateDelta: Number((target.responseGenerationRate - base.responseGenerationRate).toFixed(4)),
-    artifactGenerationRateDelta: Number((target.artifactGenerationRate - base.artifactGenerationRate).toFixed(4)),
-    patchGenerationRateDelta: Number((target.patchGenerationRate - base.patchGenerationRate).toFixed(4)),
-    qualityGatePassRateDelta: Number((target.qualityGatePassRate - base.qualityGatePassRate).toFixed(4)),
-    timeoutRateDelta: Number((target.timeoutRate - base.timeoutRate).toFixed(4))
-  });
-  const comparisons = {};
-  if (summary.profiles.baseline) {
-    for (const profile of profileNames) {
-      if (profile === "baseline") continue;
-      comparisons[`${profile}_vs_baseline`] = comparisonFor(
-        summary.profiles[profile],
-        summary.profiles.baseline
-      );
-    }
-  }
-  if (summary.profiles["rust-skills"]) {
-    for (const profile of profileNames) {
-      if (profile === "rust-skills") continue;
-      comparisons[`rust-skills_vs_${profile}`] = comparisonFor(
-        summary.profiles["rust-skills"],
-        summary.profiles[profile]
-      );
-    }
-  }
-  if (Object.keys(comparisons).length > 0) {
-    summary.comparisons = comparisons;
-  }
-  return summary;
-}
-
 async function runOne(caseItem, engine, profile, repeat, runRoot, options) {
   const runDir = path.join(runRoot, caseItem.id, profile, engine, `repeat-${repeat}`);
   ensureDir(runDir);
@@ -695,6 +609,7 @@ async function runOne(caseItem, engine, profile, repeat, runRoot, options) {
       repeat,
       status: "SKIP",
       hardGate: "SKIP",
+      semanticGate: "SKIP",
       reason: "real Agent execution disabled; pass --allow-real-agents or RUN_REAL_AGENTS=1",
       routing: promptProfile.routing,
       profileRoot: promptProfile.profileRoot,
@@ -709,9 +624,16 @@ async function runOne(caseItem, engine, profile, repeat, runRoot, options) {
       metrics: {
         responseGenerated: false,
         artifactGenerated: false,
-        patchGenerated: false
+        patchGenerated: false,
+        semanticApplicable: false,
+        semanticPass: false,
+        conceptTotal: 0,
+        conceptCovered: 0,
+        conceptCoverageRate: null
       },
-      failures: []
+      failures: [],
+      semanticFailures: [],
+      conceptResults: []
     };
     writeJson(path.join(runDir, "capsule.json"), skipped);
     return skipped;
@@ -727,6 +649,7 @@ async function runOne(caseItem, engine, profile, repeat, runRoot, options) {
       repeat,
       status: "SKIP",
       hardGate: "SKIP",
+      semanticGate: "SKIP",
       reason: apiSkip || `${commandName} binary not found`,
       routing: promptProfile.routing,
       profileRoot: promptProfile.profileRoot,
@@ -741,9 +664,16 @@ async function runOne(caseItem, engine, profile, repeat, runRoot, options) {
       metrics: {
         responseGenerated: false,
         artifactGenerated: false,
-        patchGenerated: false
+        patchGenerated: false,
+        semanticApplicable: false,
+        semanticPass: false,
+        conceptTotal: 0,
+        conceptCovered: 0,
+        conceptCoverageRate: null
       },
-      failures: []
+      failures: [],
+      semanticFailures: [],
+      conceptResults: []
     };
     writeJson(path.join(runDir, "capsule.json"), skipped);
     return skipped;
@@ -791,6 +721,7 @@ async function runOne(caseItem, engine, profile, repeat, runRoot, options) {
   writeText(diffFile, diff);
   const verification = await runVerificationCommands(caseItem, workspace);
   const textFailures = evaluateText(outputText, caseItem.expected);
+  const semantic = evaluateSemanticText(outputText, caseItem.expected);
   const fileFailures = evaluateFiles(workspace, caseItem.expected);
   const verificationFailures = verification
     .filter((item) => item.status !== "PASS")
@@ -817,6 +748,11 @@ async function runOne(caseItem, engine, profile, repeat, runRoot, options) {
     compilePass: verification.length === 0
       ? null
       : verification.every((item) => item.status === "PASS"),
+    semanticApplicable: semantic.semanticGate !== "N/A",
+    semanticPass: semantic.semanticGate === "PASS",
+    conceptTotal: semantic.conceptTotal,
+    conceptCovered: semantic.conceptCovered,
+    conceptCoverageRate: semantic.conceptCoverageRate,
     responseChars: outputText.length,
     diffChars: diff.length
   };
@@ -829,6 +765,7 @@ async function runOne(caseItem, engine, profile, repeat, runRoot, options) {
     profile,
     repeat,
     hardGate: failures.length === 0 ? "PASS" : "FAIL",
+    semanticGate: semantic.semanticGate,
     command,
     args,
     workspace,
@@ -852,7 +789,9 @@ async function runOne(caseItem, engine, profile, repeat, runRoot, options) {
     },
     verification,
     metrics,
-    failures
+    failures,
+    semanticFailures: semantic.semanticFailures,
+    conceptResults: semantic.conceptResults
   };
   writeJson(path.join(runDir, "capsule.json"), capsule);
   return capsule;
@@ -897,6 +836,8 @@ const anthropicBaseUrl = argValue(
 const allowRealAgents = hasFlag("--allow-real-agents") || process.env.RUN_REAL_AGENTS === "1";
 const requireRealAgents = hasFlag("--require-real-agents");
 const benchmarkMode = hasFlag("--benchmark-mode");
+const enforceSkillHarm = hasFlag("--enforce-skill-harm");
+const skillHarmThreshold = Number.parseFloat(argValue("--skill-harm-threshold", "0"));
 const codexIgnoreUserConfig = !hasFlag("--codex-use-user-config");
 const codexIgnoreRules = !hasFlag("--codex-use-rules");
 const caseFilter = argValue("--case-filter", null);
@@ -930,6 +871,9 @@ if (cases.length === 0) {
 }
 if (!Number.isFinite(repeats) || repeats < 1) throw new Error("repeats must be >= 1");
 if (profiles.length === 0) throw new Error("profiles must not be empty");
+if (!Number.isFinite(skillHarmThreshold) || skillHarmThreshold < 0) {
+  throw new Error("--skill-harm-threshold must be a non-negative number");
+}
 for (const profile of profiles) resolveProfileRoot(profile, { profileRoots });
 
 const tasks = [];
@@ -956,12 +900,13 @@ for (const caseItem of cases) {
 }
 
 const results = await runQueue(tasks, concurrency);
-const summary = summarize(results);
+const summary = summarize(results, { skillHarmThreshold });
 const requireRealAgentsPassed = !requireRealAgents || (summary.runnable > 0 && summary.skipped === 0);
 const qualityPassed = summary.failed === 0;
-const reportStatus = requireRealAgentsPassed && qualityPassed
+const skillHarmPassed = !enforceSkillHarm || summary.skillHarm.harmfulProfiles.length === 0;
+const reportStatus = requireRealAgentsPassed && qualityPassed && skillHarmPassed
   ? "PASS"
-  : requireRealAgentsPassed && benchmarkMode
+  : requireRealAgentsPassed && benchmarkMode && skillHarmPassed
     ? "MEASURED"
     : "FAIL";
 const report = {
@@ -980,6 +925,8 @@ const report = {
   allowRealAgents,
   requireRealAgents,
   benchmarkMode,
+  enforceSkillHarm,
+  skillHarmThreshold,
   api: {
     openai: {
       enabled: engines.includes("openai-api"),
@@ -1003,6 +950,7 @@ const report = {
   },
   qualityPassed,
   requireRealAgentsPassed,
+  skillHarmPassed,
   runRoot,
   summary,
   results

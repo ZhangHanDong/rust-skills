@@ -100,6 +100,7 @@ function hasExpectedSignal(testCase) {
   return Boolean(
     expected.minResponseChars ||
     (expected.mustMention || []).length ||
+    (expected.concepts || []).length ||
     (expected.mustNotMention || []).length ||
     (expected.files || []).length ||
     (expected.mustMentionInFiles || []).length ||
@@ -123,6 +124,20 @@ function auditCase(testCase, seenIds) {
   }
   if (!hasExpectedSignal(testCase)) {
     failures.push({ kind: "missing_mechanical_expectation", id: testCase.id });
+  }
+  if (testCase.expected?.concepts !== undefined) {
+    const concepts = testCase.expected.concepts;
+    if (!Array.isArray(concepts)) {
+      failures.push({ kind: "invalid_concepts", id: testCase.id, reason: "expected.concepts must be an array" });
+    } else {
+      for (const concept of concepts) {
+        const validString = typeof concept === "string" && concept.trim().length > 0;
+        const validObject = concept && typeof concept === "object" && String(concept.concept || concept.name || "").trim();
+        if (!validString && !validObject) {
+          failures.push({ kind: "invalid_concept", id: testCase.id, concept });
+        }
+      }
+    }
   }
 
   const prompt = String(testCase.prompt || "").toLowerCase();

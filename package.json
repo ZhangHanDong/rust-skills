@@ -45,6 +45,7 @@
     "test:rust-cli-parity": "node tests/rust-cli-parity-test.mjs",
     "test:aom": "node tests/aom/run-routing-aom.mjs",
     "test:skill-generation": "node tests/aom/run-skill-generation-gate.mjs --skills skills --json",
+    "test:aom:evaluator": "node tests/aom/run-evaluator-self-test.mjs",
     "test:aom:fixtures": "node tests/aom/run-agent-fixture-audit.mjs",
     "test:aom:cli-fixtures": "node tests/aom/run-agent-fixture-audit.mjs --cases tests/aom/fixtures/agent-matrix-cli.json --profile cli --report tests/results/agent-fixture-audit-cli-report.json",
     "test:agents": "node tests/aom/run-agent-matrix.mjs --allow-real-agents --require-real-agents",

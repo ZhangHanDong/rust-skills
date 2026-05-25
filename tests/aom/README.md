@@ -125,6 +125,36 @@ profiles by default:
 The report includes per-profile metrics and pairwise deltas such as
 `rust-skills_vs_baseline`.
 
+### Scoring Model
+
+Agent reports keep the original hard gate intact. `hardGate` still evaluates
+exact `mustMention` phrases, forbidden phrases, expected files, verification
+commands, and Agent process status. M5 adds an additive `semanticGate` for text
+quality cases so exact-phrase misses can be separated from real concept misses.
+
+`semanticGate` evaluates the same required concepts plus a compact alias
+registry for recurring Rust terms. For example, `typed public errors` can cover
+the `typed errors` concept, and `critical section` / `drop the guard` can cover
+the `scope` concept. A hard FAIL with semantic PASS is reported as likely
+wording sensitivity; a semantic FAIL remains a real quality miss to triage.
+Fixtures may add `expected.concepts` for case-specific semantic concepts
+without removing hard `mustMention` checks.
+
+When `baseline` is part of a run, the summary also includes `skillHarm`. This
+compares each skill profile to the no-skill baseline on hard quality,
+semantic quality, artifact generation, patch generation, and timeout rate.
+Harm is report-only by default:
+
+```bash
+node tests/aom/run-agent-matrix.mjs \
+  --benchmark-mode \
+  --profiles baseline,rust-skills \
+  --skill-harm-threshold 0
+```
+
+Add `--enforce-skill-harm` only when a CI or release gate should fail if a
+skill profile falls below baseline beyond the configured threshold.
+
 The matrix also supports direct API engines for environments where CLI agents
 are unavailable or unstable:
 
