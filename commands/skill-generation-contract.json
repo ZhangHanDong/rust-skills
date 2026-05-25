@@ -26,24 +26,29 @@
     },
     "m05-type-driven": {
       "anchors": [
-        "E0282 means inference lacks constraints; add a boundary type, turbofish, or type annotation."
+        "E0282 means inference lacks constraints; name `collect`, `type annotation`, and `turbofish` when explaining collection output types."
       ]
     },
     "m04-zero-cost": {
       "anchors": [
-        "For E0282 through generic APIs, name the inference boundary and suggest a type annotation or turbofish."
+        "For E0282 through generic APIs, name the inference boundary and the stable fix terms `type annotation` and `turbofish`."
       ]
     },
     "m01-ownership": {
       "anchors": [
         "E0382 fixes should preserve ownership intent; borrow before consume and clone last.",
-        "For E0716, say lifetime when explaining the temporary boundary and bind owned storage before borrowing.",
+        "For E0716, use the diagnostic term `lifetime` when naming the temporary owner and owned redesign boundary.",
         "For first-unique or index helpers over `&[String]`, count with borrowed `&str` keys and return a borrowed `&str` from the original slice."
+      ]
+    },
+    "m06-error-handling": {
+      "anchors": [
+        "For public library error APIs, contrast internal `anyhow` context with public `thiserror` typed errors."
       ]
     },
     "domain-embedded": {
       "anchors": [
-        "For no_std logging, say embedded Rust and explicitly discuss dynamic allocation or no allocation.",
+        "For no_std logging, say embedded Rust and explicitly discuss allocation or no allocation.",
         "Name heapless or fixed-capacity buffers and make overflow behavior part of the API contract."
       ]
     }

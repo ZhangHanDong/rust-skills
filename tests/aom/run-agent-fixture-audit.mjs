@@ -153,6 +153,17 @@ function auditCase(testCase, seenIds) {
     if (testCase.category === "code-generation" && !gitignore.split(/\r?\n/).includes("/target/")) {
       failures.push({ kind: "fixture_target_not_ignored", id: testCase.id, fixtureDir: testCase.fixtureDir });
     }
+    const cargoTomlPath = path.join(fixturePath, "Cargo.toml");
+    if (testCase.category === "code-generation" && fs.existsSync(cargoTomlPath)) {
+      const cargoToml = fs.readFileSync(cargoTomlPath, "utf8");
+      if (!/^\[workspace\]\s*$/m.test(cargoToml)) {
+        failures.push({
+          kind: "fixture_missing_standalone_workspace",
+          id: testCase.id,
+          fixtureDir: testCase.fixtureDir
+        });
+      }
+    }
   }
   if (testCase.category === "code-generation" && (testCase.verifyCommands || []).length === 0) {
     failures.push({ kind: "codegen_without_verify_command", id: testCase.id });
