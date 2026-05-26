@@ -105,7 +105,11 @@ fn run(argv: &[String]) -> Result<i32, String> {
                 "skills": route["skills"].clone(),
                 "runtime_root": route["runtime_root"].clone()
             });
-            write_output(&value, value["decision"].as_str().unwrap_or("no-op"), json_output);
+            write_output(
+                &value,
+                value["decision"].as_str().unwrap_or("no-op"),
+                json_output,
+            );
             Ok(0)
         }
         "route" => {
@@ -208,7 +212,10 @@ fn prompt_from(args: &[String]) -> String {
 
 fn write_output(value: &Value, text: &str, json_output: bool) {
     if json_output {
-        println!("{}", serde_json::to_string_pretty(value).expect("json serialization should work"));
+        println!(
+            "{}",
+            serde_json::to_string_pretty(value).expect("json serialization should work")
+        );
     } else {
         println!("{text}");
     }
@@ -305,7 +312,14 @@ fn build_paths(skills: &[String], skills_by_id: &HashMap<String, Skill>) -> Map<
 
 fn build_layers(skills: Vec<String>, skills_by_id: &HashMap<String, Skill>) -> Value {
     let mut layers = Map::new();
-    for layer in ["router", "layer1", "layer2", "layer3", "utility", "experimental"] {
+    for layer in [
+        "router",
+        "layer1",
+        "layer2",
+        "layer3",
+        "utility",
+        "experimental",
+    ] {
         layers.insert(layer.to_string(), Value::Array(Vec::new()));
     }
 
@@ -371,7 +385,10 @@ fn query_skill(skill_id: &str) -> Result<Value, String> {
         "absolute_path".to_string(),
         Value::String(absolute_path.to_string_lossy().to_string()),
     );
-    object.insert("exists".to_string(), Value::Bool(file_exists(&absolute_path)));
+    object.insert(
+        "exists".to_string(),
+        Value::Bool(file_exists(&absolute_path)),
+    );
     object.insert(
         "runtime_root".to_string(),
         Value::String(runtime.root.to_string_lossy().to_string()),
@@ -600,7 +617,10 @@ fn keyword_matches(text: &str, keyword: &str) -> bool {
 }
 
 fn bounded_regex(keyword: &str, case_insensitive: bool) -> Option<Regex> {
-    let pattern = format!(r"(^|[^A-Za-z0-9_]){}([^A-Za-z0-9_]|$)", regex::escape(keyword));
+    let pattern = format!(
+        r"(^|[^A-Za-z0-9_]){}([^A-Za-z0-9_]|$)",
+        regex::escape(keyword)
+    );
     RegexBuilder::new(&pattern)
         .case_insensitive(case_insensitive)
         .build()

@@ -120,10 +120,12 @@ The Agent matrix launches real Codex and Claude Code processes across two
 profiles by default:
 
 - `baseline`: original prompt only
-- `rust-skills`: same prompt plus routed rust-skills context from `lib/routing.js`
+- `rust-skills`: same prompt plus context routed by the native `rust-skills`
+  CLI through the compatibility launcher
 
 The report includes per-profile metrics and pairwise deltas such as
-`rust-skills_vs_baseline`.
+`rust-skills_vs_baseline`, plus injected context bytes and final prompt bytes.
+Use these cost fields to catch over-injection even when quality passes.
 
 ### Scoring Model
 
@@ -177,9 +179,8 @@ reports; missing credentials or models are recorded as skipped runs.
 To compare the current branch against another rust-skills checkout, add a
 profile root. When the external checkout has `lib/routing.js` and
 `index/routes.json`, that profile uses its own runtime and routed skill files.
-For legacy main checkouts without the new runtime, the runner uses the current
-router selector over that checkout's skill files and records
-`routingMode=current-router-profile-skills` in each capsule:
+For roots without a compatibility router, the runner uses the subject router
+against that root's skill files and records the routing mode in each capsule:
 
 ```bash
 node tests/aom/run-agent-matrix.mjs \

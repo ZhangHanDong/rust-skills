@@ -180,6 +180,15 @@
     "tags": ["rust", "learner", "over-injection"]
   },
   {
+    "id": "rust-repo-doc-quality-no-learner",
+    "prompt": "Review a Rust repository directory structure, code style, and documentation quality",
+    "expectedInject": true,
+    "requiredSkills": ["rust-router", "m09-domain", "coding-guidelines"],
+    "forbiddenSkills": ["rust-learner"],
+    "maxContextCost": 3,
+    "tags": ["rust", "docs", "over-injection"]
+  },
+  {
     "id": "rust-fintech-decimal",
     "prompt": "Rust payment ledger decimal currency audit",
     "expectedInject": true,

@@ -40,6 +40,11 @@
     "expected": { "rust": true, "skills": ["rust-router", "rust-learner", "m02-resource", "m07-concurrency"] }
   },
   {
+    "id": "rust-repo-doc-quality",
+    "prompt": "Review a Rust repository directory structure, code style, and documentation quality",
+    "expected": { "rust": true, "skills": ["rust-router", "m09-domain", "coding-guidelines"] }
+  },
+  {
     "id": "rust-dynamic-pack",
     "prompt": "根据 Cargo.toml dependencies sync crate skills for tokio",
     "expected": { "rust": true, "skills": ["rust-router", "core-dynamic-skills"] }
