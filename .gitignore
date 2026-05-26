@@ -14,3 +14,6 @@ doc/.hook-state.json
 
 # Generated AOM reports and Agent evidence capsules
 tests/results/
+
+# Rust build output
+target/

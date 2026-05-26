@@ -86,7 +86,10 @@ Generated skills must follow the skill generation contract:
 - scope, documentation boundary, calibration anchors, and key patterns in
   `SKILL.md`
 - long API details in `references/`
-- no prompt-like role setup
+- no prompt-like role setup, decorative banner, ASCII art, or exact display
+  instruction
+- judgment guidance as boundaries/calibration anchors, not scripted thinking
+  prompts
 - strict quality gate before accepting output
 - no hand patching generated skills to improve benchmark metrics; update the
   generator inputs and regenerate from a clean directory instead

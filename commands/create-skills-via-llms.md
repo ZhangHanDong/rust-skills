@@ -26,6 +26,9 @@ Generated skills follow the skill generation contract:
 - English only for generated repo-owned skill text.
 - Concise frontmatter; no trigger inflation.
 - `SKILL.md` carries scope, workflow, boundaries, and calibration anchors.
+- No decorative banners, ASCII art, or exact display/output instructions.
+- Judgment guidance uses boundaries and calibration anchors, not scripted
+  chain-of-thought or step-by-step thinking prompts.
 - Detailed API tables, long examples, and version notes go in `references/`.
 - Templates go in `assets/`; deterministic helpers go in `scripts/`.
 - The generated skill must pass the skill generation quality gate:

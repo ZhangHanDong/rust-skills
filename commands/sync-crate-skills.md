@@ -27,6 +27,10 @@ All generated skills must follow the skill generation contract:
 - detailed API material in `references/`,
 - no generated README or changelog files,
 - strict skill generation quality gate before accepting regenerated output.
+- no decorative banners, ASCII art, exact display instructions, or prompt-like
+  role setup in generated skills,
+- judgment guidance as boundaries/calibration anchors, not scripted thinking
+  prompts,
 - regeneration benchmark roots apply
   `commands/skill-generation-contract.json` overlays when present, so repeated
   runs use source-controlled guidance instead of hand-patched leaf skills.

@@ -29,7 +29,7 @@ domain term anchors by name when they carry the meaning.
 | secret-bearing config dump, env tokens, printable diagnostics | `domain-cli` + `m06-error-handling` | environment source, redaction, safe config view, error diagnostics |
 | destructive CLI path cleanup, recursive delete, workspace root | `domain-cli` + `m06-error-handling` | canonicalize root and target, dry run safety concept, rejected-path error |
 | trait object, plugin registry, `dyn`, generic methods, returns `Self` | `m04-zero-cost` | object safe, dyn dispatch, generic method, Self |
-| `no_std`, embedded firmware, cannot allocate, fixed buffers | `domain-embedded` | no_std, embedded target, heapless buffers, no allocation |
+| `no_std`, embedded firmware, cannot allocate, fixed buffers | `domain-embedded` | embedded Rust, no_std, heapless buffers, no allocation |
 
 ---
 
@@ -37,7 +37,8 @@ domain term anchors by name when they carry the meaning.
 
 ### Core Principle
 
-**Don't answer directly. Trace through the cognitive layers first.**
+Rust answers connect domain constraints, design choices, and language mechanics
+when those layers affect the result.
 
 ```
 Layer 3: Domain Constraints (WHY)
@@ -86,7 +87,7 @@ Use negotiation for comparative, best-practice, cross-domain, or ambiguous
 Rust prompts. Keep it as a confidence and gap disclosure layer, not a separate
 answer template. See `patterns/negotiation.md` for the full protocol.
 
-## Must Produce
+## Routing Surface
 
 - Route from prompt signal to layer intent and skill IDs.
 - Preserve matched concept anchors when they carry the meaning.
@@ -94,11 +95,11 @@ answer template. See `patterns/negotiation.md` for the full protocol.
 
 ### Default Project Settings
 
-When creating new Rust projects or Cargo.toml files, ALWAYS use:
+Project default for new Rust projects or Cargo.toml files in this skill set:
 
 ```toml
 [package]
-edition = "2024"  # ALWAYS use latest stable edition
+edition = "2024"
 rust-version = "1.85"
 
 [lints.rust]
