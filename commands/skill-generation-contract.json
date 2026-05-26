@@ -5,8 +5,9 @@
       "anchors": [
         "Glossary: alignment is the required memory boundary for a typed pointer or reference.",
         "Terminology: alignment is the invariant name; aligned describes a pointer or reference that satisfies it.",
-        "FFI slice wrappers use invariant labels: pointer, length, alignment, lifetime, aliasing.",
-        "`from_raw_parts` safety contracts include alignment as a documented caller obligation."
+        "Terminology: `len` is a code identifier; length is the prose invariant for pointer-plus-length APIs.",
+        "FFI slice contracts pair pointer and length with alignment, lifetime, and aliasing.",
+        "`from_raw_parts` safety contracts include pointer validity, length, alignment, and lifetime as documented caller obligations."
       ]
     },
     "m07-concurrency": {
@@ -59,19 +60,14 @@
     },
     "domain-embedded": {
       "anchors": [
-        "Domain label: embedded Rust heapless allocation-free logging for no_std, no-allocator firmware.",
-        "Glossary: firmware and microcontroller prompts are embedded Rust prompts.",
-        "Glossary: embedded Rust includes no_std firmware and fixed-capacity device code.",
-        "Glossary: heapless means fixed-capacity, no-allocator collections or equivalent raw-array designs.",
-        "Vocabulary bridge: fixed-capacity arrays and ring buffers are heapless storage.",
-        "Vocabulary bridge: no allocator, allocation-free, and no allocation all name the allocation boundary.",
-        "Heapless design includes raw arrays, static buffers, ring buffers, and bounded collections without a heap allocator.",
-        "Vocabulary: embedded Rust is the domain label for firmware or no_std logging; heapless is the design label for fixed-capacity no-allocation storage.",
-        "Raw arrays, static buffers, and ring buffers are heapless designs when they avoid heap allocation.",
+        "Canonical term family: embedded Rust, no_std firmware, heapless storage, allocation boundary, no allocation, fixed-capacity buffers.",
+        "Glossary: embedded Rust includes firmware, microcontroller, no_std, and fixed-capacity device code.",
+        "Glossary: heapless storage means fixed-capacity collections, raw arrays, static buffers, or ring buffers without heap allocation.",
         "Glossary: allocation means heap-backed dynamic storage; no allocation means no heap growth at runtime.",
-        "Embedded Rust logging vocabulary: heapless, allocation, no allocation, fixed-capacity buffers.",
-        "`no_std` logging in embedded Rust is constrained by allocation or no allocation.",
-        "Name heapless or fixed-capacity buffers and make overflow behavior part of the API contract."
+        "Vocabulary bridge: raw arrays, static buffers, and ring buffers are heapless designs when they avoid heap allocation.",
+        "For no_std logging, heapless storage and no allocation connect raw-array implementations to embedded Rust constraints.",
+        "The `heapless` crate is one implementation option; equivalent fixed-capacity buffers share the same heapless design boundary.",
+        "Logging and buffering designs connect core::fmt::Write, fixed-capacity buffers, overflow behavior, and embedded Rust constraints."
       ]
     },
     "domain-cli": {

@@ -94,7 +94,8 @@ Generated skills must follow the skill generation contract:
 - no hand patching generated skills to improve benchmark metrics; update the
   generator inputs and regenerate from a clean directory instead
 - use stable Rust failure terms in anchors when relevant, including `pointer`,
-  `length`, `alignment`, `lifetime`, `deadlock`, `scope`, `MSRV`, and `semver`
+  `length`, `alignment`, `lifetime`, `deadlock`, `scope`, `MSRV`, `semver`,
+  `embedded Rust`, `heapless`, and `allocation`
 
 ### Step 1: Identify Target and Construct URL
 

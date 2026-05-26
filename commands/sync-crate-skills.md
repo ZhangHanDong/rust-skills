@@ -23,7 +23,8 @@ All generated skills must follow the skill generation contract:
 - `Use when:` and `Keywords:` frontmatter description,
 - relevant calibration anchors instead of broad prompt templates,
 - stable Rust failure terms when they matter, especially `pointer`, `length`,
-  `alignment`, `lifetime`, `deadlock`, `scope`, `MSRV`, and `semver`,
+  `alignment`, `lifetime`, `deadlock`, `scope`, `MSRV`, `semver`,
+  `embedded Rust`, `heapless`, and `allocation`,
 - detailed API material in `references/`,
 - no generated README or changelog files,
 - strict skill generation quality gate before accepting regenerated output.

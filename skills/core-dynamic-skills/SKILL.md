@@ -28,7 +28,8 @@ Generated skills follow the skill generation contract:
 - `Use when:` and `Keywords:` frontmatter description
 - relevant calibration anchors selected from crate docs
 - stable Rust failure terminology in anchors when relevant: `pointer`,
-  `length`, `alignment`, `lifetime`, `deadlock`, `scope`, `MSRV`, `semver`
+  `length`, `alignment`, `lifetime`, `deadlock`, `scope`, `MSRV`, `semver`,
+  `embedded Rust`, `heapless`, `allocation`
 - no decorative banners, ASCII art, exact display instructions, or prompt-like
   role setup
 - judgment guidance as boundaries/calibration anchors, not scripted thinking

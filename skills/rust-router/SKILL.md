@@ -22,14 +22,14 @@ domain term anchors by name when they carry the meaning.
 | moved value, API still needs original data | `m01-ownership` | ownership transfer, borrow-based API, public API contract |
 | E0716, `&format!`, temporary value dropped while borrowed | `m01-ownership` | lifetime problem, temporary owner, reference lifetime, owned redesign |
 | MSRV, stabilized API, deprecation, crate upgrade behavior change | `m11-ecosystem` | MSRV, semver, release notes, fallback, regression tests |
-| raw C pointer plus length, safe wrapper, `from_raw_parts`, FFI contract | `unsafe-checker` | SAFETY, pointer validity, length, alignment requirements, lifetime, aliasing |
+| raw C pointer plus length, safe wrapper, `from_raw_parts`, FFI contract | `unsafe-checker` | SAFETY, pointer validity, length, alignment, lifetime, aliasing; `len` is the code identifier for the length invariant |
 | slow pipeline, heavy allocation, optimization plan | `m10-performance` | measure first, benchmark, allocation, criterion |
 | async handler holds a mutex across I/O | `m07-concurrency` + `domain-web` when handler/web is present | Mutex, await, deadlock risk, lock scope |
 | CLI exits 0 after failure, catches every error | `m06-error-handling` + `domain-cli` when CLI is present | exit code, error context, automation |
 | secret-bearing config dump, env tokens, printable diagnostics | `domain-cli` + `m06-error-handling` | environment source, redaction, safe config view, error diagnostics |
 | destructive CLI path cleanup, recursive delete, workspace root | `domain-cli` + `m06-error-handling` | canonicalize root and target, dry run safety concept, rejected-path error |
 | trait object, plugin registry, `dyn`, generic methods, returns `Self` | `m04-zero-cost` | object safe, dyn dispatch, generic method, Self |
-| `no_std`, embedded firmware, cannot allocate, fixed buffers | `domain-embedded` | embedded Rust, no_std, heapless buffers, no allocation |
+| `no_std`, embedded firmware, cannot allocate, fixed buffers | `domain-embedded` | embedded Rust, no_std, heapless storage, allocation boundary, no allocation, fixed-capacity buffers |
 
 ---
 

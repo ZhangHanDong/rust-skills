@@ -49,7 +49,8 @@ Do not paste every anchor into every generated skill.
 | Type inference | generic constructors, `collect`, `parse`, channels, turbofish |
 | Error boundaries | `Result`, custom errors, `thiserror`, application/library split |
 | API evolution | MSRV, semver, stabilization, deprecation, release notes |
-| Unsafe/FFI | stable terms `pointer`, `length`, `alignment`, `lifetime`; initialization, aliasing, allocation bounds, caller contract |
+| Unsafe/FFI | stable terms `pointer`, `length`, `alignment`, `lifetime`; `len` identifiers map to the length invariant; initialization, aliasing, allocation bounds, caller contract |
+| Embedded/no_std | embedded Rust, heapless storage, allocation boundary, no allocation, fixed-capacity buffers |
 
 ### Generated Artifact Boundary
 
