@@ -1,10 +1,81 @@
 # Rust Skills - Agent Instructions
 
-> For OpenAI Codex and compatible agents
+> Codex and compatible-agent adapter for the shared Rust behavior contract.
+> If this repository is available locally, also read [`_meta/platform-behavior-contract.md`](_meta/platform-behavior-contract.md).
+> If `AGENTS.md` is copied standalone into another project, the required Codex workflow is summarized here.
 
-## Default Project Settings
+## Codex Operating Model
 
-When creating Rust projects or Cargo.toml files, ALWAYS use:
+Codex does not use the Claude plugin hook model from this repository.
+
+That means behavior parity with Claude comes from following the same contract explicitly:
+- route through `rust-router` first
+- enable negotiation when comparison or synthesis is required
+- load both mechanics/design skills and `domain-*` skills when domain context matters
+- use `rust-learner` for live Rust/crate/docs questions
+
+## Required Codex Workflow
+
+### 1. Start With `rust-router`
+
+For any Rust-related question, invoke `rust-router` before jumping to specialized skills.
+
+This includes:
+- compiler errors such as `E0382`, `E0277`, `E0597`
+- design and best-practice questions
+- crate and ecosystem questions
+- code-writing requests in Rust
+
+### 2. Trigger Negotiation Explicitly
+
+When the user asks for:
+- comparisons
+- trade-offs
+- best practices
+- domain + error synthesis
+
+Codex should treat the prompt as a negotiation query and follow the shared output contract for confidence, gaps, and recommendation.
+
+### 3. Load Both Domain and Mechanics Skills When Needed
+
+Do not stop at the first technical keyword when domain context changes the correct answer.
+
+Examples:
+- `Web API` + `Send` -> `m07-concurrency` + `domain-web`
+- `trading` + `E0382` -> `m01-ownership` + `domain-fintech`
+
+### 4. Use `rust-learner` for Live Information
+
+For:
+- Rust version features
+- crate versions and metadata
+- API docs
+- Clippy lint lookups
+
+prefer `rust-learner` and its agent or inline workflows over answering from memory.
+
+## Codex Expectations
+
+### Behavior Parity
+
+Codex should aim for the same reasoning behavior as Claude:
+- same routing intent
+- same negotiation triggers
+- same dual-skill loading rules
+- same output expectations
+
+### Capability Difference
+
+Codex does not automatically receive the plugin hook injection that Claude gets from `.claude/hooks/`.
+
+So Codex parity is achieved through:
+- these instructions
+- the shared contract
+- the skill files themselves
+
+## Shared Rust Defaults
+
+When creating Rust projects or `Cargo.toml` files, use:
 
 ```toml
 [package]
@@ -19,94 +90,45 @@ all = "warn"
 pedantic = "warn"
 ```
 
-## Core Capabilities
+## Standalone Quick Reference
 
-### 1. Question Routing
-Route Rust questions to appropriate skills:
-- Ownership/borrowing → m01-ownership
-- Smart pointers → m02-resource
-- Error handling → m06-error-handling
-- Concurrency → m07-concurrency
-- Unsafe code → unsafe-checker
+This section intentionally duplicates a small amount of guidance so the documented "copy `AGENTS.md` only" install path remains useful.
 
-### 2. Code Style
-Follow Rust coding guidelines:
-- Use snake_case for variables and functions
-- Use PascalCase for types and traits
-- Use SCREAMING_SNAKE_CASE for constants
-- Max line length: 100 characters
-- Use `?` operator instead of `unwrap()` in library code
+### Routing Summary
 
-### 3. Error Handling
-```rust
-// Good: Use Result with context
-fn read_config() -> Result<Config, ConfigError> {
-    let content = std::fs::read_to_string("config.toml")
-        .map_err(|e| ConfigError::Io(e))?;
-    toml::from_str(&content)
-        .map_err(|e| ConfigError::Parse(e))
-}
+- ownership / borrow / lifetime / `E0382` / `E0597` -> `m01-ownership`
+- `Box` / `Rc` / `Arc` / smart pointers -> `m02-resource`
+- `Result` / `panic` / error handling -> `m06-error-handling`
+- `async` / `await` / `Send` / `Sync` -> `m07-concurrency`
+- versions / crate info / docs -> `rust-learner`
+- `unsafe` / FFI / raw pointers -> `unsafe-checker`
 
-// Avoid: unwrap() in library code
-fn read_config() -> Config {
-    let content = std::fs::read_to_string("config.toml").unwrap(); // Bad
-    toml::from_str(&content).unwrap() // Bad
-}
-```
+### Common Error Fixes
 
-### 4. Unsafe Code
-Every `unsafe` block MUST have a `// SAFETY:` comment:
-```rust
-// SAFETY: We checked that index < len above, so this is in bounds
-unsafe { slice.get_unchecked(index) }
-```
+| Error | Cause | Fix Direction |
+|---|---|---|
+| `E0382` | use of moved value | borrow, clone intentionally, or redesign ownership |
+| `E0597` | lifetime too short | extend lifetime or restructure borrows |
+| `E0502` | borrow conflict | split borrows or change borrowing pattern |
+| `E0499` | multiple mutable borrows | restructure to one mutable borrow at a time |
+| `E0277` | missing trait bound | add the right bound or use the correct thread-safe type |
 
-### 5. Common Error Fixes
+### Practical Rust Rules
 
-| Error | Cause | Fix |
-|-------|-------|-----|
-| E0382 | Use of moved value | Clone, borrow, or use reference |
-| E0597 | Lifetime too short | Extend lifetime or restructure |
-| E0502 | Borrow conflict | Split borrows or use RefCell |
-| E0499 | Multiple mut borrows | Restructure to single mut borrow |
-| E0277 | Missing trait impl | Add trait bound or implement trait |
+- Use `?` instead of `unwrap()` in library-style code.
+- Every `unsafe` block needs a `// SAFETY:` comment.
+- Prefer `Arc<T>` over `Rc<T>` when state may cross threads.
+- For read-only functions, prefer `&T` over taking ownership.
 
-## Quick Reference
+## Key Skill Entry Points
 
-### Ownership
-- Each value has one owner
-- Borrowing: `&T` (shared) or `&mut T` (exclusive)
-- Lifetimes: `'a` annotations for references
+If the repository is available locally:
 
-### Smart Pointers
-- `Box<T>`: Heap allocation
-- `Rc<T>`: Reference counting (single-threaded)
-- `Arc<T>`: Atomic reference counting (thread-safe)
-- `RefCell<T>`: Interior mutability
+- `skills/rust-router/SKILL.md` - master routing
+- `skills/rust-learner/SKILL.md` - live Rust/crate/docs queries
+- `skills/coding-guidelines/SKILL.md` - style and conventions
+- `skills/unsafe-checker/SKILL.md` - unsafe and FFI guidance
 
-### Concurrency
-- `Send`: Safe to transfer between threads
-- `Sync`: Safe to share references between threads
-- `Mutex<T>`: Mutual exclusion
-- `RwLock<T>`: Reader-writer lock
+## Practical Rule
 
-### Async
-```rust
-#[tokio::main]
-async fn main() {
-    let handle = tokio::spawn(async {
-        // async work
-    });
-    handle.await.unwrap();
-}
-```
-
-## Skill Files
-
-For detailed guidance, see:
-- `skills/rust-router/SKILL.md` - Question routing
-- `skills/coding-guidelines/SKILL.md` - Code style rules
-- `skills/unsafe-checker/SKILL.md` - Unsafe code review
-- `skills/m01-ownership/SKILL.md` - Ownership concepts
-- `skills/m06-error-handling/SKILL.md` - Error patterns
-- `skills/m07-concurrency/SKILL.md` - Concurrency patterns
+If Claude would rely on hooks to force the Rust Skills workflow, Codex should apply that workflow deliberately from these instructions instead.

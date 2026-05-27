@@ -2,7 +2,7 @@
 
 ## Installation
 
-### Option 1: Copy AGENTS.md
+### Option 1: Copy AGENTS.md (Minimal)
 
 Copy the main agent instructions to your project:
 
@@ -10,6 +10,8 @@ Copy the main agent instructions to your project:
 # From the rust-skills repository
 cp AGENTS.md /path/to/your/project/AGENTS.md
 ```
+
+This is the lightest install path. It gives Codex a useful Rust workflow summary and standalone quick reference, but not the full repository context or the closest Claude parity.
 
 ### Option 2: Reference as Submodule
 
@@ -26,6 +28,32 @@ Then reference in your AGENTS.md:
 See `.rust-skills/AGENTS.md` for Rust development guidelines.
 ```
 
+This is the recommended option for the closest behavior parity with Claude Code because Codex can also read:
+- the skill files
+- the `_meta/` documents
+- the rest of the repository guidance
+
+## Behavior Parity With Claude Code
+
+Codex does not support the Claude Code plugin hook flow used by this repository.
+
+To get the closest behavior:
+- use `AGENTS.md` as the Codex entry point
+- keep the repository available locally if possible so Codex can read the skills and `_meta/` guidance
+- if you installed via submodule or local checkout, follow the shared behavior contract in [`_meta/platform-behavior-contract.md`](../_meta/platform-behavior-contract.md)
+
+What parity means here:
+- same routing intent
+- same negotiation rules
+- same domain-aware skill loading
+- same `rust-learner` path for live information
+
+What parity does not mean:
+- automatic prompt-submit hook injection
+- identical runtime tool APIs
+- identical enforcement strength
+- guaranteed live-data retrieval when the required tools are unavailable
+
 ## What's Included
 
 This plugin provides Rust development assistance:
@@ -38,7 +66,13 @@ This plugin provides Rust development assistance:
 
 ## Usage
 
-After installation, ask Codex about:
+After installation, Codex should:
+- read `AGENTS.md`
+- apply the shared workflow described in `AGENTS.md`
+- if the repository is available locally, also apply the shared contract from `_meta/platform-behavior-contract.md`
+- route Rust prompts through `rust-router` before specialized skills
+
+Then you can ask Codex about:
 
 - Rust ownership and borrowing
 - Error handling patterns
@@ -51,19 +85,6 @@ After installation, ask Codex about:
 - Rust 1.85+ (edition 2024 recommended)
 - Cargo
 
-## Default Project Settings
+## Shared Defaults
 
-When creating Rust projects, use:
-
-```toml
-[package]
-edition = "2024"
-rust-version = "1.85"
-
-[lints.rust]
-unsafe_code = "warn"
-
-[lints.clippy]
-all = "warn"
-pedantic = "warn"
-```
+Use the shared Rust defaults documented in [`_meta/platform-behavior-contract.md`](../_meta/platform-behavior-contract.md#shared-rust-defaults).
