@@ -140,8 +140,9 @@ The Agent matrix launches real Codex and Claude Code processes across two
 profiles by default:
 
 - `baseline`: original prompt only
-- `rust-skills`: same prompt plus context routed by the native `rust-skills`
-  CLI through the compatibility launcher
+- `rust-skills`: same prompt plus context routed by the native Rust CLI
+  (`rust-skills`). The JavaScript compatibility launcher remains package and
+  hook glue, not the benchmark routing model.
 
 The report includes per-profile metrics and pairwise deltas such as
 `rust-skills_vs_baseline`, plus injected context bytes and final prompt bytes.
@@ -373,10 +374,12 @@ remote-absolute paths when running a main-checkout comparison on SSH hosts.
 
 The harvest writes `tests/results/agent-harvest/<run-id>/manifest.json` and
 copies remote `report.json` files back under `tests/results/agent-matrix/`.
-Raw capsules stay ignored. Commit concise summaries instead:
+Raw capsules stay ignored. Keep the product repo evidence surface compact:
+update `benchmark-evidence/current-summary.md` for PR-ready claims, or store
+large historical summaries in the separate bench repository.
 
 ```bash
 npm run test:agents:report -- \
   --report tests/results/agent-matrix/<run-id>/report.json \
-  --out benchmark-evidence/<run-id>.md
+  --out benchmark-evidence/current-summary.md
 ```

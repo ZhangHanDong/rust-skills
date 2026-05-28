@@ -106,6 +106,28 @@ rust-skills detect --json "今天天気怎么样"
 rust-skills route --json "Rust Web API Rc cannot be sent between threads"
 ```
 
+よく使うインストールオプション：
+
+```bash
+node install.js --all                         # Codex と Claude Code の両方
+node install.js --codex                       # Codex のみ
+node install.js --claude                      # Claude Code のみ
+node install.js --codex --dry-run             # 書き込まずに計画を表示
+node install.js --codex --codex-dir ~/.codex2 # Codex home を上書き
+node install.js --claude --claude-dir ~/.cc2  # Claude Code home を上書き
+node install.js --codex --home /tmp/home      # ~/.local/bin 用 home を上書き
+node install.js --codex --no-hooks            # hook 設定をマージしない
+node install.js --codex --no-user-bin         # ~/.local/bin shim を省略
+node install.js --codex --prune-legacy-top-level-skills
+node install.js --codex --legacy-top-level-skills
+RUST_SKILLS_DEBUG=1 rust-skills route --json "Rust E0382"
+```
+
+`--no-hooks` は runtime CLI と hook ファイルをコピーしますが、Codex/Claude
+hook 設定のマージだけを省略します。デフォルトのローカル runtime は単一の
+トップレベル `rust-skills` を使います。古いトップレベル deep-skill レイアウト
+との互換が必要な場合だけ `--legacy-top-level-skills` を使ってください。
+
 ---
 
 ### Skills-only インストール（推奨）

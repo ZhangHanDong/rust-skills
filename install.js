@@ -34,7 +34,8 @@ Options:
   --codex-dir <path>      Override Codex home, default ~/.codex.
   --claude-dir <path>     Override Claude Code home, default ~/.claude.
   --home <path>           Override user home for ~/.local/bin linking.
-  --no-hooks              Copy runtime and CLI only; do not merge hook settings.
+  --no-hooks              Do not merge Codex/Claude hook settings. Runtime and
+                           hook files are still copied.
   --no-user-bin           Do not copy rust-skills into ~/.local/bin.
   --prune-legacy-top-level-skills
                            Move old top-level deep skills into a backup folder.

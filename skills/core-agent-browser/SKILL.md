@@ -1,6 +1,6 @@
 ---
 name: core-agent-browser
-description: "Internal support skill for agent-browser CLI workflows used by rust-learner, docs-researcher, and crate-researcher. Use only when browser automation is explicitly required."
+description: "Internal support skill for agent-browser CLI workflows used by rust-learner, docs-researcher, and crate-researcher. Use when browser automation is explicitly required. Keywords: agent-browser, Rust docs, browser automation."
 user-invocable: false
 disable-model-invocation: true
 ---

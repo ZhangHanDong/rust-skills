@@ -96,6 +96,10 @@ fn run(argv: &[String]) -> Result<i32, String> {
             Ok(0)
         }
         "detect" => {
+            if wants_help(command_args) {
+                print_detect_help();
+                return Ok(0);
+            }
             let route = route_prompt(&prompt_from(command_args))?;
             let value = json!({
                 "decision": route["decision"].clone(),
@@ -113,6 +117,10 @@ fn run(argv: &[String]) -> Result<i32, String> {
             Ok(0)
         }
         "route" => {
+            if wants_help(command_args) {
+                print_route_help();
+                return Ok(0);
+            }
             let value = route_prompt(&prompt_from(command_args))?;
             let text = value["skills"]
                 .as_array()
@@ -129,6 +137,10 @@ fn run(argv: &[String]) -> Result<i32, String> {
         }
         "index" => run_index(command_args, json_output),
         "verify" => {
+            if wants_help(command_args) {
+                print_verify_help();
+                return Ok(0);
+            }
             let value = verify_registry()?;
             let status = value["status"].as_str().unwrap_or("FAIL");
             write_output(&value, status, json_output);
@@ -144,13 +156,20 @@ fn run(argv: &[String]) -> Result<i32, String> {
 
 fn run_index(args: &[String], json_output: bool) -> Result<i32, String> {
     let Some(subcommand) = args.first().map(String::as_str) else {
-        eprintln!("Unknown command: index\n");
-        print_help();
-        return Ok(2);
+        print_index_help();
+        return Ok(0);
     };
 
     match subcommand {
+        "help" | "--help" | "-h" => {
+            print_index_help();
+            Ok(0)
+        }
         "list" => {
+            if wants_help(&args[1..]) {
+                print_index_list_help();
+                return Ok(0);
+            }
             let value = list_skills()?;
             let text = value["skills"]
                 .as_array()
@@ -166,6 +185,10 @@ fn run_index(args: &[String], json_output: bool) -> Result<i32, String> {
             Ok(0)
         }
         "query" => {
+            if wants_help(&args[1..]) {
+                print_index_query_help();
+                return Ok(0);
+            }
             let stripped = strip_flags(&args[1..]);
             let Some(skill_id) = stripped.first() else {
                 eprintln!("Missing skill id");
@@ -183,7 +206,7 @@ fn run_index(args: &[String], json_output: bool) -> Result<i32, String> {
         }
         _ => {
             eprintln!("Unknown command: index\n");
-            print_help();
+            print_index_help();
             Ok(2)
         }
     }
@@ -191,12 +214,52 @@ fn run_index(args: &[String], json_output: bool) -> Result<i32, String> {
 
 fn print_help() {
     println!(
-        "Rust Skills local runtime\n\nUsage:\n  rust-skills detect [--json] <prompt>\n  rust-skills route [--json] <prompt>\n  rust-skills index list [--json]\n  rust-skills index query <skill-id> [--json]\n  rust-skills verify [--json]\n\nEnvironment:\n  RUST_SKILLS_ROOT  Override runtime data root."
+        "Rust Skills native runtime\n\nUsage:\n  rust-skills detect [--json] <prompt>\n  rust-skills route [--json] <prompt>\n  rust-skills index list [--json]\n  rust-skills index query <skill-id> [--json]\n  rust-skills verify [--json]\n\nCommands:\n  detect   Cheap Rust prompt detection summary.\n  route    Matched skill route and runtime skill paths.\n  index    Registry listing and skill lookup.\n  verify   Runtime registry and skill-standard checks.\n\nEnvironment:\n  RUST_SKILLS_ROOT  Override runtime data root."
+    );
+}
+
+fn print_detect_help() {
+    println!(
+        "Detect whether a prompt should receive Rust Skills context.\n\nUsage:\n  rust-skills detect [--json] <prompt>\n\nOutput:\n  Text mode prints inject or no-op.\n  JSON mode includes decision, should_inject, rust_signal, skills, and runtime_root."
+    );
+}
+
+fn print_route_help() {
+    println!(
+        "Route a Rust prompt to matched skills.\n\nUsage:\n  rust-skills route [--json] <prompt>\n\nOutput:\n  Text mode prints matched skill IDs, one per line.\n  JSON mode includes layers, match reasons, skill paths, context cost, and runtime_root."
+    );
+}
+
+fn print_index_help() {
+    println!(
+        "Inspect the installed Rust Skills registry.\n\nUsage:\n  rust-skills index list [--json]\n  rust-skills index query <skill-id> [--json]\n\nSubcommands:\n  list    List every registered skill.\n  query   Look up one skill path and metadata."
+    );
+}
+
+fn print_index_list_help() {
+    println!(
+        "List registered Rust Skills.\n\nUsage:\n  rust-skills index list [--json]\n\nText mode prints skill IDs. JSON mode includes registered skill metadata."
+    );
+}
+
+fn print_index_query_help() {
+    println!(
+        "Look up one Rust Skill by ID.\n\nUsage:\n  rust-skills index query <skill-id> [--json]\n\nExample:\n  rust-skills index query rust-router --json"
+    );
+}
+
+fn print_verify_help() {
+    println!(
+        "Verify the installed Rust Skills runtime.\n\nUsage:\n  rust-skills verify [--json]\n\nChecks include route registry integrity, skill file presence, and router visibility gates."
     );
 }
 
 fn has_flag(args: &[String], flag: &str) -> bool {
     args.iter().any(|arg| arg == flag)
+}
+
+fn wants_help(args: &[String]) -> bool {
+    has_flag(args, "--help") || has_flag(args, "-h")
 }
 
 fn strip_flags(args: &[String]) -> Vec<String> {

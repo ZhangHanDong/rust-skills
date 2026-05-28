@@ -1,6 +1,7 @@
 ---
 name: core-dynamic-skills
-description: "Internal command support for dynamic Rust crate skill management. Use only when explicitly invoked by /sync-crate-skills, /clean-crate-skills, or /update-crate-skill."
+description: "Internal command support for dynamic Rust crate skill management. Use when explicitly invoked by /sync-crate-skills, /clean-crate-skills, or /update-crate-skill. Keywords: Rust crates, dynamic skills, sync crate skills."
+user-invocable: false
 disable-model-invocation: true
 argument-hint: "[--force] | <crate_name>"
 context: fork

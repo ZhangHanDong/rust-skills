@@ -30,13 +30,21 @@ function run(command, args, options = {}) {
 
 run("cargo", ["build", "--workspace"]);
 
+const nativeBin = path.join(
+  root,
+  "target",
+  "debug",
+  process.platform === "win32" ? "rust-skills.exe" : "rust-skills"
+);
+const jsLauncher = path.join(root, "rust-skills.js");
+
 function routeWithRust(prompt) {
-  const result = run(process.execPath, [path.join(root, "rust-skills.js"), "route", "--json", prompt]);
+  const result = run(nativeBin, ["route", "--json", prompt]);
   return JSON.parse(result.stdout);
 }
 
 function detectWithRust(prompt) {
-  const result = run(process.execPath, [path.join(root, "rust-skills.js"), "detect", "--json", prompt]);
+  const result = run(nativeBin, ["detect", "--json", prompt]);
   return JSON.parse(result.stdout);
 }
 
@@ -215,16 +223,38 @@ for (const [id, prompt] of [...prompts].slice(0, 12)) {
   assertDeepEqual(`detect:${id}`, detectWithRust(prompt), legacyDetect(prompt));
 }
 
-const verify = JSON.parse(run(process.execPath, [path.join(root, "rust-skills.js"), "verify", "--json"]).stdout);
+const verify = JSON.parse(run(nativeBin, ["verify", "--json"]).stdout);
 assert(verify.status === "PASS", `verify should pass: ${JSON.stringify(verify, null, 2)}`);
 assert(verify.skill_count === registry.skills.length, "verify skill count mismatch");
 assert(verify.route_count === registry.routes.length, "verify route count mismatch");
 
-const list = JSON.parse(run(process.execPath, [path.join(root, "rust-skills.js"), "index", "list", "--json"]).stdout);
+const list = JSON.parse(run(nativeBin, ["index", "list", "--json"]).stdout);
 assert(list.skills.length === registry.skills.length, "index list skill count mismatch");
 
-const query = JSON.parse(run(process.execPath, [path.join(root, "rust-skills.js"), "index", "query", "rust-router", "--json"]).stdout);
+const query = JSON.parse(run(nativeBin, ["index", "query", "rust-router", "--json"]).stdout);
 assert(query.found === true, "index query should find rust-router");
 assert(query.path === "skills/rust-router/SKILL.md", "index query path mismatch");
+
+function assertHelp(args, expected) {
+  const result = run(nativeBin, args);
+  assert(result.stdout.includes(expected), `help ${args.join(" ")} missing ${expected}`);
+}
+
+assertHelp(["route", "--help"], "Route a Rust prompt");
+assertHelp(["index", "--help"], "Inspect the installed Rust Skills registry");
+assertHelp(["index", "query", "--help"], "Look up one Rust Skill by ID");
+assertHelp(["verify", "--help"], "Verify the installed Rust Skills runtime");
+
+const compatibilityPrompt = "Rust E0382 value moved in axum state";
+assertDeepEqual(
+  "compatibility launcher route",
+  JSON.parse(run(process.execPath, [jsLauncher, "route", "--json", compatibilityPrompt]).stdout),
+  routeWithRust(compatibilityPrompt)
+);
+assertDeepEqual(
+  "compatibility launcher detect",
+  JSON.parse(run(process.execPath, [jsLauncher, "detect", "--json", compatibilityPrompt]).stdout),
+  detectWithRust(compatibilityPrompt)
+);
 
 console.log(`rust cli parity test: PASS route_cases=${routeCases} detect_cases=12`);

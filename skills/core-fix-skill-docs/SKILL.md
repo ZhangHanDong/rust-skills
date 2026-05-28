@@ -1,6 +1,7 @@
 ---
 name: core-fix-skill-docs
-description: "Internal maintenance support for checking and fixing generated Rust skill documentation references. Use only when explicitly invoked by /fix-skill-docs."
+description: "Internal maintenance support for checking and fixing generated Rust skill documentation references. Use when explicitly invoked by /fix-skill-docs. Keywords: Rust skill docs, generated references, fix skill docs."
+user-invocable: false
 disable-model-invocation: true
 argument-hint: "[crate_name] [--check-only]"
 context: fork
@@ -26,7 +27,7 @@ Check and fix missing reference files in dynamic skills.
 
 ## Execution Mode Detection
 
-**CRITICAL: Check if agent infrastructure is available.**
+Check whether agent infrastructure is available before selecting execution mode.
 
 This skill can run in two modes:
 - **Agent Mode**: Uses background agents for documentation fetching

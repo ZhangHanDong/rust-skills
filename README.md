@@ -112,10 +112,24 @@ rust-skills route --json "Rust Web API Rc cannot be sent between threads"
 Useful install flags:
 
 ```bash
-node install.js --codex --dry-run        # print planned actions without writing files
-node install.js --codex --no-user-bin    # skip the ~/.local/bin shim
+node install.js --all                         # install Codex and Claude Code targets
+node install.js --codex                       # install only Codex
+node install.js --claude                      # install only Claude Code
+node install.js --codex --dry-run             # print planned actions without writing files
+node install.js --codex --codex-dir ~/.codex2 # override Codex home
+node install.js --claude --claude-dir ~/.cc2  # override Claude Code home
+node install.js --codex --home /tmp/home      # override home used for ~/.local/bin
+node install.js --codex --no-hooks            # do not merge hook settings
+node install.js --codex --no-user-bin         # skip the ~/.local/bin shim
+node install.js --codex --prune-legacy-top-level-skills
+node install.js --codex --legacy-top-level-skills
 RUST_SKILLS_DEBUG=1 rust-skills route --json "Rust E0382"
 ```
+
+`--no-hooks` still copies the runtime CLI and hook files; it only skips merging
+Codex/Claude hook settings. `--legacy-top-level-skills` is for compatibility
+with older skills-only layouts. New local runtime installs should keep the
+single top-level `rust-skills` entry.
 
 ---
 
@@ -259,7 +273,8 @@ Rust Skills relies on these external tools for full functionality:
 
 ### Core Concept
 
-**Don't answer directly. Trace through cognitive layers first.**
+Rust answers should connect the relevant cognitive layers when they affect the
+result.
 
 ```
 Layer 3: Domain Constraints (WHY)

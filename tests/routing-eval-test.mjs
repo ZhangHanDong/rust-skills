@@ -6,13 +6,23 @@ import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const corpus = JSON.parse(fs.readFileSync(path.join(root, "tests", "routing-corpus.json"), "utf8"));
+const nativeBin = path.join(
+  root,
+  "target",
+  "debug",
+  process.platform === "win32" ? "rust-skills.exe" : "rust-skills"
+);
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
 function route(prompt) {
-  const result = spawnSync(process.execPath, [path.join(root, "rust-skills.js"), "route", "--json", prompt], {
+  const command = fs.existsSync(nativeBin) ? nativeBin : "cargo";
+  const args = fs.existsSync(nativeBin)
+    ? ["route", "--json", prompt]
+    : ["run", "--quiet", "-p", "rust-skills-cli", "--bin", "rust-skills", "--", "route", "--json", prompt];
+  const result = spawnSync(command, args, {
     cwd: root,
     encoding: "utf8"
   });

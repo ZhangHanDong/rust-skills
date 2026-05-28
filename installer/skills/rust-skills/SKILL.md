@@ -12,7 +12,7 @@ If prompt context already contains `RUST SKILLS AUTO ROUTE`, use that matched
 skill list directly and read the listed skill files from the runtime root.
 No extra route command is needed.
 
-Use the `rust-skills` CLI as the executable routing contract:
+Use the native Rust `rust-skills` CLI as the executable routing contract:
 
 ```bash
 rust-skills detect --json "<user prompt>"
@@ -77,7 +77,13 @@ Optional behavior:
 node install.js --codex --no-hooks
 node install.js --codex --no-user-bin
 node install.js --codex --prune-legacy-top-level-skills
+node install.js --codex --legacy-top-level-skills
 ```
+
+`--no-hooks` still copies the runtime CLI and hook files; it only skips merging
+Codex/Claude hook settings. Prefer the default single-entry layout. Use
+`--legacy-top-level-skills` only when an older top-level deep-skill layout is
+required for compatibility.
 
 Runtime selector environment:
 

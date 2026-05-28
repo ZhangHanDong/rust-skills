@@ -109,10 +109,23 @@ rust-skills route --json "Rust Web API Rc cannot be sent between threads"
 常用安装参数：
 
 ```bash
-node install.js --codex --dry-run        # 只打印计划，不写入文件
-node install.js --codex --no-user-bin    # 不安装 ~/.local/bin shim
+node install.js --all                         # 同时安装 Codex 和 Claude Code
+node install.js --codex                       # 只安装 Codex
+node install.js --claude                      # 只安装 Claude Code
+node install.js --codex --dry-run             # 只打印计划，不写入文件
+node install.js --codex --codex-dir ~/.codex2 # 覆盖 Codex home
+node install.js --claude --claude-dir ~/.cc2  # 覆盖 Claude Code home
+node install.js --codex --home /tmp/home      # 覆盖 ~/.local/bin 使用的 home
+node install.js --codex --no-hooks            # 不合并 hook 设置
+node install.js --codex --no-user-bin         # 不安装 ~/.local/bin shim
+node install.js --codex --prune-legacy-top-level-skills
+node install.js --codex --legacy-top-level-skills
 RUST_SKILLS_DEBUG=1 rust-skills route --json "Rust E0382"
 ```
+
+`--no-hooks` 仍会复制 runtime CLI 和 hook 文件，只是不合并 Codex/Claude
+hook 设置。默认本地 runtime 只暴露一个顶层 `rust-skills`；只有兼容旧布局时
+才使用 `--legacy-top-level-skills`。
 
 ---
 

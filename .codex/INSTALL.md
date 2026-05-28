@@ -4,7 +4,7 @@
 
 ### Option 1: Full Local Runtime
 
-This installs one top-level Codex skill plus the local router CLI and hook.
+This installs one top-level Codex skill plus the native Rust CLI router and hook.
 Node 18+ is required. Rust/Cargo is required when installing from source without
 a prebuilt or already-built native CLI.
 
@@ -43,15 +43,26 @@ a backup folder unless `--prune-legacy-top-level-skills` is passed.
 Useful configuration knobs:
 
 ```bash
+node install.js --all
+node install.js --codex
+node install.js --claude
 node install.js --codex --codex-dir /path/to/codex-home
+node install.js --claude --claude-dir /path/to/claude-home
 node install.js --codex --home /path/to/user-home
 node install.js --codex --no-hooks
 node install.js --codex --no-user-bin
+node install.js --codex --prune-legacy-top-level-skills
+node install.js --codex --legacy-top-level-skills
 
 RUST_SKILLS_PROFILE=codex rust-skills verify --json
 RUST_SKILLS_ROOT=/path/to/runtime rust-skills route --json "Rust E0382"
 RUST_SKILLS_DEBUG=1 rust-skills detect --json "cargo clippy warning"
 ```
+
+`--no-hooks` still copies the runtime CLI and hook files; it only skips merging
+Codex hook settings. `--legacy-top-level-skills` keeps the older full top-level
+skill layout for compatibility. The default local runtime layout exposes one
+top-level `rust-skills` skill and stores deep skills under runtime data.
 
 The installer writes the current Codex feature flag:
 

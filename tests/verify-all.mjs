@@ -4,6 +4,12 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const nativeBin = path.join(
+  root,
+  "target",
+  "debug",
+  process.platform === "win32" ? "rust-skills.exe" : "rust-skills"
+);
 
 function run(label, command, args) {
   const result = spawnSync(command, args, {
@@ -17,7 +23,8 @@ function run(label, command, args) {
   }
 }
 
-run("registry verify", process.execPath, [path.join(root, "rust-skills.js"), "verify", "--json"]);
+run("cargo build", "cargo", ["build", "--workspace"]);
+run("registry verify", nativeBin, ["verify", "--json"]);
 run("rust cli parity", process.execPath, [path.join(root, "tests", "rust-cli-parity-test.mjs")]);
 run("hook matcher", process.execPath, [path.join(root, "tests", "hook-matcher-test.mjs")]);
 run("routing eval", process.execPath, [path.join(root, "tests", "routing-eval-test.mjs")]);

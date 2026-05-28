@@ -9,6 +9,12 @@ const corpusPath = path.join(root, "tests", "routing-corpus.json");
 const baselinePath = path.join(root, "tests", "fixtures", "legacy-hook-baseline.json");
 const corpus = JSON.parse(fs.readFileSync(corpusPath, "utf8"));
 const baseline = JSON.parse(fs.readFileSync(baselinePath, "utf8"));
+const nativeBin = path.join(
+  root,
+  "target",
+  "debug",
+  process.platform === "win32" ? "rust-skills.exe" : "rust-skills"
+);
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -25,7 +31,11 @@ function compileMatcher(source) {
 }
 
 function route(prompt) {
-  const result = spawnSync(process.execPath, [path.join(root, "rust-skills.js"), "route", "--json", prompt], {
+  const command = fs.existsSync(nativeBin) ? nativeBin : "cargo";
+  const args = fs.existsSync(nativeBin)
+    ? ["route", "--json", prompt]
+    : ["run", "--quiet", "-p", "rust-skills-cli", "--bin", "rust-skills", "--", "route", "--json", prompt];
+  const result = spawnSync(command, args, {
     cwd: root,
     encoding: "utf8"
   });
