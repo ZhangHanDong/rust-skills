@@ -10,9 +10,9 @@
     "meta_skills": 14,
     "domain_skills": 7,
     "core_skills": 4,
-    "utility_skills": 6,
+    "utility_skills": 13,
     "experimental_skills": 1,
-    "total_skills": 32,
+    "total_skills": 39,
     "unsafe_rules": 47,
     "coding_guidelines": {
       "p_rules": 80,
@@ -58,12 +58,19 @@
       "domain-ml"
     ],
     "utility": [
+      "rust-env-setup",
       "rust-daily",
       "rust-skill-creator",
       "core-actionbook",
       "core-agent-browser",
       "core-dynamic-skills",
-      "core-fix-skill-docs"
+      "core-fix-skill-docs",
+      "rust-code-navigator",
+      "rust-call-graph",
+      "rust-symbol-analyzer",
+      "rust-trait-explorer",
+      "rust-refactor-helper",
+      "rust-deps-visualizer"
     ],
     "experimental": [
       "meta-cognition-parallel"

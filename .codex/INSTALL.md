@@ -89,6 +89,7 @@ This plugin provides Rust development assistance:
 
 - **rust-router**: Master router for all Rust questions
 - **rust-learner**: Rust version and crate information
+- **rust-env-setup**: Rust toolchain, Cargo, and rust-skills runtime setup
 - **coding-guidelines**: Code style and best practices
 - **unsafe-checker**: Unsafe code review and FFI guidance
 - **m01-m15**: Meta-question skills for ownership, concurrency, error handling, etc.

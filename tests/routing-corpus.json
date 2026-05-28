@@ -145,6 +145,26 @@
     "expected": { "rust": true, "skills": ["rust-router", "rust-skill-creator"] }
   },
   {
+    "id": "rust-env-install-toolchain",
+    "prompt": "install Rust toolchain and configure Cargo PATH",
+    "expected": { "rust": true, "skills": ["rust-router", "rust-env-setup"] }
+  },
+  {
+    "id": "rust-env-cn-cargo-setup",
+    "prompt": "安装 Rust 并配置 cargo 和 rustup",
+    "expected": { "rust": true, "skills": ["rust-router", "rust-env-setup"] }
+  },
+  {
+    "id": "rust-skills-product-install",
+    "prompt": "rust-skill install for Codex and Claude Code",
+    "expected": { "rust": true, "skills": ["rust-router", "rust-env-setup"] }
+  },
+  {
+    "id": "rust-skills-product-verify",
+    "prompt": "verify rustskills runtime setup",
+    "expected": { "rust": true, "skills": ["rust-router", "rust-env-setup"] }
+  },
+  {
     "id": "non-rust-weather",
     "prompt": "今天天气怎么样",
     "expected": { "rust": false, "skills": [] }

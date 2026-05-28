@@ -1,6 +1,6 @@
 ---
 name: rust-skills
-description: "Top-level Rust Skills router for full runtime installs. Use for Rust questions, cargo/rustc issues, Rust compiler errors, ownership, borrowing, lifetimes, async, Send/Sync, unsafe, FFI, crates, clippy, Cargo.toml, Rust domain architecture, and rust-skills install/config/verify requests."
+description: "Top-level Rust Skills router for full runtime installs. Use when: Rust code, cargo/rustc errors, Rust toolchain setup, and rust-skills install/config/verify. Keywords: Rust, Cargo, rustup, rust-skills."
 allowed-tools: ["Bash", "Read", "Grep", "Glob"]
 ---
 

@@ -1,14 +1,10 @@
 ---
 name: rust-router
-description: "Use when: routing Rust questions before loading deeper skills. Keywords: Rust, cargo, rustc, Cargo.toml, compiler errors, ownership, borrow, lifetime, trait, async, Send, Sync, unsafe, FFI, Result, error handling, performance, no_std, embedded, CLI, web, best practices, comparisons, Chinese Rust questions."
+description: "Use when: routing Rust questions before deeper skills. Keywords: Rust, cargo, rustc, Cargo.toml, compiler errors, ownership, borrow, lifetime, trait, async, Send, Sync, unsafe, FFI, Result, performance, no_std, embedded, CLI, web."
 globs: ["**/Cargo.toml", "**/*.rs"]
 ---
 
 # Rust Question Router
-
-> **Version:** 2.0.0 | **Last Updated:** 2025-01-22
->
-> **v2.0:** Context optimized - detailed examples moved to sub-files
 
 ## Routing Calibration
 
@@ -24,6 +20,7 @@ domain term anchors by name when they carry the meaning.
 | MSRV, stabilized API, deprecation, crate upgrade behavior change | `m11-ecosystem` | MSRV, semver, release notes, fallback, regression tests |
 | raw C pointer plus length, safe wrapper, `from_raw_parts`, FFI contract | `unsafe-checker` | SAFETY, pointer validity, length, alignment, lifetime, aliasing; `len` is the code identifier for the length invariant |
 | slow pipeline, heavy allocation, optimization plan | `m10-performance` | measure first, benchmark, allocation, criterion |
+| Rust toolchain, Cargo setup, rust-skills install or verify | `rust-env-setup` | rustup, Cargo setup, rust-analyzer, rust-skills runtime, verify |
 | async handler holds a mutex across I/O | `m07-concurrency` + `domain-web` when handler/web is present | Mutex, await, deadlock risk, lock scope |
 | CLI exits 0 after failure, catches every error | `m06-error-handling` + `domain-cli` when CLI is present | exit code, error context, automation |
 | secret-bearing config dump, env tokens, printable diagnostics | `domain-cli` + `m06-error-handling` | environment source, redaction, safe config view, error diagnostics |

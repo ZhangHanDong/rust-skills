@@ -10,7 +10,7 @@
   "plugins": [
     {
       "name": "rust-skills",
-      "description": "38 skills covering ownership, concurrency, error handling, unsafe code, LSP code intelligence, and domain-specific patterns for Rust development",
+      "description": "39 skills covering ownership, concurrency, error handling, unsafe code, LSP code intelligence, setup, and domain-specific patterns for Rust development",
       "source": "./",
       "category": "development"
     }

@@ -286,6 +286,7 @@ Layer 1: Language Mechanics (HOW)
 ### Core Skills
 - `rust-router` - Master router for all Rust questions (invoked first)
 - `rust-learner` - Fetch latest Rust/crate version info
+- `rust-env-setup` - Rust toolchain, Cargo, and rust-skills runtime setup
 - `coding-guidelines` - Coding conventions lookup
 
 ### Layer 1: Language Mechanics (m01-m07)
