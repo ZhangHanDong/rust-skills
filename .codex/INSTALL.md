@@ -4,8 +4,9 @@
 
 ### Option 1: Full Local Runtime
 
-This installs one top-level Codex skill plus the local router CLI and hook. It
-does not require Rust/Cargo; Node 18+ is enough.
+This installs one top-level Codex skill plus the local router CLI and hook.
+Node 18+ is required. Rust/Cargo is required when installing from source without
+a prebuilt or already-built native CLI.
 
 The hook is a two-stage guard: the hook starts the router, and the router must
 return `should_inject: true` from `route --json` before Rust context is injected.
@@ -16,6 +17,12 @@ cd rust-skills
 node install.js --codex
 
 rust-skills route --json "Rust E0382 value moved"
+```
+
+For a non-writing preview:
+
+```bash
+node install.js --codex --dry-run
 ```
 
 Installed layout:
@@ -29,6 +36,19 @@ Installed layout:
 The installer does not overwrite global `AGENTS.md`. Use `--dry-run` to preview
 actions without writing files. Legacy top-level deep skills are not moved into
 a backup folder unless `--prune-legacy-top-level-skills` is passed.
+
+Useful configuration knobs:
+
+```bash
+node install.js --codex --codex-dir /path/to/codex-home
+node install.js --codex --home /path/to/user-home
+node install.js --codex --no-hooks
+node install.js --codex --no-user-bin
+
+RUST_SKILLS_PROFILE=codex rust-skills verify --json
+RUST_SKILLS_ROOT=/path/to/runtime rust-skills route --json "Rust E0382"
+RUST_SKILLS_DEBUG=1 rust-skills detect --json "cargo clippy warning"
+```
 
 The installer writes the current Codex feature flag:
 
@@ -83,10 +103,20 @@ After installation, ask Codex about:
 - Code style and naming conventions
 - Unsafe code review
 
+## Verification
+
+Run these after installation or environment changes:
+
+```bash
+rust-skills verify --json
+rust-skills detect --json "今天天气怎么样"
+rust-skills route --json "Rust Web API Rc cannot be sent between threads"
+```
+
 ## Requirements
 
 - Node 18+ for the installer and local runtime.
-- Rust/Cargo are not required to install Rust Skills.
+- Rust/Cargo when the installer must build the native CLI from source.
 - Rust 1.85+ and Cargo are recommended for Rust projects that use the guidance below.
 
 ## Default Project Settings

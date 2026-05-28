@@ -1,6 +1,6 @@
 ---
 name: rust-skills
-description: "Top-level Rust Skills router for full runtime installs. Use for Rust questions, cargo/rustc issues, Rust compiler errors, ownership, borrowing, lifetimes, async, Send/Sync, unsafe, FFI, crates, clippy, Cargo.toml, and Rust domain architecture."
+description: "Top-level Rust Skills router for full runtime installs. Use for Rust questions, cargo/rustc issues, Rust compiler errors, ownership, borrowing, lifetimes, async, Send/Sync, unsafe, FFI, crates, clippy, Cargo.toml, Rust domain architecture, and rust-skills install/config/verify requests."
 allowed-tools: ["Bash", "Read", "Grep", "Glob"]
 ---
 
@@ -32,3 +32,62 @@ If `route` returns `inject`, load `rust-router` first, then load the matched ski
 When a route includes Layer 1 and Layer 3 skills, trace from language mechanics up to domain constraints, then back down to the concrete Rust design.
 
 Set `RUST_SKILLS_DEBUG=1` when diagnosing hook discovery or runtime failures.
+
+## Install and Environment Configuration
+
+Use this section when the user asks to install, reinstall, configure, verify,
+or diagnose rust-skills itself.
+
+Primary local runtime install:
+
+```bash
+node install.js --codex --claude
+rust-skills verify --json
+```
+
+Preview before writing:
+
+```bash
+node install.js --codex --claude --dry-run
+```
+
+Target selection:
+
+```bash
+node install.js --codex
+node install.js --claude
+node install.js --all
+node install.js --codex --codex-dir /path/to/codex-home
+node install.js --claude --claude-dir /path/to/claude-home
+node install.js --codex --home /path/to/user-home
+```
+
+Optional behavior:
+
+```bash
+node install.js --codex --no-hooks
+node install.js --codex --no-user-bin
+node install.js --codex --prune-legacy-top-level-skills
+```
+
+Runtime selector environment:
+
+```bash
+RUST_SKILLS_PROFILE=codex rust-skills verify --json
+RUST_SKILLS_PROFILE=claude rust-skills verify --json
+RUST_SKILLS_ROOT=/path/to/runtime rust-skills route --json "Rust E0382"
+RUST_SKILLS_BIN=/path/to/rust-skills rust-skills verify --json
+RUST_SKILLS_DEBUG=1 rust-skills detect --json "cargo clippy warning"
+```
+
+Post-install checks:
+
+```bash
+rust-skills detect --json "今天天气怎么样"
+rust-skills route --json "Rust Web API Rc cannot be sent between threads"
+rust-skills index query rust-router --json
+```
+
+The installer keeps one top-level skill by default and stores deep skills under
+`~/.codex/rust-skills/skills/` or `~/.claude/rust-skills/skills/`. It does not
+overwrite global `AGENTS.md`, Claude `agents/`, or Claude `commands/`.

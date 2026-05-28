@@ -3,6 +3,26 @@
 This directory contains quality gates for measuring rust-skills behavior beyond
 ordinary pass/fail unit tests.
 
+## AI Quick Start
+
+Use this command chooser before reading the detailed sections:
+
+| Goal | Command | Real Agents | Output |
+|------|---------|-------------|--------|
+| Fast routing regression | `npm run test:aom` | No | `tests/results/routing-aom-report.json` |
+| Full deterministic local gate | `npm test` | No | console PASS/FAIL plus `tests/results/*` reports |
+| Generated skill contract | `npm run test:skill-generation` | No | `tests/results/skill-generation-gate-report.json` |
+| Broad fixture fairness audit | `npm run test:aom:fixtures` | No | `tests/results/agent-fixture-audit-report.json` |
+| CLI fixture fairness audit | `npm run test:aom:cli-fixtures` | No | `tests/results/agent-fixture-audit-cli-report.json` |
+| Dry Agent evidence shape | `npm run test:agents:skip` | No | `tests/results/agent-matrix/<run-id>/report.json` |
+| Real broad benchmark | `npm run test:agents:comprehensive:benchmark -- --engines codex,claude-code --profiles baseline,rust-skills --repeats 3 --concurrency 2` | Yes | Agent matrix report |
+| Real CLI benchmark | `npm run test:agents:cli:benchmark -- --engines codex,claude-code --profiles baseline,rust-skills --repeats 3 --concurrency 2` | Yes | Agent matrix report |
+| Compare against another root | add `--profiles baseline,rust-main,rust-skills --profile-root rust-main=/path/to/root` | Optional | Pairwise deltas and context-cost fields |
+
+Benchmark prompts, expectations, and scoring are fixed evidence. If a profile
+underperforms, update the subject runtime, router, or skill-generation sources;
+do not change fixture expectations to improve a score.
+
 ## Fast Gate
 
 ```bash
