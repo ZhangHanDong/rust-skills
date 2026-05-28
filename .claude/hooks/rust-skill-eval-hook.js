@@ -215,30 +215,76 @@ function shouldInject(routeOutput) {
   return parseJson(routeOutput)?.should_inject === true;
 }
 
-function additionalContext(routeOutput) {
-  return `
-=== RUST SKILLS CLI ROUTE ===
-${routeOutput.trimEnd()}
-===
+function debugEnabled() {
+  return process.env.RUST_SKILLS_DEBUG === "1";
+}
 
-=== RUST SKILLS ROUTING CONTRACT ===
+function matchedReason(match) {
+  const matched = match?.matched;
+  if (!matched || typeof matched !== "object") return "";
+  const kind = typeof matched.kind === "string" ? matched.kind : "";
+  const value = typeof matched.value === "string" ? matched.value : "";
+  if (!kind && !value) return "";
+  return [kind, value].filter(Boolean).join(": ");
+}
+
+function routeSummary(route) {
+  if (!route || typeof route !== "object") return "";
+  const skills = Array.isArray(route.skills) ? route.skills.filter(Boolean) : [];
+  if (skills.length === 0) return "";
+
+  const runtimeRoot = typeof route.runtime_root === "string" && route.runtime_root
+    ? route.runtime_root
+    : "~/.claude/rust-skills or ~/.codex/rust-skills";
+  const paths = route.paths && typeof route.paths === "object" ? route.paths : {};
+  const skillLines = skills.map((skill) => {
+    const skillPath = typeof paths[skill] === "string"
+      ? paths[skill]
+      : `skills/${skill}/SKILL.md`;
+    return `- ${skill}: ${skillPath}`;
+  });
+  const reasons = Array.isArray(route.matches)
+    ? route.matches.map(matchedReason).filter(Boolean).slice(0, 6)
+    : [];
+  const reasonLine = reasons.length > 0 ? `\nmatch reasons: ${reasons.join("; ")}` : "";
+
+  return `=== RUST SKILLS AUTO ROUTE ===
+matched skills: ${skills.join(", ")}
+runtime root: ${runtimeRoot}
+skill files:
+${skillLines.join("\n")}${reasonLine}
+===`;
+}
+
+function rawRouteBlock(routeOutput) {
+  return routeOutput.trim()
+    ? `=== RUST SKILLS ROUTE JSON ===\n${routeOutput.trimEnd()}\n===`
+    : "";
+}
+
+function additionalContext(routeOutput) {
+  const route = parseJson(routeOutput);
+  const blocks = [];
+  const summary = routeSummary(route);
+  if (summary) blocks.push(summary);
+  if (!summary || debugEnabled()) {
+    const rawBlock = rawRouteBlock(routeOutput);
+    if (rawBlock) blocks.push(rawBlock);
+  }
+
+  blocks.push(`=== RUST SKILLS ROUTING CONTRACT ===
 Use this context only for Rust-related work.
 
-1. Treat the route JSON above as the source of truth.
-2. Load rust-router first.
-3. Load every matched skill id from the "skills" array.
-4. Full runtime installs expose one top-level skill: rust-skills.
-5. Deep skill files live under the installed runtime data root:
+1. Treat the auto route above as the source of truth.
+2. Load rust-router first, then the matched skills in order.
+3. Full runtime installs expose one top-level skill: rust-skills.
+4. Deep skill files live under the installed runtime data root:
    - ~/.claude/rust-skills/skills/<skill-id>/SKILL.md
    - ~/.codex/rust-skills/skills/<skill-id>/SKILL.md
+5. Keep domain-matched constraints in view when applying Rust mechanics.
+===`);
 
-Mandatory reasoning flow:
-- Identify the entry layer: error/language mechanism, design choice, or domain.
-- If a domain signal is present, trace up to the domain constraint and then
-  back down to the Rust mechanism.
-- Do not stop at a surface compiler fix when domain constraints change the
-  correct ownership, concurrency, error, or unsafe boundary.
-===`;
+  return blocks.filter(Boolean).join("\n\n");
 }
 
 function main() {

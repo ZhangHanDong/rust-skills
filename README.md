@@ -69,6 +69,9 @@ Runtime hooks use a two-stage trigger guard:
 2. The CLI/router must still return `should_inject: true` from `route --json` before any Rust context is injected.
 
 This keeps non-Rust work quiet even if a prompt contains ambiguous words such as `cargo`, `ownership`, `lifetime`, `Rocket`, `Tower`, or `unsafe`.
+When a Rust prompt does match, hooks inject a compact `RUST SKILLS AUTO ROUTE`
+section with the matched skill IDs and file paths. Set `RUST_SKILLS_DEBUG=1`
+only when you need the full route JSON for diagnosis.
 
 ```bash
 git clone https://github.com/actionbook/rust-skills.git

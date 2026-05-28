@@ -8,6 +8,10 @@ allowed-tools: ["Bash", "Read", "Grep", "Glob"]
 
 This is the single top-level entry for full runtime installs.
 
+If prompt context already contains `RUST SKILLS AUTO ROUTE`, use that matched
+skill list directly and read the listed skill files from the runtime root.
+No extra route command is needed.
+
 Use the `rust-skills` CLI as the executable routing contract:
 
 ```bash
@@ -24,14 +28,19 @@ inject Rust-specific reasoning unless the route JSON returns
 
 If `detect` returns `no-op`, do not inject Rust-specific reasoning.
 
-If `route` returns `inject`, load `rust-router` first, then load the matched skill IDs from the route JSON. In full runtime installs, deep skills are stored under the assistant runtime data directory instead of being exposed as top-level skills:
+If no auto route is present and `route` returns `inject`, load `rust-router`
+first, then load the matched skill IDs from the route JSON. In full runtime
+installs, deep skills are stored under the assistant runtime data directory
+instead of being exposed as top-level skills:
 
 - Codex: `~/.codex/rust-skills/skills/<skill-id>/SKILL.md`
 - Claude Code: `~/.claude/rust-skills/skills/<skill-id>/SKILL.md`
 
-When a route includes Layer 1 and Layer 3 skills, trace from language mechanics up to domain constraints, then back down to the concrete Rust design.
+When a route includes Layer 1 and Layer 3 skills, keep both Rust mechanics and
+domain constraints in view.
 
 Set `RUST_SKILLS_DEBUG=1` when diagnosing hook discovery or runtime failures.
+Hooks then include the full route JSON in addition to the compact auto route.
 
 ## Install and Environment Configuration
 

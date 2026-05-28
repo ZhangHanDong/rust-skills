@@ -10,6 +10,9 @@ a prebuilt or already-built native CLI.
 
 The hook is a two-stage guard: the hook starts the router, and the router must
 return `should_inject: true` from `route --json` before Rust context is injected.
+Matched Rust prompts receive a compact `RUST SKILLS AUTO ROUTE` section with
+skill IDs and runtime file paths. Set `RUST_SKILLS_DEBUG=1` only when you need
+the full route JSON.
 
 ```bash
 git clone https://github.com/actionbook/rust-skills.git

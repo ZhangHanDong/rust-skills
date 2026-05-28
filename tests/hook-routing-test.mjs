@@ -124,9 +124,22 @@ assert(
 
 const codexRust = JSON.parse(runHook(codexHook, "Web API reports Rc cannot be sent between threads"));
 const codexContext = codexRust.hookSpecificOutput?.additionalContext || "";
-assert(codexContext.includes("RUST SKILLS CLI ROUTE"), "Codex Rust prompt should inject route context");
+assert(codexContext.includes("RUST SKILLS AUTO ROUTE"), "Codex Rust prompt should inject auto route context");
+assert(!codexContext.includes("RUST SKILLS CLI ROUTE"), "Codex default context should not expose CLI wording");
+assert(!codexContext.includes("\"matches\""), "Codex default context should keep full JSON out of prompt context");
 assert(codexContext.includes("m07-concurrency"), "Codex Rust prompt should route m07-concurrency");
 assert(codexContext.includes("domain-web"), "Codex Rust prompt should route domain-web");
+assert(codexContext.includes("skill files:"), "Codex Rust prompt should expose matched skill files");
+
+const codexDebugRust = JSON.parse(runHook(
+  codexHook,
+  "Web API reports Rc cannot be sent between threads",
+  { RUST_SKILLS_DEBUG: "1" }
+));
+const codexDebugContext = codexDebugRust.hookSpecificOutput?.additionalContext || "";
+assert(codexDebugContext.includes("RUST SKILLS AUTO ROUTE"), "Codex debug context should keep compact auto route");
+assert(codexDebugContext.includes("RUST SKILLS ROUTE JSON"), "Codex debug context should expose full route JSON");
+assert(codexDebugContext.includes("\"matches\""), "Codex debug context should include route matches JSON");
 
 const codexRustWithoutCli = JSON.parse(runHook(
   codexHook,
@@ -134,6 +147,7 @@ const codexRustWithoutCli = JSON.parse(runHook(
   { RUST_SKILLS_BIN: path.join(root, "missing-rust-skills") }
 ));
 const codexNoCliContext = codexRustWithoutCli.hookSpecificOutput?.additionalContext || "";
+assert(codexNoCliContext.includes("RUST SKILLS AUTO ROUTE"), "Codex direct route should use auto route context");
 assert(codexNoCliContext.includes("domain-web"), "Codex hook should route directly when CLI bin is missing");
 
 const fakeCli = writeFakeCliDetectInjectRouteNoop();
@@ -156,9 +170,20 @@ const claudeNonRust = runHook(claudeHook, "今天天气怎么样");
 assert(claudeNonRust.length === 0, `Claude non-Rust prompt should no-op, got ${claudeNonRust}`);
 
 const claudeRust = runHook(claudeHook, "Rust E0382 value moved in trading system");
-assert(claudeRust.includes("RUST SKILLS CLI ROUTE"), "Claude Rust prompt should inject route context");
+assert(claudeRust.includes("RUST SKILLS AUTO ROUTE"), "Claude Rust prompt should inject auto route context");
+assert(!claudeRust.includes("RUST SKILLS CLI ROUTE"), "Claude default context should not expose CLI wording");
+assert(!claudeRust.includes("\"matches\""), "Claude default context should keep full JSON out of prompt context");
 assert(claudeRust.includes("m01-ownership"), "Claude Rust prompt should route m01-ownership");
 assert(claudeRust.includes("domain-fintech"), "Claude Rust prompt should route domain-fintech");
 assert(!claudeRust.includes("Always invoke with Skill() tool"), "Claude hook should not require deep top-level Skill entries");
+
+const claudeDebugRust = runHook(
+  claudeHook,
+  "Rust E0382 value moved in trading system",
+  { RUST_SKILLS_DEBUG: "1" }
+);
+assert(claudeDebugRust.includes("RUST SKILLS AUTO ROUTE"), "Claude debug context should keep compact auto route");
+assert(claudeDebugRust.includes("RUST SKILLS ROUTE JSON"), "Claude debug context should expose full route JSON");
+assert(claudeDebugRust.includes("\"matches\""), "Claude debug context should include route matches JSON");
 
 console.log("hook routing test: PASS");
