@@ -158,16 +158,39 @@ function buildNativeCli(actions) {
     }
   );
   actions.push({ action: "build-native-cli", command: "cargo build --release -p rust-skills-cli --bin rust-skills" });
-  if (result.status !== 0) {
-    const detail = (result.stderr || result.stdout || "").trim();
-    throw new Error(`failed to build native rust-skills CLI${detail ? `: ${detail}` : ""}`);
+  if (result.error || result.status !== 0) {
+    const detail = (result.error?.message || result.stderr || result.stdout || "").trim();
+    fail(
+      `failed to build native rust-skills CLI${detail ? `: ${detail}` : ""}\n` +
+        "Install a Rust toolchain via https://rustup.rs and re-run `node install.js` — " +
+        "the installer is idempotent and will pick up where it left off."
+    );
   }
   return existingRelease;
 }
 
-function readClaudeHookMatcher() {
-  const hooksConfig = readJson(path.join(root, "hooks", "hooks.json"));
-  return hooksConfig.hooks?.UserPromptSubmit?.[0]?.matcher || "(?i)(rust|cargo|rustc|Cargo\\.toml|E0\\d{3,4})";
+function fail(message) {
+  process.stderr.write(`install error: ${message}\n`);
+  process.exit(1);
+}
+
+function cargoIsUsable() {
+  const probe = childProcess.spawnSync("cargo", ["--version"], { encoding: "utf8" });
+  return !probe.error && probe.status === 0;
+}
+
+// Fail fast BEFORE copying anything: a missing toolchain mid-install used to
+// leave a partial install behind with only a bare stack trace.
+function preflightToolchain() {
+  if (dryRun) return;
+  if (nativeBinaryIsFresh(builtNativeBinaryPath("release"))) return;
+  if (nativeBinaryIsFresh(builtNativeBinaryPath("debug"))) return;
+  if (cargoIsUsable()) return;
+  fail(
+    "no prebuilt rust-skills binary found and `cargo --version` failed.\n" +
+      "Install a Rust toolchain via https://rustup.rs (or place a prebuilt binary at " +
+      `${builtNativeBinaryPath("release")}), then re-run \`node install.js\`.`
+  );
 }
 
 function copyRuntimeData(targetRoot, actions) {
@@ -486,7 +509,8 @@ function writeClaudeHookSettings(targetRoot, actions) {
       UserPromptSubmit: [
         ...preserved,
         {
-          matcher: readClaudeHookMatcher(),
+          // No matcher: Claude Code does not apply matchers to
+          // UserPromptSubmit, and gating happens inside the hook itself.
           hooks: [
             {
               type: "command",
@@ -535,6 +559,7 @@ if (!installCodex && !installClaude) {
 }
 
 const actions = [];
+preflightToolchain();
 if (installCodex) installCodexTarget(actions);
 if (installClaude) installClaudeTarget(actions);
 
@@ -548,3 +573,14 @@ process.stdout.write(`${JSON.stringify({
   },
   actions
 }, null, 2)}\n`);
+
+const localBin = path.join(os.homedir(), ".local", "bin");
+const onPath = String(process.env.PATH || "")
+  .split(path.delimiter)
+  .some((entry) => entry && path.resolve(entry) === localBin);
+if (!dryRun && !onPath) {
+  process.stderr.write(
+    `note: ${localBin} is not on your PATH; add it (export PATH="$HOME/.local/bin:$PATH") ` +
+      "or call the installed shim by absolute path.\n"
+  );
+}

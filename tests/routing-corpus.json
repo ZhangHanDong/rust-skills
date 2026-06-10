@@ -2,281 +2,555 @@
   {
     "id": "rust-ownership-e0382",
     "prompt": "E0382 错误怎么解决，value moved after move",
-    "expected": { "rust": true, "skills": ["rust-router", "m01-ownership"] }
+    "expected": {
+      "rust": true,
+      "skills": [
+        "rust-router",
+        "m01-ownership"
+      ]
+    }
   },
   {
     "id": "rust-web-send-sync",
     "prompt": "Web API reports Rc cannot be sent between threads in axum state",
-    "expected": { "rust": true, "skills": ["rust-router", "m02-resource", "m07-concurrency", "domain-web"] }
+    "expected": {
+      "rust": true,
+      "skills": [
+        "rust-router",
+        "m02-resource",
+        "m07-concurrency",
+        "domain-web"
+      ]
+    }
   },
   {
     "id": "rust-unsafe-ffi",
     "prompt": "unsafe FFI raw pointer wrapper 怎么写安全",
-    "expected": { "rust": true, "skills": ["rust-router", "unsafe-checker"] }
+    "expected": {
+      "rust": true,
+      "skills": [
+        "rust-router",
+        "unsafe-checker"
+      ]
+    }
   },
   {
     "id": "rust-fintech-decimal",
     "prompt": "Rust 支付系统 decimal 精度和交易审计如何建模",
-    "expected": { "rust": true, "skills": ["rust-router", "domain-fintech"] }
+    "expected": {
+      "rust": true,
+      "skills": [
+        "rust-router",
+        "domain-fintech"
+      ]
+    }
   },
   {
     "id": "rust-learner-crate",
     "prompt": "tokio latest crate info and docs.rs usage",
-    "expected": { "rust": true, "skills": ["rust-router", "rust-learner"] }
+    "expected": {
+      "rust": true,
+      "skills": [
+        "rust-router",
+        "rust-learner"
+      ]
+    }
   },
   {
     "id": "rust-cli-clap",
     "prompt": "Rust CLI 用 clap 设计子命令和错误码",
-    "expected": { "rust": true, "skills": ["rust-router", "domain-cli"] }
+    "expected": {
+      "rust": true,
+      "skills": [
+        "rust-router",
+        "domain-cli"
+      ]
+    }
   },
   {
     "id": "rust-clippy-learner",
     "prompt": "clippy lint needless_collect 在 Rust 里是什么意思",
-    "expected": { "rust": true, "skills": ["rust-router", "rust-learner"] }
+    "expected": {
+      "rust": true,
+      "skills": [
+        "rust-router",
+        "rust-learner"
+      ]
+    }
   },
   {
     "id": "rust-std-docs",
     "prompt": "Rust std docs 里 Arc 和 Send Sync 怎么查",
-    "expected": { "rust": true, "skills": ["rust-router", "rust-learner", "m02-resource", "m07-concurrency"] }
+    "expected": {
+      "rust": true,
+      "skills": [
+        "rust-router",
+        "rust-learner",
+        "m02-resource",
+        "m07-concurrency"
+      ]
+    }
   },
   {
     "id": "rust-repo-doc-quality",
     "prompt": "Review a Rust repository directory structure, code style, and documentation quality",
-    "expected": { "rust": true, "skills": ["rust-router", "m09-domain", "coding-guidelines"] }
+    "expected": {
+      "rust": true,
+      "skills": [
+        "rust-router",
+        "coding-guidelines"
+      ]
+    }
   },
   {
     "id": "rust-dynamic-pack",
     "prompt": "根据 Cargo.toml dependencies sync crate skills for tokio",
-    "expected": { "rust": true, "skills": ["rust-router", "core-dynamic-skills"] }
+    "expected": {
+      "rust": true,
+      "skills": [
+        "rust-router",
+        "core-dynamic-skills"
+      ]
+    }
   },
   {
     "id": "rust-dynamic-docs-pack",
     "prompt": "Rust Cargo.toml sync crate docs pack",
-    "expected": { "rust": true, "skills": ["rust-router", "core-dynamic-skills"] }
+    "expected": {
+      "rust": true,
+      "skills": [
+        "rust-router",
+        "core-dynamic-skills"
+      ]
+    }
   },
   {
     "id": "rust-performance",
     "prompt": "Rust benchmark allocation 性能优化怎么做",
-    "expected": { "rust": true, "skills": ["rust-router", "m10-performance"] }
+    "expected": {
+      "rust": true,
+      "skills": [
+        "rust-router",
+        "m10-performance"
+      ]
+    }
   },
   {
     "id": "rust-embedded",
     "prompt": "Rust embedded no_std firmware 资源生命周期怎么设计",
-    "expected": { "rust": true, "skills": ["rust-router", "domain-embedded", "m12-lifecycle"] }
+    "expected": {
+      "rust": true,
+      "skills": [
+        "rust-router",
+        "domain-embedded",
+        "m12-lifecycle"
+      ]
+    }
   },
   {
     "id": "rust-mutability-e0502",
     "prompt": "Rust E0502 already borrowed as immutable 还能 mut borrow 吗",
-    "expected": { "rust": true, "skills": ["rust-router", "m03-mutability"] }
+    "expected": {
+      "rust": true,
+      "skills": [
+        "rust-router",
+        "m03-mutability"
+      ]
+    }
   },
   {
     "id": "rust-interior-mutability",
     "prompt": "Rust RefCell interior mutability pattern 什么时候用",
-    "expected": { "rust": true, "skills": ["rust-router", "m02-resource", "m03-mutability"] }
+    "expected": {
+      "rust": true,
+      "skills": [
+        "rust-router",
+        "m02-resource",
+        "m03-mutability"
+      ]
+    }
   },
   {
     "id": "rust-trait-e0277",
     "prompt": "Rust E0277 trait bound not satisfied generic where 怎么写",
-    "expected": { "rust": true, "skills": ["rust-router", "m04-zero-cost"] }
+    "expected": {
+      "rust": true,
+      "skills": [
+        "rust-router",
+        "m04-zero-cost"
+      ]
+    }
   },
   {
     "id": "rust-type-state",
     "prompt": "Rust type state PhantomData builder pattern 如何建模",
-    "expected": { "rust": true, "skills": ["rust-router", "m05-type-driven"] }
+    "expected": {
+      "rust": true,
+      "skills": [
+        "rust-router",
+        "m05-type-driven"
+      ]
+    }
   },
   {
     "id": "rust-error-anyhow",
     "prompt": "Rust app error handling anyhow thiserror Result 怎么分层",
-    "expected": { "rust": true, "skills": ["rust-router", "m06-error-handling"] }
+    "expected": {
+      "rust": true,
+      "skills": [
+        "rust-router",
+        "m06-error-handling"
+      ]
+    }
   },
   {
     "id": "rust-async-tokio",
     "prompt": "Rust tokio spawn async await Send bound 报错怎么处理",
-    "expected": { "rust": true, "skills": ["rust-router", "m07-concurrency"] }
+    "expected": {
+      "rust": true,
+      "skills": [
+        "rust-router",
+        "m07-concurrency"
+      ]
+    }
   },
   {
     "id": "rust-domain-model-ddd",
     "prompt": "Rust DDD aggregate entity value object repository 怎么设计",
-    "expected": { "rust": true, "skills": ["rust-router", "m09-domain"] }
+    "expected": {
+      "rust": true,
+      "skills": [
+        "rust-router",
+        "m09-domain"
+      ]
+    }
   },
   {
     "id": "rust-feature-flags",
     "prompt": "Rust dependency feature flag workspace crate selection 怎么做",
-    "expected": { "rust": true, "skills": ["rust-router", "m11-ecosystem"] }
+    "expected": {
+      "rust": true,
+      "skills": [
+        "rust-router",
+        "m11-ecosystem"
+      ]
+    }
   },
   {
     "id": "rust-domain-error",
     "prompt": "Rust domain error retry fallback recovery strategy 如何分类",
-    "expected": { "rust": true, "skills": ["rust-router", "m13-domain-error"] }
+    "expected": {
+      "rust": true,
+      "skills": [
+        "rust-router",
+        "m13-domain-error"
+      ]
+    }
   },
   {
     "id": "rust-mental-model",
     "prompt": "learning Rust mental model how to think about ownership error",
-    "expected": { "rust": true, "skills": ["rust-router", "m14-mental-model", "m01-ownership"] }
+    "expected": {
+      "rust": true,
+      "skills": [
+        "rust-router",
+        "m14-mental-model",
+        "m01-ownership"
+      ]
+    }
   },
   {
     "id": "rust-anti-pattern",
     "prompt": "Rust anti-pattern code smell common mistake pitfall review",
-    "expected": { "rust": true, "skills": ["rust-router", "m15-anti-pattern"] }
+    "expected": {
+      "rust": true,
+      "skills": [
+        "rust-router",
+        "m15-anti-pattern"
+      ]
+    }
   },
   {
     "id": "rust-guidelines",
     "prompt": "Rust best practice naming rustfmt clippy lint style",
-    "expected": { "rust": true, "skills": ["rust-router", "coding-guidelines"] }
+    "expected": {
+      "rust": true,
+      "skills": [
+        "rust-router",
+        "coding-guidelines"
+      ]
+    }
   },
   {
     "id": "rust-cloud-native",
     "prompt": "Rust tonic grpc microservice kubernetes observability 怎么设计",
-    "expected": { "rust": true, "skills": ["rust-router", "domain-cloud-native"] }
+    "expected": {
+      "rust": true,
+      "skills": [
+        "rust-router",
+        "domain-cloud-native"
+      ]
+    }
   },
   {
     "id": "rust-iot",
     "prompt": "Rust IoT MQTT sensor telemetry edge computing 资源怎么建模",
-    "expected": { "rust": true, "skills": ["rust-router", "domain-iot"] }
+    "expected": {
+      "rust": true,
+      "skills": [
+        "rust-router",
+        "domain-iot"
+      ]
+    }
   },
   {
     "id": "rust-ml",
     "prompt": "Rust machine learning inference tensor model 用 burn 怎么组织",
-    "expected": { "rust": true, "skills": ["rust-router", "domain-ml"] }
+    "expected": {
+      "rust": true,
+      "skills": [
+        "rust-router",
+        "domain-ml"
+      ]
+    }
   },
   {
     "id": "rust-create-crate-skill",
     "prompt": "create rust skill for serde crate docs",
-    "expected": { "rust": true, "skills": ["rust-router", "rust-skill-creator"] }
+    "expected": {
+      "rust": true,
+      "skills": [
+        "rust-router",
+        "rust-skill-creator"
+      ]
+    }
   },
   {
     "id": "rust-env-install-toolchain",
     "prompt": "install Rust toolchain and configure Cargo PATH",
-    "expected": { "rust": true, "skills": ["rust-router", "rust-env-setup"] }
+    "expected": {
+      "rust": true,
+      "skills": [
+        "rust-router",
+        "rust-env-setup"
+      ]
+    }
   },
   {
     "id": "rust-env-cn-cargo-setup",
     "prompt": "安装 Rust 并配置 cargo 和 rustup",
-    "expected": { "rust": true, "skills": ["rust-router", "rust-env-setup"] }
+    "expected": {
+      "rust": true,
+      "skills": [
+        "rust-router",
+        "rust-env-setup"
+      ]
+    }
   },
   {
     "id": "rust-skills-product-install",
     "prompt": "rust-skill install for Codex and Claude Code",
-    "expected": { "rust": true, "skills": ["rust-router", "rust-env-setup"] }
+    "expected": {
+      "rust": true,
+      "skills": [
+        "rust-router",
+        "rust-env-setup"
+      ]
+    }
   },
   {
     "id": "rust-skills-product-verify",
     "prompt": "verify rustskills runtime setup",
-    "expected": { "rust": true, "skills": ["rust-router", "rust-env-setup"] }
+    "expected": {
+      "rust": true,
+      "skills": [
+        "rust-router",
+        "rust-env-setup"
+      ]
+    }
   },
   {
     "id": "non-rust-weather",
     "prompt": "今天天气怎么样",
-    "expected": { "rust": false, "skills": [] }
+    "expected": {
+      "rust": false,
+      "skills": []
+    }
   },
   {
     "id": "non-rust-flight",
     "prompt": "帮我订一张机票",
-    "expected": { "rust": false, "skills": [] }
+    "expected": {
+      "rust": false,
+      "skills": []
+    }
   },
   {
     "id": "non-rust-generic-api",
     "prompt": "帮我设计一个 HTTP API，用 Python FastAPI",
-    "expected": { "rust": false, "skills": [] }
+    "expected": {
+      "rust": false,
+      "skills": []
+    }
   },
   {
     "id": "non-rust-javascript-async",
     "prompt": "JavaScript async await event loop 怎么理解",
-    "expected": { "rust": false, "skills": [] }
+    "expected": {
+      "rust": false,
+      "skills": []
+    }
   },
   {
     "id": "non-rust-meeting-thread",
     "prompt": "帮我整理一下会议 thread 和 action items",
-    "expected": { "rust": false, "skills": [] }
+    "expected": {
+      "rust": false,
+      "skills": []
+    }
   },
   {
     "id": "non-rust-python-click-cli",
     "prompt": "Python click CLI command line 参数怎么设计",
-    "expected": { "rust": false, "skills": [] }
+    "expected": {
+      "rust": false,
+      "skills": []
+    }
   },
   {
     "id": "non-rust-cargo-shipping",
     "prompt": "International cargo shipping 文档和费用怎么整理",
-    "expected": { "rust": false, "skills": [] }
+    "expected": {
+      "rust": false,
+      "skills": []
+    }
   },
   {
     "id": "non-rust-send-cargo-shipping",
     "prompt": "Send this package by cargo shipping",
-    "expected": { "rust": false, "skills": [] }
+    "expected": {
+      "rust": false,
+      "skills": []
+    }
   },
   {
     "id": "non-rust-wooden-crate",
     "prompt": "wooden crate dimensions and brightness labels for a lighting display",
-    "expected": { "rust": false, "skills": [] }
+    "expected": {
+      "rust": false,
+      "skills": []
+    }
   },
   {
     "id": "non-rust-arc-browser",
     "prompt": "Compare Arc browser and Chrome for web research",
-    "expected": { "rust": false, "skills": [] }
+    "expected": {
+      "rust": false,
+      "skills": []
+    }
   },
   {
     "id": "non-rust-rocket-mortgage",
     "prompt": "Rocket Mortgage application status",
-    "expected": { "rust": false, "skills": [] }
+    "expected": {
+      "rust": false,
+      "skills": []
+    }
   },
   {
     "id": "non-rust-tower-lighting",
     "prompt": "Tower fan bedroom lighting plan",
-    "expected": { "rust": false, "skills": [] }
+    "expected": {
+      "rust": false,
+      "skills": []
+    }
   },
   {
     "id": "non-rust-hyper-browser",
     "prompt": "Hyper browser tab management",
-    "expected": { "rust": false, "skills": [] }
+    "expected": {
+      "rust": false,
+      "skills": []
+    }
   },
   {
     "id": "non-rust-warp-terminal",
     "prompt": "Warp terminal theme setup",
-    "expected": { "rust": false, "skills": [] }
+    "expected": {
+      "rust": false,
+      "skills": []
+    }
   },
   {
     "id": "non-rust-lifetime-value",
     "prompt": "customer lifetime value model",
-    "expected": { "rust": false, "skills": [] }
+    "expected": {
+      "rust": false,
+      "skills": []
+    }
   },
   {
     "id": "non-rust-home-ownership",
     "prompt": "home ownership documents",
-    "expected": { "rust": false, "skills": [] }
+    "expected": {
+      "rust": false,
+      "skills": []
+    }
   },
   {
     "id": "non-rust-unsafe-ladder",
     "prompt": "unsafe ladder installation guide",
-    "expected": { "rust": false, "skills": [] }
+    "expected": {
+      "rust": false,
+      "skills": []
+    }
   },
   {
     "id": "non-rust-cn-lifecycle-marketing",
     "prompt": "生命周期营销怎么做",
-    "expected": { "rust": false, "skills": [] }
+    "expected": {
+      "rust": false,
+      "skills": []
+    }
   },
   {
     "id": "non-rust-cn-home-ownership",
     "prompt": "房屋所有权证明怎么准备",
-    "expected": { "rust": false, "skills": [] }
+    "expected": {
+      "rust": false,
+      "skills": []
+    }
   },
   {
     "id": "non-rust-wooden-crate-docs",
     "prompt": "wooden crate documentation for packaging",
-    "expected": { "rust": false, "skills": [] }
+    "expected": {
+      "rust": false,
+      "skills": []
+    }
   },
   {
     "id": "non-rust-nightly-skincare",
     "prompt": "nightly skincare routine",
-    "expected": { "rust": false, "skills": [] }
+    "expected": {
+      "rust": false,
+      "skills": []
+    }
   },
   {
     "id": "non-rust-whats-new-lighting",
     "prompt": "what's new in bedroom lighting design this year",
-    "expected": { "rust": false, "skills": [] }
+    "expected": {
+      "rust": false,
+      "skills": []
+    }
   },
   {
     "id": "non-rust-doc-current-prompt-with-rust-history",
     "prompt": "装修卧室灯光，先总结每个灯的尺寸和亮度文档，然后讨论怎么挂",
-    "expected": { "rust": false, "skills": [] }
+    "expected": {
+      "rust": false,
+      "skills": []
+    }
   }
 ]

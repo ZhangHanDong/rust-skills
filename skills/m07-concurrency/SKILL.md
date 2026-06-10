@@ -17,13 +17,16 @@ Before choosing concurrency primitives:
 - What data needs to be shared?
 - What's the thread safety requirement?
 
-## Calibration Anchors
+## Async Locking Guardrails
 
-- In async Rust, do not hold a `std::sync::MutexGuard` across `.await`.
-- Name the risk as deadlock or starvation when tasks block executor threads or
-  hold shared state while suspended.
-- Keep the lock scope small: copy or take the needed data, drop the guard, then
-  await I/O and reacquire the lock only to update shared state.
+- Do not hold a `std::sync::MutexGuard` across `.await`. The task can be
+  suspended while still holding the lock, which blocks an executor thread and
+  can deadlock the runtime or starve other tasks.
+- Keep the lock scope small: copy or take the data you need, drop the guard,
+  await the I/O, then reacquire the lock only to write results back.
+- If state genuinely must stay locked across an await point, use an
+  async-aware lock such as `tokio::sync::Mutex`, and treat the long hold as a
+  design smell worth revisiting.
 
 ---
 

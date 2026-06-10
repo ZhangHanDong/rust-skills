@@ -63,10 +63,7 @@ Rust Skills 支持三种安装模式：
 - Node.js 用于运行 `install.js` 和 hook。
 - 如果没有现成的预编译 binary，需要 Rust/Cargo 来构建 native `rust-skills` CLI。
 
-Runtime hook 使用两级触发保护：
-
-1. 低成本 hook matcher 只判断是否需要运行路由器。
-2. CLI/router 必须在 `route --json` 中返回 `should_inject: true`，才会真正注入 Rust 上下文。
+触发判断在 hook 脚本内部完成：每个 prompt 提交时，hook 会启动一次 `rust-skills` CLI（约 30-70ms），只有 `route --json` 返回 `should_inject: true` 时才注入 Rust 上下文，否则静默退出。不存在独立的 hook matcher。
 
 这样即使 prompt 里出现 `cargo`、`ownership`、`lifetime`、`Rocket`、`Tower`、`unsafe` 这类歧义词，非 Rust 工作也不会被打扰。
 
@@ -77,6 +74,8 @@ node install.js --codex --claude
 
 rust-skills route --json "Rust E0382 value moved in axum state"
 ```
+
+如果安装后找不到 `rust-skills` 命令，请确认 `~/.local/bin` 在 PATH 中（`export PATH="$HOME/.local/bin:$PATH"`），或直接用绝对路径调用 shim（`~/.local/bin/rust-skills`）。
 
 安装内容：
 
@@ -376,8 +375,8 @@ cd my-rust-project
      ▼
 ┌─────────────────────────────────────────┐
 │           Hook 触发层                    │
-│  低成本候选触发                          │
-│  CLI 确认 should_inject 后才加载         │
+│  每个 prompt 运行一次 CLI 路由器         │
+│  should_inject 为 true 才注入，否则静默  │
 └─────────────────────────────────────────┘
      │
      ▼

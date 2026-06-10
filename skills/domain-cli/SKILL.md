@@ -11,18 +11,6 @@ user-invocable: false
 
 ## Domain Constraints → Design Implications
 
-## Calibration Anchors
-
-- Glossary: dry run is the two-word safety concept for preview without
-  mutation.
-- Glossary: rejected-path error means a non-zero error exit before mutation.
-- Secret-bearing config diagnostics: environment source, redaction, separate
-  printable config, and non-zero error behavior without leaking values.
-- Destructive cleanup diagnostics: canonicalized workspace root, dry run mode,
-  explicit confirmation, and non-zero error for rejected paths.
-- Stdout is for machine-readable data; stderr is for human diagnostics and
-  error context.
-
 | Domain Rule | Design Constraint | Rust Implication |
 |-------------|-------------------|------------------|
 | User ergonomics | Clear help, errors | clap derive macros |
@@ -42,6 +30,22 @@ user-invocable: false
 | Non-zero exit on error | Script integration, automation | `main() -> Result<(), Error>` or explicit exit |
 | Destructive actions show intent before mutation | Safer automation | dry run mode, confirmation, canonicalized root checks |
 | Secret values stay out of printable diagnostics | Safe bug reports and CI logs | redacted view types, no raw `Debug` for secrets |
+
+---
+
+## Safety Guardrails
+
+- Destructive operations (recursive delete, workspace cleanup) should
+  canonicalize the workspace root and every target path first, refuse any
+  path that resolves outside the root with a non-zero exit before touching
+  the filesystem, and offer a preview mode that prints planned actions
+  without mutating anything.
+- Diagnostics that print configuration must redact secret values. Report
+  where each value came from (flag, environment variable, config file)
+  without echoing tokens or passwords, and keep that redaction in error
+  paths and panics too.
+- Reserve stdout for the tool's actual output so it stays pipeable; send
+  progress, warnings, and error context to stderr.
 
 ---
 

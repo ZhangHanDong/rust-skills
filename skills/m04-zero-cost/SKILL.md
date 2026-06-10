@@ -29,15 +29,12 @@ Before choosing between generics and trait objects:
 | E0599 | "Import the trait" | Is the trait the right abstraction? |
 | E0038 | "Make object-safe" | Do we really need dynamic dispatch? |
 
-## Calibration Anchors
+## Inference Guidance
 
-- Glossary: type annotation means an explicit type on a binding, return, or
-  collection boundary.
-- Glossary: turbofish is Rust's `::<...>` syntax for explicit generic
-  arguments.
-- E0282 means inference ran out of constraints. Add the explicit type at the
-  boundary that communicates intent: variable annotation, turbofish, channel
-  item type, or enum/error type.
+E0282 means inference ran out of constraints. Add the explicit type at the
+boundary that best communicates intent: a binding annotation, turbofish
+(`::<...>`) on the call, the channel's item type, or the collection/error
+type, rather than wherever the compiler happens to point.
 
 ---
 

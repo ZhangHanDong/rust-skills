@@ -63,10 +63,7 @@ Prerequisites for source installs:
 - Node.js for `install.js` and hook execution.
 - Rust/Cargo for building the native `rust-skills` CLI when a prebuilt binary is not already present.
 
-Runtime hooks use a two-stage trigger guard:
-
-1. A low-cost hook matcher only decides whether the router should run.
-2. The CLI/router must still return `should_inject: true` from `route --json` before any Rust context is injected.
+Gating happens inside the hook script itself: on every prompt the hook spawns the `rust-skills` CLI once (~30-70ms) and exits silently unless `route --json` returns `should_inject: true`. There is no separate hook-level matcher.
 
 This keeps non-Rust work quiet even if a prompt contains ambiguous words such as `cargo`, `ownership`, `lifetime`, `Rocket`, `Tower`, or `unsafe`.
 When a Rust prompt does match, hooks inject a compact `RUST SKILLS AUTO ROUTE`
@@ -80,6 +77,8 @@ node install.js --codex --claude
 
 rust-skills route --json "Rust E0382 value moved in axum state"
 ```
+
+If `rust-skills` is not found after install, ensure `~/.local/bin` is on your PATH (`export PATH="$HOME/.local/bin:$PATH"`) or call the shim by absolute path (`~/.local/bin/rust-skills`).
 
 What it installs:
 
@@ -382,8 +381,8 @@ User Question
      ▼
 ┌─────────────────────────────────────────┐
 │           Hook Layer                     │
-│  Low-cost candidate trigger              │
-│  CLI confirms should_inject before load  │
+│  Runs CLI router once per prompt         │
+│  Silent unless should_inject is true     │
 └─────────────────────────────────────────┘
      │
      ▼

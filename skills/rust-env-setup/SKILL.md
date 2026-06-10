@@ -19,15 +19,19 @@ Use for environment and runtime setup, not ordinary Rust code design.
 | Install rust-skills | Codex or Claude Code runtime, hooks, selector shim |
 | Diagnose install state | versions, runtime root, route and verify commands |
 
-## Calibration Anchors
+## Setup Checklist
 
-- Toolchain setup: rustup, stable toolchain, host triple, PATH, shell profile.
-- Cargo setup: `CARGO_HOME`, `.cargo/config.toml`, registry, proxy, offline
-  mode, and target directory.
-- Quality components: rustfmt, clippy, rust-src, rust-analyzer.
-- Project check: `cargo fmt --check`, `cargo clippy`, `cargo test`.
-- rust-skills runtime: Codex target, Claude Code target, runtime root, hooks,
-  selector shim, and `rust-skills verify --json`.
+- Toolchain: install via rustup, default to the stable toolchain for the host
+  triple, and make sure the shell profile puts `~/.cargo/bin` on `PATH`.
+- Cargo: set `CARGO_HOME` deliberately; use `.cargo/config.toml` for registry
+  mirrors, proxies, offline mode, and a shared target directory.
+- Quality components: add rustfmt, clippy, rust-src, and rust-analyzer so the
+  editor and CI agree on diagnostics.
+- Sanity-check a project with `cargo fmt --check`, `cargo clippy`, and
+  `cargo test`.
+- For the rust-skills runtime, install the Codex or Claude Code target, then
+  confirm the runtime root, hooks, and selector shim with
+  `rust-skills verify --json`.
 
 ## Boundary
 

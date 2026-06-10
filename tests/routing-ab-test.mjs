@@ -9,12 +9,10 @@ const corpusPath = path.join(root, "tests", "routing-corpus.json");
 const baselinePath = path.join(root, "tests", "fixtures", "legacy-hook-baseline.json");
 const corpus = JSON.parse(fs.readFileSync(corpusPath, "utf8"));
 const baseline = JSON.parse(fs.readFileSync(baselinePath, "utf8"));
-const nativeBin = path.join(
-  root,
-  "target",
-  "debug",
-  process.platform === "win32" ? "rust-skills.exe" : "rust-skills"
-);
+const binaryName = process.platform === "win32" ? "rust-skills.exe" : "rust-skills";
+const nativeBin = ["release", "debug"]
+  .map((profile) => path.join(root, "target", profile, binaryName))
+  .find((candidate) => fs.existsSync(candidate));
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);

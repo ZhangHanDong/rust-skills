@@ -5,6 +5,7 @@ use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 use std::env;
 use std::fs;
+use std::io::Read;
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, Deserialize)]
@@ -71,7 +72,10 @@ struct Runtime {
 }
 
 fn main() {
-    let argv = env::args().skip(1).collect::<Vec<_>>();
+    let argv = env::args_os()
+        .skip(1)
+        .map(|arg| arg.to_string_lossy().into_owned())
+        .collect::<Vec<_>>();
     let exit_code = match run(&argv) {
         Ok(code) => code,
         Err(error) => {
@@ -204,8 +208,8 @@ fn run_index(args: &[String], json_output: bool) -> Result<i32, String> {
             write_output(&value, text, json_output);
             Ok(i32::from(!found))
         }
-        _ => {
-            eprintln!("Unknown command: index\n");
+        unknown => {
+            eprintln!("Unknown index subcommand: {unknown}\n");
             print_index_help();
             Ok(2)
         }
@@ -254,8 +258,15 @@ fn print_verify_help() {
     );
 }
 
+const KNOWN_FLAGS: [&str; 3] = ["--json", "--help", "-h"];
+
+fn flag_region(args: &[String]) -> &[String] {
+    let separator = args.iter().position(|arg| arg == "--");
+    separator.map_or(args, |index| &args[..index])
+}
+
 fn has_flag(args: &[String], flag: &str) -> bool {
-    args.iter().any(|arg| arg == flag)
+    flag_region(args).iter().any(|arg| arg == flag)
 }
 
 fn wants_help(args: &[String]) -> bool {
@@ -263,14 +274,32 @@ fn wants_help(args: &[String]) -> bool {
 }
 
 fn strip_flags(args: &[String]) -> Vec<String> {
-    args.iter()
-        .filter(|arg| !arg.starts_with("--"))
+    let separator = args.iter().position(|arg| arg == "--");
+    let (flags, rest) = separator.map_or((args, &args[args.len()..]), |index| {
+        (&args[..index], &args[index + 1..])
+    });
+    flags
+        .iter()
+        .filter(|arg| !KNOWN_FLAGS.contains(&arg.as_str()))
+        .chain(rest.iter())
         .cloned()
         .collect()
 }
 
 fn prompt_from(args: &[String]) -> String {
-    strip_flags(args).join(" ").trim().to_string()
+    let positional = strip_flags(args);
+    if positional.len() == 1 && positional[0] == "-" {
+        return read_stdin_prompt();
+    }
+    positional.join(" ").trim().to_string()
+}
+
+fn read_stdin_prompt() -> String {
+    let mut buffer = String::new();
+    if std::io::stdin().read_to_string(&mut buffer).is_err() {
+        return String::new();
+    }
+    buffer.trim().to_string()
 }
 
 fn write_output(value: &Value, text: &str, json_output: bool) {
@@ -286,14 +315,15 @@ fn write_output(value: &Value, text: &str, json_output: bool) {
 
 fn route_prompt(prompt: &str) -> Result<Value, String> {
     let runtime = load_runtime()?;
-    let rust_signal = has_rust_signal(prompt, &runtime.registry);
+    let prepared = PreparedText::new(prompt);
+    let rust_signal = has_rust_signal(&prepared, &runtime.registry);
     let mut matches = Vec::new();
 
     for route in &runtime.registry.routes {
         if route.requires_rust_signal && !rust_signal {
             continue;
         }
-        if let Some((kind, value)) = match_route(prompt, route) {
+        if let Some((kind, value)) = match_route(&prepared, route) {
             matches.push(RouteMatch {
                 route: route.id.clone(),
                 skill: route.skill.clone(),
@@ -339,16 +369,13 @@ fn route_prompt(prompt: &str) -> Result<Value, String> {
 }
 
 fn compare_route_matches(left: &RouteMatch, right: &RouteMatch) -> Ordering {
-    if left.skill == "rust-router" {
-        return Ordering::Less;
-    }
-    if right.skill == "rust-router" {
-        return Ordering::Greater;
-    }
-    right
-        .priority
-        .cmp(&left.priority)
+    let left_is_router = left.skill == "rust-router";
+    let right_is_router = right.skill == "rust-router";
+    right_is_router
+        .cmp(&left_is_router)
+        .then_with(|| right.priority.cmp(&left.priority))
         .then_with(|| left.skill.cmp(&right.skill))
+        .then_with(|| left.route.cmp(&right.route))
 }
 
 fn unique_skills(matches: &[RouteMatch]) -> Vec<String> {
@@ -481,18 +508,45 @@ fn verify_registry() -> Result<Value, String> {
     let mut errors = Vec::new();
     let mut warnings = Vec::new();
 
+    let mut skill_ids = HashSet::new();
     for skill in &runtime.registry.skills {
+        if !skill_ids.insert(skill.id.as_str()) {
+            errors.push(format!("duplicate skill id: {}", skill.id));
+        }
         if !file_exists(&runtime.root.join(&skill.path)) {
             errors.push(format!("missing skill file: {}", skill.path));
         }
     }
 
+    let mut route_ids = HashSet::new();
+    let mut routed_skills = HashSet::new();
     for route in &runtime.registry.routes {
+        if !route_ids.insert(route.id.as_str()) {
+            errors.push(format!("duplicate route id: {}", route.id));
+        }
+        routed_skills.insert(route.skill.as_str());
         if !runtime.skills_by_id.contains_key(&route.skill) {
             errors.push(format!(
                 "route {} references unknown skill {}",
                 route.id, route.skill
             ));
+        }
+        for regex in &route.regexes {
+            if let Err(error) = compile_registry_regex(regex) {
+                errors.push(format!("route {} has invalid regex {regex}: {error}", route.id));
+            }
+        }
+    }
+
+    for regex in &runtime.registry.rust_signals.regexes {
+        if let Err(error) = compile_registry_regex(regex) {
+            errors.push(format!("rust_signals has invalid regex {regex}: {error}"));
+        }
+    }
+
+    for skill in &runtime.registry.skills {
+        if !routed_skills.contains(skill.id.as_str()) {
+            warnings.push(format!("skill {} is not reachable from any route", skill.id));
         }
     }
 
@@ -507,10 +561,15 @@ fn verify_registry() -> Result<Value, String> {
     ] {
         let file_path = runtime.root.join(relative);
         if file_exists(&file_path) {
-            let content = fs::read_to_string(&file_path)
-                .map_err(|error| format!("cannot read {}: {error}", file_path.display()))?;
-            if content.contains("codex_hooks") {
-                errors.push(format!("deprecated codex_hooks appears in {relative}"));
+            match fs::read_to_string(&file_path) {
+                Ok(content) => {
+                    if content.contains("codex_hooks") {
+                        errors.push(format!("deprecated codex_hooks appears in {relative}"));
+                    }
+                }
+                Err(error) => {
+                    errors.push(format!("cannot read {relative}: {error}"));
+                }
             }
         }
     }
@@ -578,23 +637,14 @@ fn verify_rust_router_skill(root: &Path) -> VerifySkillResult {
         errors.push("rust-router skill must stay plain English/ASCII".to_string());
     }
 
-    for anchor in [
-        "## Routing Calibration",
-        "Concept Anchors",
-        "public API contract",
-        "length, alignment",
-        "criterion",
-        "exit code",
-        "object safe",
-        "no_std",
-        "embedded",
-        "deadlock risk",
-    ] {
-        if !first_window.contains(anchor) {
-            errors.push(format!(
-                "rust-router first 2500 chars must expose anchor: {anchor}"
-            ));
-        }
+    // Structural gate only: the routing table must sit early in the file so
+    // agents see it without scrolling. Anchoring specific rubric phrases here
+    // couples the verifier to benchmark answer keys, so content is not checked.
+    if !first_window.contains("## Routing Calibration") {
+        errors.push(
+            "rust-router first 2500 chars must contain the ## Routing Calibration section"
+                .to_string(),
+        );
     }
 
     for forbidden in ["INSTRUCTIONS FOR CLAUDE", "INSTRUCTIONS FOR CODEX"] {
@@ -636,21 +686,35 @@ fn first_chars(value: &str, count: usize) -> String {
     value.chars().take(count).collect()
 }
 
-fn match_route(text: &str, route: &Route) -> Option<(String, String)> {
+struct PreparedText<'a> {
+    original: &'a str,
+    lower: String,
+}
+
+impl<'a> PreparedText<'a> {
+    fn new(text: &'a str) -> Self {
+        Self {
+            original: text,
+            lower: text.to_lowercase(),
+        }
+    }
+}
+
+fn match_route(text: &PreparedText, route: &Route) -> Option<(String, String)> {
     for keyword in &route.keywords {
         if keyword_matches(text, keyword) {
             return Some(("keyword".to_string(), keyword.clone()));
         }
     }
     for regex in &route.regexes {
-        if regex_matches(text, regex) {
+        if regex_matches(text.original, regex) {
             return Some(("regex".to_string(), regex.clone()));
         }
     }
     None
 }
 
-fn has_rust_signal(text: &str, registry: &Registry) -> bool {
+fn has_rust_signal(text: &PreparedText, registry: &Registry) -> bool {
     registry
         .rust_signals
         .keywords
@@ -660,34 +724,50 @@ fn has_rust_signal(text: &str, registry: &Registry) -> bool {
             .rust_signals
             .regexes
             .iter()
-            .any(|regex| regex_matches(text, regex))
+            .any(|regex| regex_matches(text.original, regex))
 }
 
-fn keyword_matches(text: &str, keyword: &str) -> bool {
-    let rust_case_sensitive_tokens = [
-        "Rc", "Arc", "Box", "RefCell", "Cell", "Mutex", "RwLock", "Send", "Sync", "Drop",
-    ];
+const RUST_CASE_SENSITIVE_TOKENS: [&str; 12] = [
+    "Rc", "Arc", "Box", "RefCell", "Cell", "Mutex", "RwLock", "Send", "Sync", "Drop", "Result",
+    "Option",
+];
 
-    if rust_case_sensitive_tokens.contains(&keyword) {
-        return bounded_regex(keyword, false).is_some_and(|regex| regex.is_match(text));
+fn keyword_matches(text: &PreparedText, keyword: &str) -> bool {
+    if RUST_CASE_SENSITIVE_TOKENS.contains(&keyword) {
+        return bounded_contains(text.original, keyword);
     }
 
-    if is_word_like(keyword) && keyword.len() <= 12 {
-        return bounded_regex(keyword, true).is_some_and(|regex| regex.is_match(text));
+    let keyword_lower = keyword.to_lowercase();
+    if is_word_like(keyword) {
+        return bounded_contains(&text.lower, &keyword_lower);
     }
 
-    text.to_lowercase().contains(&keyword.to_lowercase())
+    text.lower.contains(&keyword_lower)
 }
 
-fn bounded_regex(keyword: &str, case_insensitive: bool) -> Option<Regex> {
-    let pattern = format!(
-        r"(^|[^A-Za-z0-9_]){}([^A-Za-z0-9_]|$)",
-        regex::escape(keyword)
-    );
-    RegexBuilder::new(&pattern)
-        .case_insensitive(case_insensitive)
-        .build()
-        .ok()
+/// Substring search requiring ASCII word boundaries (matching JS `\b`
+/// semantics) on both sides, so CJK neighbours still count as boundaries.
+fn bounded_contains(haystack: &str, needle: &str) -> bool {
+    if needle.is_empty() {
+        return false;
+    }
+    let bytes = haystack.as_bytes();
+    let mut from = 0;
+    while let Some(found) = haystack[from..].find(needle) {
+        let start = from + found;
+        let end = start + needle.len();
+        let left_ok = start == 0 || !is_ascii_word_byte(bytes[start - 1]);
+        let right_ok = end == bytes.len() || !is_ascii_word_byte(bytes[end]);
+        if left_ok && right_ok {
+            return true;
+        }
+        from = start + 1;
+    }
+    false
+}
+
+fn is_ascii_word_byte(byte: u8) -> bool {
+    byte.is_ascii_alphanumeric() || byte == b'_'
 }
 
 fn is_word_like(value: &str) -> bool {
@@ -697,14 +777,23 @@ fn is_word_like(value: &str) -> bool {
 }
 
 fn regex_matches(text: &str, regex_source: &str) -> bool {
-    RegexBuilder::new(regex_source)
-        .case_insensitive(true)
-        .build()
-        .is_ok_and(|regex| regex.is_match(text))
+    compile_registry_regex(regex_source).is_ok_and(|regex| regex.is_match(text))
+}
+
+/// Registry regexes were written against JS `RegExp`, where `\b` and `\w` are
+/// ASCII-only. The Rust regex crate defaults to Unicode semantics, which makes
+/// `\b`-bounded tokens silently fail next to CJK text ("E0382错误"). Rewrite
+/// the Unicode-sensitive escapes to their ASCII forms before compiling.
+fn compile_registry_regex(regex_source: &str) -> Result<Regex, regex::Error> {
+    let pattern = regex_source
+        .replace("\\b", "(?-u:\\b)")
+        .replace("\\w", "[0-9A-Za-z_]")
+        .replace("\\d", "[0-9]");
+    RegexBuilder::new(&pattern).case_insensitive(true).build()
 }
 
 fn load_runtime() -> Result<Runtime, String> {
-    let root = find_runtime_root();
+    let root = find_runtime_root()?;
     let routes_path = root.join("index").join("routes.json");
     if !file_exists(&routes_path) {
         return Err(format!(
@@ -730,25 +819,35 @@ fn load_runtime() -> Result<Runtime, String> {
     })
 }
 
-fn find_runtime_root() -> PathBuf {
+fn find_runtime_root() -> Result<PathBuf, String> {
+    if let Ok(root) = env::var("RUST_SKILLS_ROOT") {
+        let explicit = normalize_path(Path::new(&root));
+        if file_exists(&explicit.join("index").join("routes.json")) {
+            return Ok(explicit);
+        }
+        return Err(format!(
+            "RUST_SKILLS_ROOT is set to {} but {}/index/routes.json does not exist",
+            explicit.display(),
+            explicit.display()
+        ));
+    }
     for candidate in runtime_root_candidates() {
         if file_exists(&candidate.join("index").join("routes.json")) {
-            return candidate;
+            return Ok(candidate);
         }
     }
-    current_dir()
+    Ok(current_dir())
 }
 
 fn runtime_root_candidates() -> Vec<PathBuf> {
     let mut candidates = Vec::new();
-    if let Ok(root) = env::var("RUST_SKILLS_ROOT") {
-        candidates.push(PathBuf::from(root));
-    }
 
     if let Ok(exe) = env::current_exe() {
         if let Some(bin_dir) = exe.parent() {
             candidates.push(bin_dir.join("..").join("rust-skills"));
             candidates.push(bin_dir.join(".."));
+            // repo layout: target/<profile>/rust-skills -> repo root
+            candidates.push(bin_dir.join("..").join(".."));
         }
     }
 
@@ -804,14 +903,18 @@ fn file_exists(path: &Path) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::{is_word_like, keyword_matches};
+    use super::{PreparedText, is_word_like, keyword_matches, prompt_from, regex_matches};
+
+    fn matches(text: &str, keyword: &str) -> bool {
+        keyword_matches(&PreparedText::new(text), keyword)
+    }
 
     #[test]
     fn bounded_keywords_do_not_match_inside_words() {
-        assert!(keyword_matches("Rust Rc cannot be sent", "Rc"));
-        assert!(!keyword_matches("Rocket Mortgage", "Rc"));
-        assert!(keyword_matches("cargo build failed", "cargo"));
-        assert!(keyword_matches("cargo shipping", "cargo"));
+        assert!(matches("Rust Rc cannot be sent", "Rc"));
+        assert!(!matches("Rocket Mortgage", "Rc"));
+        assert!(matches("cargo build failed", "cargo"));
+        assert!(matches("cargo shipping", "cargo"));
     }
 
     #[test]
@@ -819,5 +922,34 @@ mod tests {
         assert!(!is_word_like("Cargo.toml"));
         assert!(is_word_like("Send"));
         assert!(is_word_like("no_std"));
+    }
+
+    #[test]
+    fn keywords_match_adjacent_to_cjk_text() {
+        assert!(matches("用rust写一个解析器", "rust"));
+        assert!(matches("rustc报错了", "rustc"));
+        assert!(!matches("trusted setup", "rust"));
+    }
+
+    #[test]
+    fn long_word_like_keywords_stay_bounded() {
+        assert!(matches("rust-analyzer crashed", "rust-analyzer"));
+        assert!(!matches("rust-analyzers are plural", "rust-analyzer"));
+    }
+
+    #[test]
+    fn registry_regexes_use_ascii_boundaries() {
+        assert!(regex_matches("E0382错误怎么解决", r"\bE0\d{3,4}\b"));
+        assert!(regex_matches("main.rs报错", r"(^|[\s`'\x22])[\w./-]+\.rs\b"));
+        assert!(regex_matches("交易系统E0382怎么办", r"\bE0\d{3,4}\b"));
+        assert!(!regex_matches("CE03821", r"\bE0\d{3,4}\b"));
+    }
+
+    #[test]
+    fn prompt_parsing_keeps_dashed_text_and_separator() {
+        let args = |items: &[&str]| items.iter().map(|s| (*s).to_string()).collect::<Vec<_>>();
+        assert_eq!(prompt_from(&args(&["--json", "fix E0382"])), "fix E0382");
+        assert_eq!(prompt_from(&args(&["--json", "--", "--weird prompt"])), "--weird prompt");
+        assert_eq!(prompt_from(&args(&["--why is rust fast"])), "--why is rust fast");
     }
 }

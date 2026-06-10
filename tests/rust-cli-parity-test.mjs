@@ -28,12 +28,12 @@ function run(command, args, options = {}) {
   return result;
 }
 
-run("cargo", ["build", "--workspace"]);
+run("cargo", ["build", "--release", "--workspace"]);
 
 const nativeBin = path.join(
   root,
   "target",
-  "debug",
+  "release",
   process.platform === "win32" ? "rust-skills.exe" : "rust-skills"
 );
 const jsLauncher = path.join(root, "rust-skills.js");

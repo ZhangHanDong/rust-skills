@@ -30,16 +30,17 @@ unsafe { ... }
 pub unsafe fn dangerous() { ... }
 ```
 
-## Calibration Anchors
+## Raw Pointer Contracts
 
-- Glossary: alignment is the required memory boundary for a typed pointer or
-  reference.
-- Terminology: alignment is the invariant name; aligned describes a pointer or
-  reference that satisfies it.
-- `from_raw_parts` and raw pointer plus length APIs have a full pointer
-  contract: validity, non-null handling, alignment, initialization, lifetime,
-  aliasing, allocation bounds, and maximum size.
-- Alignment is a safety invariant, not a cosmetic detail.
+- APIs built from a raw pointer plus a length (`from_raw_parts` and friends)
+  carry the full pointer contract: the pointer must be non-null and valid for
+  the whole range, correctly aligned, point to initialized data, stay live for
+  the resulting lifetime, respect aliasing rules, fit within one allocation,
+  and the total byte size must not overflow `isize`.
+- Alignment is a safety invariant, not a cosmetic detail: producing an
+  unaligned reference is undefined behavior even if it is never dereferenced.
+- Spell out each requirement in the `// SAFETY:` comment instead of asserting
+  that the call is safe.
 
 ## Quick Reference
 

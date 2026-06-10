@@ -21,10 +21,10 @@ rust-skills index query <skill-id> --json
 rust-skills verify --json
 ```
 
-Runtime hooks are two-stage. A hook matcher may start the router as a cheap
-candidate filter, but `rust-skills route --json` is the source of truth. Do not
-inject Rust-specific reasoning unless the route JSON returns
-`should_inject: true`.
+Runtime hooks gate inside the hook script: each prompt spawns the CLI once and
+the hook stays silent unless the route JSON returns `should_inject: true`.
+`rust-skills route --json` is the source of truth. Do not inject Rust-specific
+reasoning unless the route JSON returns `should_inject: true`.
 
 If `detect` returns `no-op`, do not inject Rust-specific reasoning.
 
@@ -47,7 +47,15 @@ Hooks then include the full route JSON in addition to the compact auto route.
 Use this section when the user asks to install, reinstall, configure, verify,
 or diagnose rust-skills itself.
 
-Primary local runtime install:
+`install.js` is NOT part of this installed layout. All `node install.js ...`
+commands below must run from the original rust-skills checkout (git clone):
+
+```bash
+git clone https://github.com/actionbook/rust-skills.git
+cd rust-skills
+```
+
+Primary local runtime install (from that checkout):
 
 ```bash
 node install.js --codex --claude

@@ -23,10 +23,7 @@ Before adding dependencies:
 - What's the maintenance status?
 - What's the API stability?
 
-## API Evolution Calibration
-
-Glossary: release notes are user-facing compatibility notes; changelog entries
-are the detailed history.
+## API Evolution Guidance
 
 When a Rust API changes across compiler or crate versions, treat it as a
 compatibility problem before treating it as a syntax problem:

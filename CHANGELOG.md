@@ -5,6 +5,30 @@ All notable changes to rust-skills will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.1] - 2026-06-10
+
+### Added
+- Implicit-Rust routing signals: crate paths like `serde_json::`, pasted code such as `println!`/`String::from`, and lifetime syntax `<'a>` now route without the word "Rust".
+- Held-out routing corpus (`tests/fixtures/heldout-corpus.json`, 71 blind-authored queries) and generalization gate `tests/routing-heldout-test.mjs` with floor thresholds (accuracy 0.9, recall 0.9, precision 0.85, false-positive rate 0.15). Editing this corpus to make the router pass is forbidden; fix the router instead.
+- `rust-skills verify` now compile-checks every registry regex and reports duplicate skill ids and unreachable skills.
+- `install.js` prints a PATH hint for `~/.local/bin` after installing the shim.
+
+### Fixed
+- CJK word-boundary bug: prompts like `E0382错误` and `main.rs报错` now route correctly (ASCII `\b` semantics matching JavaScript).
+- Removed bare `clippy`/`anyhow` signals that caused false-positive injection on non-Rust prompts.
+- Hook prompts are passed to the CLI via stdin, removing the ARG_MAX limit on long prompts.
+- Invalid `RUST_SKILLS_ROOT` overrides now fail loudly instead of silently falling back.
+- `install.js` preflights cargo before copying any files, so a missing toolchain no longer leaves a partial install with a bare stack trace.
+- Hooks never trigger cargo builds: timeout and cargo fallback are disabled in hook context.
+
+### Changed
+- Removed the "Calibration Anchors" previously embedded in skill files; they leaked benchmark rubric terms into skill content and inflated earlier agent-quality numbers. Benchmark documentation now leads with the held-out routing metrics (accuracy 0.944, recall 1.000, false-positive rate 0.114 vs legacy regex 0.592 accuracy / 0.80 false-positive rate).
+- `tests/verify-all.mjs` runs against the release binary (~12s, previously ~102s).
+
+### Removed
+- `hooks.json` UserPromptSubmit matcher (it was an invalid `(?i)` JavaScript regex, and Claude Code ignores UserPromptSubmit matchers anyway); gating now happens inside the hook script, which spawns the CLI once per prompt (~30-70ms) and exits silently for non-Rust prompts.
+- Test suites: `tests/hook-matcher-test.mjs` (matcher removed), `tests/routing-eval-test.mjs` (subsumed by the routing A/B suite), `tests/hook-matcher-test.py` (orphan).
+
 ## [2.1.0] - 2026-05-18
 
 ### Added

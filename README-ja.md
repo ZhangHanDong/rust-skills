@@ -63,10 +63,7 @@ Rust Skills は3つのインストールモードをサポートしています�
 - `install.js` と hook 実行用の Node.js。
 - 事前ビルド済み binary がない場合、native `rust-skills` CLI を構築するための Rust/Cargo。
 
-Runtime hook は 2 段階のトリガーガードを使います：
-
-1. 低コストの hook matcher は、ルーターを実行する候補かどうかだけを判断します。
-2. `route --json` が `should_inject: true` を返した場合にだけ、Rust コンテキストを注入します。
+ゲーティングは hook スクリプト内部で行われます：プロンプトごとに hook が `rust-skills` CLI を 1 回起動し（約 30-70ms）、`route --json` が `should_inject: true` を返した場合にだけ Rust コンテキストを注入します。それ以外は静かに終了します。独立した hook matcher は存在しません。
 
 これにより、`cargo`、`ownership`、`lifetime`、`Rocket`、`Tower`、`unsafe` などの曖昧な語を含む非 Rust 作業を静かに扱えます。
 
@@ -77,6 +74,8 @@ node install.js --codex --claude
 
 rust-skills route --json "Rust E0382 value moved in axum state"
 ```
+
+インストール後に `rust-skills` コマンドが見つからない場合は、`~/.local/bin` が PATH に含まれていることを確認するか（`export PATH="$HOME/.local/bin:$PATH"`）、shim を絶対パスで呼び出してください（`~/.local/bin/rust-skills`）。
 
 インストールされる内容：
 
@@ -377,8 +376,8 @@ cd my-rust-project
      ▼
 ┌─────────────────────────────────────────┐
 │           Hook レイヤー                  │
-│  低コストの候補トリガー                  │
-│  CLI が should_inject を確認してから読込 │
+│  プロンプトごとに CLI ルーターを 1 回実行 │
+│  should_inject が true の場合のみ注入    │
 └─────────────────────────────────────────┘
      │
      ▼

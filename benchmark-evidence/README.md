@@ -7,6 +7,15 @@ or in ignored local `tests/results/**` outputs.
 Benchmark claims should describe the native Rust CLI runtime. JavaScript files
 are compatibility launcher glue for npm and hook integration.
 
+Claims in `current-summary.md` are tiered. Reproducible claims must come from
+committed gates anyone can run (`node tests/verify-all.mjs`) — currently the
+held-out routing corpus, the pinned routing A/B regression gate, and the
+deterministic suites. Anything that cites a `report.json` under
+`tests/results/**` is NOT verifiable from this repo (that path is gitignored)
+and must be labeled historical, with sampling-noise and comparator caveats
+stated inline. Note also that `tests/routing-corpus.json` co-evolved with the
+router: a perfect score there is a regression pin, not a benchmark result.
+
 Raw evidence capsules stay under `tests/results/**` and are ignored by Git
 because they are large. Commit only a current summary here when a benchmark run
 is used as release evidence. Harvest manifests stay in

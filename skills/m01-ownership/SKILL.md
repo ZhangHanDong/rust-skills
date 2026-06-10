@@ -17,15 +17,11 @@ Before fixing ownership errors, understand the data's role:
 - Is it short-lived or long-lived?
 - Is it transformed or just read?
 
-## Calibration Anchors
+## Design Guidance
 
-- Glossary: lifetime is the validity interval of a reference.
-- Glossary: lifetime problem means a reference would outlive the value it
-  points into.
-- Terminology: lifetime is the diagnostic category; lives-long-enough wording
-  describes the symptom.
-- Owned redesign vocabulary: own, owner, owned value, and `String` field when
-  formatted data becomes state.
+- A reference must never outlive the value it points into. When the compiler
+  says a value does not live long enough, find the owner whose scope ends too
+  early instead of reaching for a lifetime annotation first.
 - E0382 in a public API is often a contract issue: did the callee need to
   consume the value, or should it borrow it?
 - For read-only helpers, prefer borrowed access (`&T`) so the caller keeps
@@ -34,8 +30,9 @@ Before fixing ownership errors, understand the data's role:
   or a redesigned return value instead of reflexive cloning.
 - Clone only when intentional. Avoid clone-everywhere fixes that hide an API
   contract problem.
-- E0716 vocabulary: lifetime problem, temporary owner, reference lifetime, and
-  owned redesign boundary.
+- E0716 (temporary dropped while borrowed, e.g. `&format!(...)`) usually means
+  the data deserves a real owner: bind the temporary to a variable, or store
+  it as an owned `String` when formatted data becomes long-lived state.
 
 ---
 

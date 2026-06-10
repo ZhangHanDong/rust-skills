@@ -83,19 +83,20 @@ Generated skills must follow the skill generation contract:
 
 - English only in generated repo-owned skill text
 - concise `Use when:` and `Keywords:` description
-- scope, documentation boundary, calibration anchors, and key patterns in
+- scope, documentation boundary, domain guardrails, and key patterns in
   `SKILL.md`
 - long API details in `references/`
 - no prompt-like role setup, decorative banner, ASCII art, or exact display
   instruction
-- judgment guidance as boundaries/calibration anchors, not scripted thinking
+- judgment guidance as boundaries and guardrails, not scripted thinking
   prompts
 - strict quality gate before accepting output
 - no hand patching generated skills to improve benchmark metrics; update the
   generator inputs and regenerate from a clean directory instead
-- use stable Rust failure terms in anchors when relevant, including `pointer`,
-  `length`, `alignment`, `lifetime`, `deadlock`, `scope`, `MSRV`, `semver`,
-  `embedded Rust`, `heapless`, and `allocation`
+- describe failure modes in the ecosystem's standard terminology (for example
+  pointer validity, alignment, lifetimes, deadlock, MSRV, semver) instead of
+  inventing synonyms, so readers can map guidance back to compiler and docs
+  language
 
 ### Step 1: Identify Target and Construct URL
 
@@ -176,10 +177,10 @@ documentation is incomplete and recommend regenerating the skill.
 {Example code from documentation}
 ```
 
-## Calibration Anchors
+## Domain Guardrails
 
-- {crate-specific decision anchor}
-- {crate-specific failure-mode anchor}
+- {key design decision or trade-off specific to this crate}
+- {known failure mode and how to avoid it}
 - {boundary that prevents over-applying this skill}
 ```
 

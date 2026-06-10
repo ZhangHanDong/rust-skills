@@ -4,10 +4,12 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+// Release binary: the suite spawns the CLI hundreds of times, and the debug
+// build is ~8x slower per spawn.
 const nativeBin = path.join(
   root,
   "target",
-  "debug",
+  "release",
   process.platform === "win32" ? "rust-skills.exe" : "rust-skills"
 );
 
@@ -23,11 +25,10 @@ function run(label, command, args) {
   }
 }
 
-run("cargo build", "cargo", ["build", "--workspace"]);
+run("cargo build", "cargo", ["build", "--release", "--workspace"]);
+run("cargo test", "cargo", ["test", "--release", "--workspace", "--quiet"]);
 run("registry verify", nativeBin, ["verify", "--json"]);
 run("rust cli parity", process.execPath, [path.join(root, "tests", "rust-cli-parity-test.mjs")]);
-run("hook matcher", process.execPath, [path.join(root, "tests", "hook-matcher-test.mjs")]);
-run("routing eval", process.execPath, [path.join(root, "tests", "routing-eval-test.mjs")]);
 run("routing aom", process.execPath, [path.join(root, "tests", "aom", "run-routing-aom.mjs")]);
 run("aom evaluator", process.execPath, [path.join(root, "tests", "aom", "run-evaluator-self-test.mjs")]);
 run("agent fixture audit", process.execPath, [path.join(root, "tests", "aom", "run-agent-fixture-audit.mjs")]);
@@ -41,6 +42,7 @@ run("CLI fixture audit", process.execPath, [
   path.join(root, "tests", "results", "agent-fixture-audit-cli-report.json")
 ]);
 run("routing ab", process.execPath, [path.join(root, "tests", "routing-ab-test.mjs")]);
+run("routing heldout", process.execPath, [path.join(root, "tests", "routing-heldout-test.mjs")]);
 run("hook routing", process.execPath, [path.join(root, "tests", "hook-routing-test.mjs")]);
 run("install e2e", process.execPath, [path.join(root, "tests", "install-e2e.mjs")]);
 run("package safety", process.execPath, [path.join(root, "tests", "package-safety-test.mjs")]);

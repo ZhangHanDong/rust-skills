@@ -25,9 +25,9 @@ Generated skills follow the skill generation contract:
 
 - English only for generated repo-owned skill text.
 - Concise frontmatter; no trigger inflation.
-- `SKILL.md` carries scope, workflow, boundaries, and calibration anchors.
+- `SKILL.md` carries scope, workflow, boundaries, and domain guardrails.
 - No decorative banners, ASCII art, or exact display/output instructions.
-- Judgment guidance uses boundaries and calibration anchors, not scripted
+- Judgment guidance uses boundaries and domain guardrails, not scripted
   chain-of-thought or step-by-step thinking prompts.
 - Detailed API tables, long examples, and version notes go in `references/`.
 - Templates go in `assets/`; deterministic helpers go in `scripts/`.
@@ -38,7 +38,7 @@ Generated skills follow the skill generation contract:
 - Benchmark improvements must come from this contract and generated output,
   not from hand-editing generated leaf skills after the run.
 
-Select calibration anchors that match the crate documentation and user need.
+Select domain guardrails that match the crate documentation and user need.
 Do not paste every anchor into every generated skill.
 
 | Anchor Family | Use when documentation mentions |
@@ -200,7 +200,7 @@ For each skill:
    - Follow the generation contract above
    - Keep SKILL.md concise; target 40-120 lines and stay below 500 lines
    - Put complex content in references/
-   - Include only relevant calibration anchors
+   - Include only relevant domain guardrails
 
 3. **Write reference files**:
    - Complete API reference
@@ -229,7 +229,7 @@ For each skill:
 - [ ] Each SKILL.md has version info and update date
 - [ ] Each SKILL.md has Documentation navigation with load conditions
 - [ ] Each SKILL.md has Documentation Boundary section
-- [ ] Each SKILL.md has relevant calibration anchors
+- [ ] Each SKILL.md has relevant domain guardrails
 - [ ] Each SKILL.md has Key Patterns code examples
 - [ ] Each SKILL.md has Deprecated Patterns table (if applicable)
 - [ ] Each SKILL.md has "When Writing Code" best practices

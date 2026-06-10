@@ -8,8 +8,9 @@ This installs one top-level Codex skill plus the native Rust CLI router and hook
 Node 18+ is required. Rust/Cargo is required when installing from source without
 a prebuilt or already-built native CLI.
 
-The hook is a two-stage guard: the hook starts the router, and the router must
-return `should_inject: true` from `route --json` before Rust context is injected.
+Gating happens inside the hook script: on every prompt it spawns the
+`rust-skills` CLI once (~30-70ms) and exits silently unless `route --json`
+returns `should_inject: true`. There is no separate hook-level matcher.
 Matched Rust prompts receive a compact `RUST SKILLS AUTO ROUTE` section with
 skill IDs and runtime file paths. Set `RUST_SKILLS_DEBUG=1` only when you need
 the full route JSON.
@@ -21,6 +22,10 @@ node install.js --codex
 
 rust-skills route --json "Rust E0382 value moved"
 ```
+
+If `rust-skills` is not found after install, ensure `~/.local/bin` is on your
+PATH (`export PATH="$HOME/.local/bin:$PATH"`) or call the shim by absolute
+path (`~/.local/bin/rust-skills`).
 
 For a non-writing preview:
 

@@ -8,25 +8,23 @@ globs: ["**/Cargo.toml", "**/*.rs"]
 
 ## Routing Calibration
 
-Route by semantic intent. Keep leaf skills general; this table only identifies
-the skills and concept anchors that should emerge for underspecified prompts.
-Matched concept anchors are coverage points, not fixed wording. Cover Rust and
-domain term anchors by name when they carry the meaning.
+Route by semantic intent: match the prompt's underlying problem, not its
+exact wording, then load the listed skills.
 
-| Prompt Signal | Route Intent | Concept Anchors |
-|---------------|--------------|-----------------|
+| Prompt Signal | Route Intent | Key Concepts |
+|---------------|--------------|--------------|
 | moved value, API still needs original data | `m01-ownership` | ownership transfer, borrow-based API, public API contract |
-| E0716, `&format!`, temporary value dropped while borrowed | `m01-ownership` | lifetime problem, temporary owner, reference lifetime, owned redesign |
+| E0716, `&format!`, temporary value dropped while borrowed | `m01-ownership` | temporary lifetimes, binding temporaries to an owner, owning the data instead of borrowing it |
 | MSRV, stabilized API, deprecation, crate upgrade behavior change | `m11-ecosystem` | MSRV, semver, release notes, fallback, regression tests |
-| raw C pointer plus length, safe wrapper, `from_raw_parts`, FFI contract | `unsafe-checker` | SAFETY, pointer validity, length, alignment, lifetime, aliasing; `len` is the code identifier for the length invariant |
+| raw C pointer plus length, safe wrapper, `from_raw_parts`, FFI contract | `unsafe-checker` | SAFETY comments, pointer validity, length and alignment invariants, lifetime, aliasing |
 | slow pipeline, heavy allocation, optimization plan | `m10-performance` | measure first, benchmark, allocation, criterion |
 | Rust toolchain, Cargo setup, rust-skills install or verify | `rust-env-setup` | rustup, Cargo setup, rust-analyzer, rust-skills runtime, verify |
 | async handler holds a mutex across I/O | `m07-concurrency` + `domain-web` when handler/web is present | Mutex, await, deadlock risk, lock scope |
 | CLI exits 0 after failure, catches every error | `m06-error-handling` + `domain-cli` when CLI is present | exit code, error context, automation |
 | secret-bearing config dump, env tokens, printable diagnostics | `domain-cli` + `m06-error-handling` | environment source, redaction, safe config view, error diagnostics |
-| destructive CLI path cleanup, recursive delete, workspace root | `domain-cli` + `m06-error-handling` | canonicalize root and target, dry run safety concept, rejected-path error |
+| destructive CLI path cleanup, recursive delete, workspace root | `domain-cli` + `m06-error-handling` | canonicalize root and target paths, preview before mutation, refuse out-of-root paths with a non-zero exit |
 | trait object, plugin registry, `dyn`, generic methods, returns `Self` | `m04-zero-cost` | object safe, dyn dispatch, generic method, Self |
-| `no_std`, embedded firmware, cannot allocate, fixed buffers | `domain-embedded` | embedded Rust, no_std, heapless storage, allocation boundary, no allocation, fixed-capacity buffers |
+| `no_std`, embedded firmware, cannot allocate, fixed buffers | `domain-embedded` | no_std, heapless and fixed-capacity buffers, avoiding heap allocation |
 
 ---
 
@@ -87,7 +85,7 @@ answer template. See `patterns/negotiation.md` for the full protocol.
 ## Routing Surface
 
 - Route from prompt signal to layer intent and skill IDs.
-- Preserve matched concept anchors when they carry the meaning.
+- Keep the routed skills' key concepts in mind when forming the answer.
 - Load referenced sub-files only when the prompt needs that detail.
 
 ### Default Project Settings

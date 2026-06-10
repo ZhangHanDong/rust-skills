@@ -3,54 +3,42 @@
   "skillOverlays": {
     "unsafe-checker": {
       "anchors": [
-        "Glossary: alignment is the required memory boundary for a typed pointer or reference.",
-        "Terminology: alignment is the invariant name; aligned describes a pointer or reference that satisfies it.",
-        "Terminology: `len` is a code identifier; length is the prose invariant for pointer-plus-length APIs.",
-        "FFI slice contracts pair pointer and length with alignment, lifetime, and aliasing.",
-        "`from_raw_parts` safety contracts include pointer validity, length, alignment, and lifetime as documented caller obligations."
+        "`from_raw_parts` caller obligations: pointer validity, length, alignment, initialization, lifetime, and aliasing — document each in a SAFETY comment.",
+        "FFI slice wrappers pair a raw pointer with an element count and must state who guarantees the buffer stays valid and unaliased."
       ]
     },
     "m07-concurrency": {
       "anchors": [
-        "Async lock reviews should name deadlock risk and lock scope before code changes.",
-        "Drop lock guards before `.await`; reacquire only after I/O when needed.",
-        "For async service intake, say backpressure when using bounded queues, semaphores, or admission control."
+        "Drop lock guards before `.await`; holding a std MutexGuard across suspension points risks deadlock and starves other tasks.",
+        "Bounded queues, semaphores, and admission control give async services backpressure instead of unbounded memory growth."
       ]
     },
     "m12-lifecycle": {
       "anchors": [
-        "For graceful shutdown designs, connect cancellation, backpressure, and shutdown sequencing."
+        "Graceful shutdown couples cancellation signals, backpressure draining, and ordered teardown of resources."
       ]
     },
     "m11-ecosystem": {
       "anchors": [
-        "Glossary: release notes are user-facing compatibility notes; changelog entries are the detailed history.",
-        "API evolution reviews should name MSRV, semver, release notes, fallback, and regression tests."
+        "API evolution reviews cover MSRV policy, semver impact, release notes, fallback paths, and regression tests."
       ]
     },
     "m05-type-driven": {
       "anchors": [
-        "E0282 means inference lacks constraints; name `collect`, `type annotation`, and `turbofish` when explaining collection output types."
+        "E0282 means inference lacks constraints; add an explicit type where it best communicates intent — a binding annotation or `collect::<Vec<_>>()`."
       ]
     },
     "m04-zero-cost": {
       "anchors": [
-        "Glossary: type annotation means an explicit type on a binding, return, or collection boundary.",
-        "Glossary: turbofish is Rust's `::<...>` syntax for explicit generic arguments.",
-        "E0282 through generic APIs is an inference-boundary issue; stable fix vocabulary includes `type annotation` and `turbofish`.",
-        "`collect()` E0282 explanations connect output collection type, type annotation, and `collect::<Vec<_>>()`."
+        "E0282 through generic APIs is an inference-boundary issue: annotate the binding or use turbofish on the call that decides the type.",
+        "`collect()` needs the output collection type from context; supply it at whichever boundary reads most clearly."
       ]
     },
     "m01-ownership": {
       "anchors": [
-        "Glossary: lifetime is the validity interval of a reference.",
-        "Glossary: lifetime problem means a reference would outlive the value it points into.",
-        "Terminology: lifetime is the diagnostic category; lives-long-enough wording describes the symptom.",
-        "Owned redesign vocabulary: own, owner, owned value, and `String` field when formatted data becomes state.",
-        "E0382 fixes should preserve ownership intent; borrow before consume and clone last.",
-        "E0716 vocabulary: lifetime problem, temporary owner, reference lifetime, and owned redesign boundary.",
-        "E0716 with `format!` connects temporary owner, reference lifetime, local binding, and `String` ownership when stored as state.",
-        "For first-unique or index helpers over `&[String]`, count with borrowed `&str` keys and return a borrowed `&str` from the original slice."
+        "E0382 fixes should preserve ownership intent: borrow where read-only access suffices, move when transferring responsibility, clone only as a last resort.",
+        "E0716 with `format!` means the temporary needs an owner: bind it to a local, or store an owned `String` when the data becomes state.",
+        "Index helpers over `&[String]` can count with borrowed `&str` keys and return a `&str` borrowed from the original slice."
       ]
     },
     "m06-error-handling": {
@@ -60,22 +48,15 @@
     },
     "domain-embedded": {
       "anchors": [
-        "Canonical term family: embedded Rust, no_std firmware, heapless storage, allocation boundary, no allocation, fixed-capacity buffers.",
-        "Glossary: embedded Rust includes firmware, microcontroller, no_std, and fixed-capacity device code.",
-        "Glossary: heapless storage means fixed-capacity collections, raw arrays, static buffers, or ring buffers without heap allocation.",
-        "Glossary: allocation means heap-backed dynamic storage; no allocation means no heap growth at runtime.",
-        "Vocabulary bridge: raw arrays, static buffers, and ring buffers are heapless designs when they avoid heap allocation.",
-        "For no_std logging, heapless storage and no allocation connect raw-array implementations to embedded Rust constraints.",
-        "The `heapless` crate is one implementation option; equivalent fixed-capacity buffers share the same heapless design boundary.",
-        "Logging and buffering designs connect core::fmt::Write, fixed-capacity buffers, overflow behavior, and embedded Rust constraints."
+        "no_std code cannot heap-allocate: use fixed-capacity buffers (raw arrays, static buffers, ring buffers, or the `heapless` crate) and define overflow policy explicitly.",
+        "no_std logging combines `core::fmt::Write` with a fixed-capacity buffer and a stated drop/overwrite behavior when full."
       ]
     },
     "domain-cli": {
       "anchors": [
-        "Glossary: dry run is the two-word safety concept for preview without mutation.",
-        "Glossary: rejected-path error means a non-zero error exit before mutation.",
-        "Secret-bearing config diagnostics: environment source, redaction, separate printable config, and non-zero error behavior without leaking values.",
-        "Destructive cleanup diagnostics: canonicalized workspace root, dry run mode, explicit confirmation, and non-zero error for rejected paths."
+        "Destructive cleanup commands canonicalize the workspace root and every target, refuse out-of-root paths with a non-zero exit before any mutation, and offer a preview (dry-run) mode plus explicit confirmation.",
+        "Config diagnostics that may carry secrets redact values, attribute each setting to its source, and exit non-zero without leaking the secret.",
+        "Stdout carries machine-readable output; stderr carries human diagnostics and error context."
       ]
     }
   }
