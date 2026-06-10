@@ -24,6 +24,11 @@ struct Signals {
     keywords: Vec<String>,
     #[serde(default)]
     regexes: Vec<String>,
+    /// Veto patterns for weak (keyword-only) signal evidence: "rust stains",
+    /// "Tokio Marine". A strong regex signal (E0xxx, cargo build...) always
+    /// wins over a veto.
+    #[serde(default)]
+    not_regexes: Vec<String>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -139,6 +144,13 @@ fn run(argv: &[String]) -> Result<i32, String> {
             write_output(&value, &text, json_output);
             Ok(0)
         }
+        "hook" => {
+            if wants_help(command_args) {
+                print_hook_help();
+                return Ok(0);
+            }
+            run_hook(command_args)
+        }
         "index" => run_index(command_args, json_output),
         "verify" => {
             if wants_help(command_args) {
@@ -218,7 +230,13 @@ fn run_index(args: &[String], json_output: bool) -> Result<i32, String> {
 
 fn print_help() {
     println!(
-        "Rust Skills native runtime\n\nUsage:\n  rust-skills detect [--json] <prompt>\n  rust-skills route [--json] <prompt>\n  rust-skills index list [--json]\n  rust-skills index query <skill-id> [--json]\n  rust-skills verify [--json]\n\nCommands:\n  detect   Cheap Rust prompt detection summary.\n  route    Matched skill route and runtime skill paths.\n  index    Registry listing and skill lookup.\n  verify   Runtime registry and skill-standard checks.\n\nEnvironment:\n  RUST_SKILLS_ROOT  Override runtime data root."
+        "Rust Skills native runtime\n\nUsage:\n  rust-skills route [--json] <prompt | ->\n  rust-skills hook <claude|codex>\n  rust-skills index list [--json]\n  rust-skills index query <skill-id> [--json]\n  rust-skills verify [--json]\n  rust-skills detect [--json] <prompt | ->   (deprecated alias of route)\n\nCommands:\n  route    Matched skill route and runtime skill paths. Use - to read the prompt from stdin.\n  hook     UserPromptSubmit hook entry point: reads the hook event JSON from stdin\n           and emits routed context (claude: plain text, codex: JSON envelope).\n  index    Registry listing and skill lookup.\n  verify   Runtime registry and skill-standard checks.\n  detect   Deprecated: same routing as route with fewer output fields.\n\nEnvironment:\n  RUST_SKILLS_ROOT  Override runtime data root."
+    );
+}
+
+fn print_hook_help() {
+    println!(
+        "Run as a UserPromptSubmit hook without a Node wrapper.\n\nUsage:\n  rust-skills hook claude   Read hook JSON on stdin; print injected context text (empty when not Rust).\n  rust-skills hook codex    Read hook JSON on stdin; print a Codex hook JSON envelope.\n\nThe command always exits 0 so a broken runtime never blocks the host prompt;\nfailures are reported on stderr. Set RUST_SKILLS_DEBUG=1 to include the raw\nroute JSON in the injected context."
     );
 }
 
@@ -313,6 +331,230 @@ fn write_output(value: &Value, text: &str, json_output: bool) {
     }
 }
 
+/// Hard ceiling on injected skills per prompt. Keyword-stuffed prompts can
+/// legitimately match many routes; injecting them all costs thousands of
+/// context lines for marginal relevance. Matches stay fully reported in the
+/// JSON output, only the injected skill list is truncated (router first,
+/// then priority order).
+const MAX_INJECTED_SKILLS: usize = 5;
+
+#[allow(clippy::unnecessary_wraps)] // uniform command signature
+fn run_hook(args: &[String]) -> Result<i32, String> {
+    let positional = strip_flags(args);
+    let platform = positional.first().map_or("", String::as_str);
+    if platform != "claude" && platform != "codex" {
+        eprintln!("Unknown hook platform: {platform} (expected claude or codex)\n");
+        print_hook_help();
+        return Ok(2);
+    }
+
+    let prompt = extract_hook_prompt(&read_stdin_prompt());
+    // Hooks must never break the host prompt: report failures on stderr and
+    // emit a clean empty result instead of a non-zero exit.
+    let route = match route_prompt(&prompt) {
+        Ok(route) => route,
+        Err(error) => {
+            eprintln!("[rust-skills] routing disabled: {error}");
+            Value::Null
+        }
+    };
+    let inject = route["should_inject"].as_bool().unwrap_or(false);
+
+    if platform == "claude" {
+        if inject {
+            println!("{}", hook_context(&route));
+        }
+    } else if inject {
+        let envelope = json!({
+            "hookSpecificOutput": {
+                "hookEventName": "UserPromptSubmit",
+                "additionalContext": hook_context(&route)
+            }
+        });
+        println!("{envelope}");
+    } else {
+        println!("{{}}");
+    }
+    Ok(0)
+}
+
+fn extract_hook_prompt(payload: &str) -> String {
+    match serde_json::from_str::<Value>(payload) {
+        Ok(Value::Object(map)) => prompt_from_hook_object(&map).unwrap_or_default(),
+        Ok(_) => String::new(),
+        Err(_) => payload.trim().to_string(),
+    }
+}
+
+fn text_from_content(value: &Value) -> String {
+    match value {
+        Value::String(text) => text.trim().to_string(),
+        Value::Array(items) => items
+            .iter()
+            .map(text_from_content)
+            .filter(|text| !text.is_empty())
+            .collect::<Vec<_>>()
+            .join("\n")
+            .trim()
+            .to_string(),
+        Value::Object(map) => {
+            for key in ["text", "content", "message"] {
+                if let Some(inner) = map.get(key) {
+                    let text = text_from_content(inner);
+                    if !text.is_empty() {
+                        return text;
+                    }
+                }
+            }
+            String::new()
+        }
+        _ => String::new(),
+    }
+}
+
+fn prompt_from_hook_object(map: &Map<String, Value>) -> Option<String> {
+    for key in [
+        "prompt",
+        "user_prompt",
+        "userPrompt",
+        "user_message",
+        "userMessage",
+        "user_input",
+        "userInput",
+        "input_text",
+        "inputText",
+    ] {
+        if let Some(value) = map.get(key) {
+            let text = text_from_content(value);
+            if !text.is_empty() {
+                return Some(text);
+            }
+        }
+    }
+
+    for key in ["message", "input"] {
+        let Some(value) = map.get(key) else { continue };
+        if let Some(text) = value.as_str() {
+            if !text.trim().is_empty() {
+                return Some(text.trim().to_string());
+            }
+        }
+        for inner_key in ["content", "text"] {
+            if let Some(inner) = value.get(inner_key) {
+                let text = text_from_content(inner);
+                if !text.is_empty() {
+                    return Some(text);
+                }
+            }
+        }
+    }
+
+    for messages in [
+        map.get("messages"),
+        map.get("conversation").and_then(|v| v.get("messages")),
+        map.get("thread").and_then(|v| v.get("messages")),
+    ]
+    .into_iter()
+    .flatten()
+    {
+        let Some(items) = messages.as_array() else {
+            continue;
+        };
+        for message in items.iter().rev() {
+            if let Some(role) = message.get("role").and_then(Value::as_str) {
+                if role != "user" {
+                    continue;
+                }
+            }
+            for key in ["content", "text", "message"] {
+                if let Some(inner) = message.get(key) {
+                    let text = text_from_content(inner);
+                    if !text.is_empty() {
+                        return Some(text);
+                    }
+                }
+            }
+        }
+    }
+
+    for key in ["payload", "event", "request", "body"] {
+        if let Some(Value::Object(inner)) = map.get(key) {
+            if let Some(text) = prompt_from_hook_object(inner) {
+                return Some(text);
+            }
+        }
+    }
+
+    None
+}
+
+fn hook_context(route: &Value) -> String {
+    let mut blocks = Vec::new();
+    let skills: Vec<&str> = route["skills"]
+        .as_array()
+        .map(|items| items.iter().filter_map(Value::as_str).collect())
+        .unwrap_or_default();
+
+    if !skills.is_empty() {
+        let runtime_root = route["runtime_root"]
+            .as_str()
+            .filter(|root| !root.is_empty())
+            .unwrap_or("~/.claude/rust-skills or ~/.codex/rust-skills");
+        let paths = route["paths"].as_object();
+        let skill_lines = skills
+            .iter()
+            .map(|skill| {
+                let path = paths
+                    .and_then(|map| map.get(*skill))
+                    .and_then(Value::as_str)
+                    .map_or_else(|| format!("skills/{skill}/SKILL.md"), str::to_string);
+                format!("- {skill}: {path}")
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+        let reasons = route["matches"]
+            .as_array()
+            .map(|matches| {
+                matches
+                    .iter()
+                    .filter_map(|item| {
+                        let kind = item["matched"]["kind"].as_str().unwrap_or("");
+                        let value = item["matched"]["value"].as_str().unwrap_or("");
+                        match (kind.is_empty(), value.is_empty()) {
+                            (true, true) => None,
+                            (false, true) => Some(kind.to_string()),
+                            (true, false) => Some(value.to_string()),
+                            (false, false) => Some(format!("{kind}: {value}")),
+                        }
+                    })
+                    .take(6)
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default();
+        let reason_line = if reasons.is_empty() {
+            String::new()
+        } else {
+            format!("\nmatch reasons: {}", reasons.join("; "))
+        };
+        blocks.push(format!(
+            "=== RUST SKILLS AUTO ROUTE ===\nmatched skills: {}\nruntime root: {runtime_root}\nskill files:\n{skill_lines}{reason_line}\n===",
+            skills.join(", ")
+        ));
+    }
+
+    if env::var("RUST_SKILLS_DEBUG").as_deref() == Ok("1") {
+        if let Ok(raw) = serde_json::to_string_pretty(route) {
+            blocks.push(format!("=== RUST SKILLS ROUTE JSON ===\n{raw}\n==="));
+        }
+    }
+
+    blocks.push(
+        "=== RUST SKILLS ROUTING CONTRACT ===\nUse this context only for Rust-related work.\n\n1. Treat the auto route above as the source of truth.\n2. Load rust-router first, then the matched skills in order.\n3. Full runtime installs expose one top-level skill: rust-skills.\n4. Deep skill files live under the installed runtime data root:\n   - ~/.claude/rust-skills/skills/<skill-id>/SKILL.md\n   - ~/.codex/rust-skills/skills/<skill-id>/SKILL.md\n5. Keep domain-matched constraints in view when applying Rust mechanics.\n===".to_string(),
+    );
+
+    blocks.join("\n\n")
+}
+
 fn route_prompt(prompt: &str) -> Result<Value, String> {
     let runtime = load_runtime()?;
     let prepared = PreparedText::new(prompt);
@@ -349,12 +591,13 @@ fn route_prompt(prompt: &str) -> Result<Value, String> {
     }
 
     matches.sort_by(compare_route_matches);
-    let skills = unique_skills(&matches);
+    let (skills, truncated) = select_skills(&matches, &runtime.skills_by_id);
     let should_inject = !skills.is_empty();
     let layers = build_layers(skills.clone(), &runtime.skills_by_id);
     let paths = build_paths(&skills, &runtime.skills_by_id);
 
     Ok(json!({
+        "schema_version": 2,
         "decision": if should_inject { "inject" } else { "no-op" },
         "should_inject": should_inject,
         "prompt_is_rust": should_inject,
@@ -364,6 +607,7 @@ fn route_prompt(prompt: &str) -> Result<Value, String> {
         "matches": matches_to_value(&matches),
         "paths": paths,
         "context_cost": paths.len(),
+        "truncated": truncated,
         "runtime_root": runtime.root.to_string_lossy()
     }))
 }
@@ -387,6 +631,51 @@ fn unique_skills(matches: &[RouteMatch]) -> Vec<String> {
         }
     }
     skills
+}
+
+/// Truncate over-cap matches with layer quotas instead of pure priority
+/// order: the system's core thesis is that domain (layer3) and design
+/// (layer2) constraints co-load with mechanics (layer1), so the best match
+/// of each gets a guaranteed slot before remaining slots fill by priority.
+fn select_skills(
+    matches: &[RouteMatch],
+    skills_by_id: &HashMap<String, Skill>,
+) -> (Vec<String>, bool) {
+    let ordered = unique_skills(matches);
+    if ordered.len() <= MAX_INJECTED_SKILLS {
+        return (ordered, false);
+    }
+
+    let layer_of = |id: &String| {
+        skills_by_id
+            .get(id)
+            .and_then(|skill| skill.layer.as_deref())
+            .unwrap_or("utility")
+    };
+    let mut selected: Vec<&String> = Vec::new();
+    for guaranteed in ["router", "layer3", "layer2"] {
+        if let Some(id) = ordered.iter().find(|id| layer_of(id) == guaranteed) {
+            if !selected.contains(&id) {
+                selected.push(id);
+            }
+        }
+    }
+    for id in &ordered {
+        if selected.len() >= MAX_INJECTED_SKILLS {
+            break;
+        }
+        if !selected.contains(&id) {
+            selected.push(id);
+        }
+    }
+    // present in original priority order
+    let mut skills: Vec<String> = ordered
+        .iter()
+        .filter(|id| selected.contains(id))
+        .cloned()
+        .collect();
+    skills.truncate(MAX_INJECTED_SKILLS);
+    (skills, true)
 }
 
 fn build_paths(skills: &[String], skills_by_id: &HashMap<String, Skill>) -> Map<String, Value> {
@@ -538,7 +827,13 @@ fn verify_registry() -> Result<Value, String> {
         }
     }
 
-    for regex in &runtime.registry.rust_signals.regexes {
+    for regex in runtime
+        .registry
+        .rust_signals
+        .regexes
+        .iter()
+        .chain(&runtime.registry.rust_signals.not_regexes)
+    {
         if let Err(error) = compile_registry_regex(regex) {
             errors.push(format!("rust_signals has invalid regex {regex}: {error}"));
         }
@@ -715,16 +1010,27 @@ fn match_route(text: &PreparedText, route: &Route) -> Option<(String, String)> {
 }
 
 fn has_rust_signal(text: &PreparedText, registry: &Registry) -> bool {
-    registry
+    let strong = registry
+        .rust_signals
+        .regexes
+        .iter()
+        .any(|regex| regex_matches(text.original, regex));
+    if strong {
+        return true;
+    }
+    let weak = registry
         .rust_signals
         .keywords
         .iter()
-        .any(|keyword| keyword_matches(text, keyword))
-        || registry
-            .rust_signals
-            .regexes
-            .iter()
-            .any(|regex| regex_matches(text.original, regex))
+        .any(|keyword| keyword_matches(text, keyword));
+    if !weak {
+        return false;
+    }
+    !registry
+        .rust_signals
+        .not_regexes
+        .iter()
+        .any(|regex| regex_matches(text.original, regex))
 }
 
 const RUST_CASE_SENSITIVE_TOKENS: [&str; 12] = [
@@ -951,5 +1257,84 @@ mod tests {
         assert_eq!(prompt_from(&args(&["--json", "fix E0382"])), "fix E0382");
         assert_eq!(prompt_from(&args(&["--json", "--", "--weird prompt"])), "--weird prompt");
         assert_eq!(prompt_from(&args(&["--why is rust fast"])), "--why is rust fast");
+    }
+
+    #[test]
+    fn hook_prompt_extraction_handles_common_payload_shapes() {
+        use super::extract_hook_prompt;
+        assert_eq!(extract_hook_prompt(r#"{"prompt":"fix E0382"}"#), "fix E0382");
+        assert_eq!(
+            extract_hook_prompt(r#"{"user_input":{"text":"cargo build fails"}}"#),
+            "cargo build fails"
+        );
+        assert_eq!(
+            extract_hook_prompt(
+                r#"{"messages":[{"role":"assistant","content":"hi"},{"role":"user","content":[{"type":"text","text":"why Send bound"}]}]}"#
+            ),
+            "why Send bound"
+        );
+        assert_eq!(
+            extract_hook_prompt(r#"{"payload":{"prompt":"nested prompt"}}"#),
+            "nested prompt"
+        );
+        // non-JSON input is treated as the raw prompt
+        assert_eq!(extract_hook_prompt("plain text prompt"), "plain text prompt");
+        // unknown JSON shapes fail closed
+        assert_eq!(extract_hook_prompt(r#"{"transcript":"cargo test"}"#), "");
+    }
+
+    #[test]
+    fn skill_selection_guarantees_layer_quota_when_truncating() {
+        use super::{RouteMatch, Skill, select_skills};
+        use serde_json::Map;
+        use std::collections::HashMap;
+
+        let mk = |skill: &str, priority: i64| RouteMatch {
+            route: format!("r-{skill}"),
+            skill: skill.to_string(),
+            layer: None,
+            category: None,
+            priority,
+            matched_kind: "keyword".to_string(),
+            matched_value: "x".to_string(),
+        };
+        let skill = |id: &str, layer: &str| Skill {
+            id: id.to_string(),
+            path: format!("skills/{id}/SKILL.md"),
+            layer: Some(layer.to_string()),
+            extra: Map::new(),
+        };
+        let by_id: HashMap<String, Skill> = [
+            ("rust-router", "router"),
+            ("l1-a", "layer1"),
+            ("l1-b", "layer1"),
+            ("l1-c", "layer1"),
+            ("l1-d", "layer1"),
+            ("l2-a", "layer2"),
+            ("l3-a", "layer3"),
+        ]
+        .into_iter()
+        .map(|(id, layer)| (id.to_string(), skill(id, layer)))
+        .collect();
+
+        let matches = vec![
+            mk("rust-router", 1000),
+            mk("l1-a", 900),
+            mk("l1-b", 890),
+            mk("l1-c", 880),
+            mk("l1-d", 870),
+            mk("l3-a", 700),
+            mk("l2-a", 650),
+        ];
+        let (skills, truncated) = select_skills(&matches, &by_id);
+        assert!(truncated);
+        assert_eq!(skills.len(), 5);
+        assert!(skills.contains(&"rust-router".to_string()));
+        assert!(skills.contains(&"l3-a".to_string()), "layer3 must keep a slot");
+        assert!(skills.contains(&"l2-a".to_string()), "layer2 must keep a slot");
+        // under-cap input passes through untouched
+        let (few, t) = select_skills(&matches[..3], &by_id);
+        assert_eq!(few.len(), 3);
+        assert!(!t);
     }
 }

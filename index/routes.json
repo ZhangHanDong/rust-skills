@@ -67,6 +67,12 @@
       "\\b(serde_json|serde_yaml|serde|tokio|axum|actix|sqlx|anyhow|thiserror)::",
       "&'[a-z_]+\\b",
       "<'[a-z_]+\\b"
+    ],
+    "not_regexes": [
+      "rust[ -]?(stain|colou?r|spot|proof|remover|bucket|belt)",
+      "rust\\s+the\\s+game",
+      "tokio\\s+(marine|hotel|disney|olympic|drift|tower|station|tour)",
+      "铁锈|生锈|除锈"
     ]
   },
   "skills": [
@@ -272,34 +278,6 @@
       "layer": "utility",
       "kind": "dynamic",
       "description": "Dynamic crate skill management."
-    },
-    {
-      "id": "core-actionbook",
-      "path": "skills/core-actionbook/SKILL.md",
-      "layer": "utility",
-      "kind": "web",
-      "description": "Actionbook integration."
-    },
-    {
-      "id": "core-agent-browser",
-      "path": "skills/core-agent-browser/SKILL.md",
-      "layer": "utility",
-      "kind": "web",
-      "description": "Browser fetch integration."
-    },
-    {
-      "id": "core-fix-skill-docs",
-      "path": "skills/core-fix-skill-docs/SKILL.md",
-      "layer": "utility",
-      "kind": "maintenance",
-      "description": "Skill doc repair."
-    },
-    {
-      "id": "meta-cognition-parallel",
-      "path": "skills/meta-cognition-parallel/SKILL.md",
-      "layer": "experimental",
-      "kind": "orchestration",
-      "description": "Parallel meta-cognition analysis."
     },
     {
       "id": "rust-code-navigator",

@@ -62,6 +62,9 @@ function main(argv) {
     cwd: plan.cwd,
     env,
     encoding: "utf8",
+    // inherit stdin so stdin-reading subcommands (hook, route --json -- -)
+    // work through the launcher
+    stdio: ["inherit", "pipe", "pipe"],
     maxBuffer: 16 * 1024 * 1024
   });
 

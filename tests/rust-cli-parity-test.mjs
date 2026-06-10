@@ -103,9 +103,9 @@ function matchRoute(text, route) {
 
 function hasRustSignal(text) {
   const signals = registry.rust_signals || {};
-  if ((signals.keywords || []).some((keyword) => keywordMatches(text, keyword))) return true;
   if ((signals.regexes || []).some((regex) => regexMatches(text, regex))) return true;
-  return false;
+  if (!(signals.keywords || []).some((keyword) => keywordMatches(text, keyword))) return false;
+  return !(signals.not_regexes || []).some((regex) => regexMatches(text, regex));
 }
 
 function uniq(values) {
@@ -159,13 +159,32 @@ function legacyRoute(prompt) {
     if (right.skill === "rust-router") return 1;
     return right.priority - left.priority || left.skill.localeCompare(right.skill);
   });
-  const skillIds = uniq(orderedMatches.map((match) => match.skill));
+  const MAX_INJECTED_SKILLS = 5;
+  const allSkillIds = uniq(orderedMatches.map((match) => match.skill));
+  const truncated = allSkillIds.length > MAX_INJECTED_SKILLS;
+  let skillIds = allSkillIds;
+  if (truncated) {
+    // Mirror the CLI's layer-quota truncation: router + best layer3 + best
+    // layer2 get guaranteed slots, the rest fill by priority order.
+    const layerOf = (id) => skillsById.get(id)?.layer || "utility";
+    const selected = [];
+    for (const guaranteed of ["router", "layer3", "layer2"]) {
+      const found = allSkillIds.find((id) => layerOf(id) === guaranteed);
+      if (found && !selected.includes(found)) selected.push(found);
+    }
+    for (const id of allSkillIds) {
+      if (selected.length >= MAX_INJECTED_SKILLS) break;
+      if (!selected.includes(id)) selected.push(id);
+    }
+    skillIds = allSkillIds.filter((id) => selected.includes(id)).slice(0, MAX_INJECTED_SKILLS);
+  }
   const shouldInject = skillIds.length > 0;
   const paths = Object.fromEntries(
     skillIds.map((skillId) => [skillId, skillsById.get(skillId)?.path || null])
   );
 
   return {
+    schema_version: 2,
     decision: shouldInject ? "inject" : "no-op",
     should_inject: shouldInject,
     prompt_is_rust: shouldInject,
@@ -175,6 +194,7 @@ function legacyRoute(prompt) {
     matches: orderedMatches,
     paths,
     context_cost: skillIds.length,
+    truncated,
     runtime_root: root
   };
 }

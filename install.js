@@ -174,6 +174,20 @@ function fail(message) {
   process.exit(1);
 }
 
+// Full installs always ship the native binary (preflightToolchain guarantees
+// it), so hooks call it directly: one ~10ms native spawn per prompt instead
+// of node (~50ms) + a nested binary spawn. The node hook scripts stay
+// installed under <targetRoot>/hooks/ as a manual fallback and for plugin
+// layouts that cannot guarantee a built binary.
+function hookCommand(targetRoot, platform) {
+  const binary = path.join(
+    path.resolve(targetRoot),
+    "bin",
+    process.platform === "win32" ? "rust-skills.cmd" : "rust-skills"
+  );
+  return `${commandQuote(binary)} hook ${platform}`;
+}
+
 function cargoIsUsable() {
   const probe = childProcess.spawnSync("cargo", ["--version"], { encoding: "utf8" });
   return !probe.error && probe.status === 0;
@@ -447,9 +461,13 @@ function ensureCodexHooksFeature(targetRoot, actions) {
   }
 }
 
-function isRustSkillsCodexHook(entry) {
-  return JSON.stringify(entry).includes("rust-skill-router-hook.js")
-    || JSON.stringify(entry).includes("rust-skill-eval-hook.");
+// Matches both the current native hook command and the legacy node hook
+// scripts, so re-installs and upgrades replace our entry instead of stacking.
+function isRustSkillsHookEntry(entry) {
+  const raw = JSON.stringify(entry);
+  return raw.includes("rust-skill-router-hook.js")
+    || raw.includes("rust-skill-eval-hook.")
+    || /rust-skills(\.cmd)?\\?"? hook (codex|claude)/.test(raw);
 }
 
 function writeCodexHookSettings(targetRoot, actions) {
@@ -457,14 +475,13 @@ function writeCodexHookSettings(targetRoot, actions) {
   ensureCodexHooksFeature(targetRoot, actions);
 
   const hooksPath = path.join(targetRoot, "hooks.json");
-  const hookScript = path.join(path.resolve(targetRoot), "hooks", "rust-skill-router-hook.js");
-  const command = `node ${commandQuote(hookScript)}`;
+  const command = hookCommand(targetRoot, "codex");
   const settings = readJson(hooksPath);
   const existingHooks = objectOrEmpty(settings.hooks);
   const existingUserPromptHooks = Array.isArray(existingHooks.UserPromptSubmit)
     ? existingHooks.UserPromptSubmit
     : [];
-  const preserved = existingUserPromptHooks.filter((entry) => !isRustSkillsCodexHook(entry));
+  const preserved = existingUserPromptHooks.filter((entry) => !isRustSkillsHookEntry(entry));
   const nextSettings = {
     ...settings,
     hooks: {
@@ -492,16 +509,13 @@ function writeCodexHookSettings(targetRoot, actions) {
 function writeClaudeHookSettings(targetRoot, actions) {
   if (noHooks) return;
   const settingsPath = path.join(targetRoot, "settings.json");
-  const hookScript = path.join(path.resolve(targetRoot), "hooks", "rust-skill-eval-hook.js");
-  const command = `node ${commandQuote(hookScript)}`;
+  const command = hookCommand(targetRoot, "claude");
   const settings = readJson(settingsPath);
   const existingHooks = objectOrEmpty(settings.hooks);
   const existingUserPromptHooks = Array.isArray(existingHooks.UserPromptSubmit)
     ? existingHooks.UserPromptSubmit
     : [];
-  const preserved = existingUserPromptHooks.filter((entry) =>
-    !JSON.stringify(entry).includes("rust-skill-eval-hook.")
-  );
+  const preserved = existingUserPromptHooks.filter((entry) => !isRustSkillsHookEntry(entry));
   const nextSettings = {
     ...settings,
     hooks: {

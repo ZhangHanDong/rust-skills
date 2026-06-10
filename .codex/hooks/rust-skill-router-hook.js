@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 "use strict";
 
-// Codex UserPromptSubmit hook. All routing logic lives in the shared
-// lib/hook-core.js; this wrapper only resolves the core module for the
-// supported install layouts and emits the Codex JSON hook envelope.
+// Codex UserPromptSubmit hook. The native CLI does all routing work
+// (`rust-skills hook codex`); this wrapper locates lib/hook-core.js for the
+// supported install layouts and passes the hook event through. Kept for
+// layouts whose settings still reference the node hook; full installs invoke
+// the binary directly.
 
 const fs = require("fs");
 const path = require("path");
@@ -48,10 +50,6 @@ function loadHookCore() {
   return null;
 }
 
-function emit(value) {
-  process.stdout.write(`${JSON.stringify(value)}\n`);
-}
-
 function main() {
   const core = loadHookCore();
   if (!core) {
@@ -59,28 +57,15 @@ function main() {
       "[rust-skills] routing disabled: lib/hook-core.js not found " +
         "(re-run `node install.js` from the rust-skills checkout)\n"
     );
-    emit({});
+    process.stdout.write("{}\n");
     return;
   }
-
-  const config = {
-    hookDir,
+  const output = core.runHook("codex", {
     platformRoot: codexRoot,
     fallbackRoot: repoRoot,
     homeOrder: [".codex", ".claude"]
-  };
-  const prompt = core.extractPrompt(core.readStdin());
-  const route = core.resolveRoute(prompt, config);
-  if (!route.inject) {
-    emit({});
-    return;
-  }
-  emit({
-    hookSpecificOutput: {
-      hookEventName: "UserPromptSubmit",
-      additionalContext: route.context
-    }
   });
+  process.stdout.write(output || "{}\n");
 }
 
 main();

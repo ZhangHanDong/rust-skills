@@ -162,13 +162,26 @@ try {
 
   const hooks = JSON.parse(fs.readFileSync(path.join(codexDir, "hooks.json"), "utf8"));
   const rustHooks = (hooks.hooks.UserPromptSubmit || [])
-    .filter((entry) => JSON.stringify(entry).includes("rust-skill-router-hook.js"));
+    .filter((entry) => JSON.stringify(entry).includes("hook codex"));
   assert(rustHooks.length === 1, `expected one Codex hook, got ${rustHooks.length}`);
 
   const claudeSettings = JSON.parse(fs.readFileSync(path.join(claudeDir, "settings.json"), "utf8"));
   const claudeHooks = (claudeSettings.hooks.UserPromptSubmit || [])
-    .filter((entry) => JSON.stringify(entry).includes("rust-skill-eval-hook.js"));
+    .filter((entry) => JSON.stringify(entry).includes("hook claude"));
   assert(claudeHooks.length === 1, `expected one Claude hook, got ${claudeHooks.length}`);
+
+  // The installed native hook must work end-to-end via the binary itself.
+  const installedBin = path.join(codexDir, "bin", process.platform === "win32" ? "rust-skills.cmd" : "rust-skills");
+  const codexHookOut = run(installedBin, ["hook", "codex"], { input: '{"prompt":"Rust E0382 value moved in axum handler"}' });
+  assert(codexHookOut.stdout.includes("hookSpecificOutput"), "native codex hook should emit an envelope for Rust prompts");
+  assert(codexHookOut.stdout.includes("rust-router"), "native codex hook should route rust-router");
+  const codexHookSilent = run(installedBin, ["hook", "codex"], { input: '{"prompt":"what should I cook tonight"}' });
+  assert(codexHookSilent.stdout.trim() === "{}", "native codex hook should emit {} for non-Rust prompts");
+  const claudeBin = path.join(claudeDir, "bin", process.platform === "win32" ? "rust-skills.cmd" : "rust-skills");
+  const claudeHookOut = run(claudeBin, ["hook", "claude"], { input: '{"prompt":"Rust E0382 value moved"}' });
+  assert(claudeHookOut.stdout.includes("RUST SKILLS AUTO ROUTE"), "native claude hook should emit context for Rust prompts");
+  const claudeHookSilent = run(claudeBin, ["hook", "claude"], { input: '{"prompt":"hello there"}' });
+  assert(claudeHookSilent.stdout.trim() === "", "native claude hook should stay silent for non-Rust prompts");
 
   const userBin = path.join(temp, ".local", "bin", process.platform === "win32" ? "rust-skills.cmd" : "rust-skills");
   assert(fs.existsSync(userBin), "user PATH bin missing");

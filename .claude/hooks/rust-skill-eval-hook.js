@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 "use strict";
 
-// Claude Code UserPromptSubmit hook. All routing logic lives in the shared
-// lib/hook-core.js; this wrapper only resolves the core module for the
-// supported install layouts and emits raw context text on stdout.
+// Claude Code UserPromptSubmit hook. The native CLI does all routing work
+// (`rust-skills hook claude`); this wrapper locates lib/hook-core.js for the
+// supported install layouts and passes the hook event through. Kept for
+// layouts whose settings still reference the node hook; full installs invoke
+// the binary directly.
 
 const fs = require("fs");
 const path = require("path");
@@ -59,16 +61,12 @@ function main() {
     );
     return;
   }
-
-  const config = {
-    hookDir,
+  const output = core.runHook("claude", {
     platformRoot: claudeRoot,
     fallbackRoot: pluginRoot,
     homeOrder: [".claude", ".codex"]
-  };
-  const prompt = core.extractPrompt(core.readStdin());
-  const route = core.resolveRoute(prompt, config);
-  if (route.inject) process.stdout.write(route.context);
+  });
+  if (output) process.stdout.write(output);
 }
 
 main();

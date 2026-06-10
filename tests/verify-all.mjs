@@ -41,6 +41,16 @@ run("CLI fixture audit", process.execPath, [
   "--report",
   path.join(root, "tests", "results", "agent-fixture-audit-cli-report.json")
 ]);
+run("agent matrix dry-run", process.execPath, [
+  path.join(root, "tests", "aom", "run-agent-matrix.mjs"),
+  "--cases",
+  path.join(root, "tests", "aom", "fixtures", "agent-matrix-smoke.json"),
+  "--benchmark-mode",
+  "--run-root",
+  path.join(root, "tests", "results", "agent-matrix-smoke-dryrun"),
+  "--report",
+  path.join(root, "tests", "results", "agent-matrix-smoke-dryrun", "report.json")
+]);
 run("routing ab", process.execPath, [path.join(root, "tests", "routing-ab-test.mjs")]);
 run("routing heldout", process.execPath, [path.join(root, "tests", "routing-heldout-test.mjs")]);
 run("hook routing", process.execPath, [path.join(root, "tests", "hook-routing-test.mjs")]);

@@ -6,7 +6,12 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const cli = path.join(root, "rust-skills.js");
+const cli = path.join(
+  root,
+  "target",
+  "release",
+  process.platform === "win32" ? "rust-skills.exe" : "rust-skills"
+);
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
