@@ -718,5 +718,54 @@
         "m06-error-handling"
       ]
     }
+  },
+  {
+    "id": "rust-env-cargo-not-found",
+    "prompt": "cargo: command not found",
+    "expected": {
+      "rust": true,
+      "skills": [
+        "rust-router",
+        "rust-env-setup"
+      ]
+    }
+  },
+  {
+    "id": "rust-env-zsh-cargo-not-found",
+    "prompt": "zsh: command not found: cargo",
+    "expected": {
+      "rust": true,
+      "skills": [
+        "rust-router",
+        "rust-env-setup"
+      ]
+    }
+  },
+  {
+    "id": "rust-env-no-rust-cn",
+    "prompt": "我电脑上没有 Rust 环境怎么办",
+    "expected": {
+      "rust": true,
+      "skills": [
+        "rust-router",
+        "rust-env-setup"
+      ]
+    }
+  },
+  {
+    "id": "non-rust-npm-not-found",
+    "prompt": "npm: command not found",
+    "expected": {
+      "rust": false,
+      "skills": []
+    }
+  },
+  {
+    "id": "non-rust-brew-not-found",
+    "prompt": "command not found after brew install",
+    "expected": {
+      "rust": false,
+      "skills": []
+    }
   }
 ]

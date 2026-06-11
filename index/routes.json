@@ -76,7 +76,10 @@
       "\\b(cli|command[- ]?line|arg(ument)?s?|parser|parsing|derive|subcommand|flag)\\b.{0,40}\\bclap\\b",
       "\\brayon\\b.{0,30}\\b(par_iter|parallel|iterator|thread ?pool)\\b",
       "clippy.{0,20}(报|警告|建议|怎么|修)",
-      "(用|使用|错误|上下文|处理|报错).{0,12}anyhow|anyhow.{0,12}(错误|上下文|处理|报错)"
+      "(用|使用|错误|上下文|处理|报错).{0,12}anyhow|anyhow.{0,12}(错误|上下文|处理|报错)",
+      "(cargo|rustc|rustup)\\s*:?\\s*(command not found|not recognized|未找到|未安装|不是内部或外部命令)",
+      "command not found\\s*:?\\s*(cargo|rustc|rustup)",
+      "(没有|缺少|没装|未安装)\\s*(Rust|rust)\\s*(环境|工具链)?"
     ],
     "not_regexes": [
       "rust[ -]?(stain|colou?r|spot|proof|remover|bucket|belt)",
@@ -387,14 +390,20 @@
         "安装 rustup",
         "配置 rustup",
         "安装 rust-skills",
-        "配置 rust-skills"
+        "配置 rust-skills",
+        "command not found",
+        "未安装",
+        "没装",
+        "环境怎么",
+        "工具链"
       ],
       "regexes": [
         "\\brustup\\s+(install|update|default|toolchain|component|target|show)\\b",
         "\\brust[- ]?skills?\\b.*\\b(install|setup|configure|verify|reinstall|diagnose|runtime|codex|claude)\\b",
         "\\b(install|setup|configure|verify|reinstall|diagnose)\\b.*\\brust[- ]?skills?\\b",
         "\\brustskills?\\b.*\\b(install|setup|configure|verify|runtime|codex|claude)\\b",
-        "\\b(install|setup|configure|verify)\\b.*\\brustskills?\\b"
+        "\\b(install|setup|configure|verify)\\b.*\\brustskills?\\b",
+        "(cargo|rustc|rustup)\\s*:?\\s*(command not found|not recognized|未找到|未安装)"
       ]
     },
     {
