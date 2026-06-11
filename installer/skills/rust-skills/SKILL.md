@@ -12,21 +12,25 @@ If prompt context already contains `RUST SKILLS AUTO ROUTE`, use that matched
 skill list directly and read the listed skill files from the runtime root.
 No extra route command is needed.
 
-Use the native Rust `rust-skills` CLI as the executable routing contract:
+Use the native Rust `rust-skills` CLI as the executable routing contract.
+`rust-skills route --json` is the primary command:
 
 ```bash
-rust-skills detect --json "<user prompt>"
 rust-skills route --json "<user prompt>"
 rust-skills index query <skill-id> --json
 rust-skills verify --json
 ```
 
-Runtime hooks gate inside the hook script: each prompt spawns the CLI once and
-the hook stays silent unless the route JSON returns `should_inject: true`.
+(`rust-skills detect` still works but is a deprecated alias of `route`.)
+
+In full installs the UserPromptSubmit hook invokes the native binary directly
+(`rust-skills hook <claude|codex>`, ~10ms per prompt). Gating happens inside
+the binary: it emits nothing for non-Rust prompts and injects context only
+when the route decision is `should_inject: true`.
 `rust-skills route --json` is the source of truth. Do not inject Rust-specific
 reasoning unless the route JSON returns `should_inject: true`.
 
-If `detect` returns `no-op`, do not inject Rust-specific reasoning.
+If `route` returns `no-op`, do not inject Rust-specific reasoning.
 
 If no auto route is present and `route` returns `inject`, load `rust-router`
 first, then load the matched skill IDs from the route JSON. In full runtime
@@ -100,13 +104,13 @@ RUST_SKILLS_PROFILE=codex rust-skills verify --json
 RUST_SKILLS_PROFILE=claude rust-skills verify --json
 RUST_SKILLS_ROOT=/path/to/runtime rust-skills route --json "Rust E0382"
 RUST_SKILLS_BIN=/path/to/rust-skills rust-skills verify --json
-RUST_SKILLS_DEBUG=1 rust-skills detect --json "cargo clippy warning"
+RUST_SKILLS_DEBUG=1 rust-skills route --json "cargo clippy warning"
 ```
 
 Post-install checks:
 
 ```bash
-rust-skills detect --json "今天天气怎么样"
+rust-skills route --json "今天天气怎么样"
 rust-skills route --json "Rust Web API Rc cannot be sent between threads"
 rust-skills index query rust-router --json
 ```

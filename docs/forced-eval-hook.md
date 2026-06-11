@@ -1,5 +1,7 @@
 # Forced Eval Hook 原理
 
+> ⚠️ **历史设计文档** — 本文描述的强制评估 hook 方案已被**原生 hook（`rust-skills hook <claude|codex>`）+ 建议式路由契约**取代，不再反映当前实现。现行机制见 [hook-mechanism-zh.md](hook-mechanism-zh.md)。
+
 > 解决 Claude Code Skills 自动触发不可靠的问题
 
 ## 问题背景

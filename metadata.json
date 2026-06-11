@@ -1,11 +1,10 @@
 {
   "name": "rust-skills",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Comprehensive Rust development skills with local routing runtime for Codex and Claude Code",
   "author": "ZhangHanDong",
   "license": "MIT",
   "repository": "https://github.com/actionbook/rust-skills",
-
   "stats": {
     "meta_skills": 14,
     "domain_skills": 7,
@@ -22,7 +21,6 @@
     "commands": 16,
     "templates": 5
   },
-
   "skills": {
     "core": [
       "rust-router",
@@ -76,7 +74,6 @@
       "meta-cognition-parallel"
     ]
   },
-
   "agents": [
     "crate-researcher",
     "rust-changelog",
@@ -87,7 +84,6 @@
     "layer2-analyzer",
     "layer3-analyzer"
   ],
-
   "commands": [
     "guideline",
     "unsafe-check",
@@ -106,12 +102,10 @@
     "fix-skill-docs",
     "meta-parallel"
   ],
-
   "compatibility": {
     "claude_code_min_version": "1.0.0",
     "rust_version_coverage": "1.0.0 - 1.85.0"
   },
-
   "last_updated": "2026-05-18",
   "quality_checks": {
     "skill_frontmatter": true,

@@ -104,6 +104,10 @@ fn run(argv: &[String]) -> Result<i32, String> {
             print_help();
             Ok(0)
         }
+        "version" | "--version" | "-V" => {
+            println!("rust-skills {}", env!("CARGO_PKG_VERSION"));
+            Ok(0)
+        }
         "detect" => {
             if wants_help(command_args) {
                 print_detect_help();
@@ -1018,17 +1022,27 @@ fn has_rust_signal(text: &PreparedText, registry: &Registry) -> bool {
     };
     if keyword_hit(text) {
         // Vetoes target ambiguous literal tokens ("rust stains", "Tokio
-        // Marine"). Strip only the vetoed spans and re-check: keyword
-        // evidence outside the vetoed phrase still counts, so "deserialize
-        // with serde while my kid plays rust the game" stays Rust.
-        match joined_registry_regex(&registry.rust_signals.not_regexes) {
-            Some(veto) if veto.is_match(text.original) => {
-                let stripped = veto.replace_all(text.original, " ");
-                if keyword_hit(&PreparedText::new(&stripped)) {
-                    return true;
-                }
+        // Marine"). Strip only the vetoed spans (per pattern, sequentially —
+        // mirrors the JS parity model and means one invalid pattern degrades
+        // only itself) and re-check: keyword evidence outside the vetoed
+        // phrase still counts, so "deserialize with serde while my kid plays
+        // rust the game" stays Rust.
+        let vetoes: Vec<Regex> = registry
+            .rust_signals
+            .not_regexes
+            .iter()
+            .filter_map(|pattern| compile_registry_regex(pattern).ok())
+            .collect();
+        if vetoes.iter().any(|veto| veto.is_match(text.original)) {
+            let mut stripped = text.original.to_string();
+            for veto in &vetoes {
+                stripped = veto.replace_all(&stripped, " ").into_owned();
             }
-            _ => return true,
+            if keyword_hit(&PreparedText::new(&stripped)) {
+                return true;
+            }
+        } else {
+            return true;
         }
     }
     // Strong regex evidence (error codes, cargo commands, code syntax)

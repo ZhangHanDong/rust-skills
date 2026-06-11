@@ -467,10 +467,14 @@ function ensureCodexHooksFeature(targetRoot, actions) {
 // double-quotes on Windows), so allow any quote characters between the binary
 // name and the hook subcommand.
 function isRustSkillsHookEntry(entry) {
-  const raw = JSON.stringify(entry);
-  return raw.includes("rust-skill-router-hook.js")
-    || raw.includes("rust-skill-eval-hook.")
-    || /rust-skills(\.cmd)?['"\\]* hook (codex|claude)/.test(raw);
+  const commands = [
+    entry?.command,
+    ...(Array.isArray(entry?.hooks) ? entry.hooks.map((hook) => hook?.command) : [])
+  ].filter((value) => typeof value === "string");
+  return commands.some((command) =>
+    command.includes("rust-skill-router-hook.js")
+      || command.includes("rust-skill-eval-hook.")
+      || /rust-skills(\.cmd)?['"]* hook (codex|claude)(?![A-Za-z0-9_-])/.test(command));
 }
 
 function writeCodexHookSettings(targetRoot, actions) {

@@ -35,7 +35,11 @@
       "clippy::",
       "anyhow::",
       "anyhow crate",
-      "par_iter"
+      "par_iter",
+      "run clippy",
+      "fix clippy",
+      "clippy errors",
+      "clippy report"
     ],
     "regexes": [
       "\\bE0\\d{3,4}\\b",
@@ -71,18 +75,17 @@
       "\\bclap\\b.{0,40}\\b(cli|command[- ]?line|arg(ument)?s?|parser|parsing|derive|subcommand|flag)\\b",
       "\\b(cli|command[- ]?line|arg(ument)?s?|parser|parsing|derive|subcommand|flag)\\b.{0,40}\\bclap\\b",
       "\\brayon\\b.{0,30}\\b(par_iter|parallel|iterator|thread ?pool)\\b",
-      "\\bclippy\\b.{0,40}\\b(lint|warn|fix|run|report|allow|deny|error|suggest|code|project|crate|rust|cargo)\\b",
-      "\\b(lint|warn|fix|run|report|allow|deny|error|suggest|code|project|crate|rust|cargo)\\b.{0,40}\\bclippy\\b",
       "clippy.{0,20}(报|警告|建议|怎么|修)",
-      "\\banyhow\\b.{0,30}\\b(error|context|result|crate|bail|chain)\\b",
-      "\\b(error|context|result|crate|bail|chain)\\b.{0,30}\\banyhow\\b",
       "(用|使用|错误|上下文|处理|报错).{0,12}anyhow|anyhow.{0,12}(错误|上下文|处理|报错)"
     ],
     "not_regexes": [
       "rust[ -]?(stain|colou?r|spot|proof|remover|bucket|belt)",
       "rust\\s+the\\s+game",
       "tokio\\s+(marine|hotel|disney|olympic|drift|tower|station|tour)",
-      "铁锈|生锈|除锈"
+      "铁锈|生锈|除锈",
+      "clippy[, ]{0,3}the\\s+(office\\s+)?(assistant|paperclip)",
+      "microsoft[^.]{0,24}clippy|clippy[^.]{0,24}microsoft",
+      "clippy\\s+(art|revival|cartoon|mascot)"
     ]
   },
   "skills": [

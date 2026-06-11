@@ -8,9 +8,12 @@ This installs one top-level Codex skill plus the native Rust CLI router and hook
 Node 18+ is required. Rust/Cargo is required when installing from source without
 a prebuilt or already-built native CLI.
 
-Gating happens inside the hook script: on every prompt it spawns the
-`rust-skills` CLI once (~30-70ms) and exits silently unless `route --json`
-returns `should_inject: true`. There is no separate hook-level matcher.
+Full installs wire the UserPromptSubmit hook directly to the native binary —
+`<targetRoot>/bin/rust-skills hook codex` (~10ms per prompt). Gating happens
+inside the binary: it emits nothing for non-Rust prompts and injects context
+only when the route decision is `should_inject: true`. There is no separate
+hook-level matcher; the node hook script remains only as a repo-checkout/
+plugin-layout fallback.
 Matched Rust prompts receive a compact `RUST SKILLS AUTO ROUTE` section with
 skill IDs and runtime file paths. Set `RUST_SKILLS_DEBUG=1` only when you need
 the full route JSON.
@@ -61,7 +64,7 @@ node install.js --codex --legacy-top-level-skills
 
 RUST_SKILLS_PROFILE=codex rust-skills verify --json
 RUST_SKILLS_ROOT=/path/to/runtime rust-skills route --json "Rust E0382"
-RUST_SKILLS_DEBUG=1 rust-skills detect --json "cargo clippy warning"
+RUST_SKILLS_DEBUG=1 rust-skills route --json "cargo clippy warning"
 ```
 
 `--no-hooks` still copies the runtime CLI and hook files; it only skips merging
@@ -129,7 +132,7 @@ Run these after installation or environment changes:
 
 ```bash
 rust-skills verify --json
-rust-skills detect --json "今天天气怎么样"
+rust-skills route --json "今天天气怎么样"
 rust-skills route --json "Rust Web API Rc cannot be sent between threads"
 ```
 

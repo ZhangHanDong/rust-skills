@@ -4,7 +4,7 @@
 
 > AI-powered Rust development assistant with meta-cognition framework
 
-[![Version](https://img.shields.io/badge/version-2.1.0-green.svg)](https://github.com/actionbook/rust-skills/releases)
+[![Version](https://img.shields.io/badge/version-2.2.0-green.svg)](https://github.com/actionbook/rust-skills/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Plugin-blue)](https://github.com/anthropics/claude-code)
 
@@ -63,7 +63,7 @@ Prerequisites for source installs:
 - Node.js for `install.js` and hook execution.
 - Rust/Cargo for building the native `rust-skills` CLI when a prebuilt binary is not already present.
 
-Gating happens inside the hook script itself: on every prompt the hook spawns the `rust-skills` CLI once (~30-70ms) and exits silently unless `route --json` returns `should_inject: true`. There is no separate hook-level matcher.
+Full installs wire the UserPromptSubmit hook directly to the native binary — `<targetRoot>/bin/rust-skills hook claude|codex` (~10ms per prompt). Gating happens inside the binary: it emits nothing for non-Rust prompts and injects context only when the route decision is `should_inject: true`. There is no separate hook-level matcher; the node hook scripts remain only as a fallback for repo-checkout/plugin layouts.
 
 This keeps non-Rust work quiet even if a prompt contains ambiguous words such as `cargo`, `ownership`, `lifetime`, `Rocket`, `Tower`, or `unsafe`.
 When a Rust prompt does match, hooks inject a compact `RUST SKILLS AUTO ROUTE`
@@ -104,7 +104,7 @@ Verify locally:
 ```bash
 npm test
 rust-skills verify --json
-rust-skills detect --json "今天天气怎么样"
+rust-skills route --json "今天天气怎么样"
 rust-skills route --json "Rust Web API Rc cannot be sent between threads"
 ```
 

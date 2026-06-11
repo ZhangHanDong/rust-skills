@@ -641,5 +641,82 @@
       "rust": false,
       "skills": []
     }
+  },
+  {
+    "id": "non-rust-anyhow-error-apology",
+    "prompt": "anyhow, that was my error and I apologize",
+    "expected": {
+      "rust": false,
+      "skills": []
+    }
+  },
+  {
+    "id": "non-rust-anyhow-meeting",
+    "prompt": "error: anyhow we proceed with the meeting",
+    "expected": {
+      "rust": false,
+      "skills": []
+    }
+  },
+  {
+    "id": "non-rust-anyhow-result-week",
+    "prompt": "anyhow the result was the same as last week",
+    "expected": {
+      "rust": false,
+      "skills": []
+    }
+  },
+  {
+    "id": "non-rust-clippy-art",
+    "prompt": "clippy art project ideas for my office party",
+    "expected": {
+      "rust": false,
+      "skills": []
+    }
+  },
+  {
+    "id": "non-rust-clippy-revival",
+    "prompt": "the Microsoft Clippy revival project needs a designer",
+    "expected": {
+      "rust": false,
+      "skills": []
+    }
+  },
+  {
+    "id": "non-rust-clippy-paperclip",
+    "prompt": "Clippy the paperclip would warn you about formatting your essay",
+    "expected": {
+      "rust": false,
+      "skills": []
+    }
+  },
+  {
+    "id": "non-rust-clippy-office-run",
+    "prompt": "I cannot run Clippy the Office assistant on my Mac",
+    "expected": {
+      "rust": false,
+      "skills": []
+    }
+  },
+  {
+    "id": "rust-clippy-cargo-warnings",
+    "prompt": "cargo clippy warnings everywhere",
+    "expected": {
+      "rust": true,
+      "skills": [
+        "rust-router"
+      ]
+    }
+  },
+  {
+    "id": "rust-anyhow-result-cn",
+    "prompt": "anyhow::Result 怎么用",
+    "expected": {
+      "rust": true,
+      "skills": [
+        "rust-router",
+        "m06-error-handling"
+      ]
+    }
   }
 ]

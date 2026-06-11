@@ -4,7 +4,7 @@
 
 > メタ認知フレームワークを備えた AI Rust 開発アシスタント
 
-[![Version](https://img.shields.io/badge/version-2.1.0-green.svg)](https://github.com/actionbook/rust-skills/releases)
+[![Version](https://img.shields.io/badge/version-2.2.0-green.svg)](https://github.com/actionbook/rust-skills/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Plugin-blue)](https://github.com/anthropics/claude-code)
 
@@ -63,7 +63,7 @@ Rust Skills は3つのインストールモードをサポートしています�
 - `install.js` と hook 実行用の Node.js。
 - 事前ビルド済み binary がない場合、native `rust-skills` CLI を構築するための Rust/Cargo。
 
-ゲーティングは hook スクリプト内部で行われます：プロンプトごとに hook が `rust-skills` CLI を 1 回起動し（約 30-70ms）、`route --json` が `should_inject: true` を返した場合にだけ Rust コンテキストを注入します。それ以外は静かに終了します。独立した hook matcher は存在しません。
+フルインストールでは UserPromptSubmit hook がネイティブ binary を直接呼び出します——`<targetRoot>/bin/rust-skills hook claude|codex`（プロンプトごとに約 10ms）。ゲーティングは binary 内部で行われます：非 Rust プロンプトには何も出力せず、ルーティング判定が `should_inject: true` の場合にだけ Rust コンテキストを注入します。独立した hook matcher は存在しません。Node hook スクリプトは repo checkout / plugin レイアウト向けのフォールバックとしてのみ残されています。
 
 これにより、`cargo`、`ownership`、`lifetime`、`Rocket`、`Tower`、`unsafe` などの曖昧な語を含む非 Rust 作業を静かに扱えます。
 
@@ -101,7 +101,7 @@ hooks = true
 ```bash
 npm test
 rust-skills verify --json
-rust-skills detect --json "今天天気怎么样"
+rust-skills route --json "今日の天気は？"
 rust-skills route --json "Rust Web API Rc cannot be sent between threads"
 ```
 

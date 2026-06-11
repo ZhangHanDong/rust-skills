@@ -404,8 +404,8 @@ Expected:
 # Check skill structure
 bash scripts/quality-check.sh
 
-# Check hook regex matching
-python tests/hook-matcher-test.py
+# Run the full verification gate (registry, routing, hooks, install e2e)
+node tests/verify-all.mjs
 ```
 
 ---

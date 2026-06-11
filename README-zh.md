@@ -4,7 +4,7 @@
 
 > 基于元认知框架的 AI Rust 开发助手
 
-[![Version](https://img.shields.io/badge/version-2.1.0-green.svg)](https://github.com/actionbook/rust-skills/releases)
+[![Version](https://img.shields.io/badge/version-2.2.0-green.svg)](https://github.com/actionbook/rust-skills/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Plugin-blue)](https://github.com/anthropics/claude-code)
 
@@ -63,7 +63,7 @@ Rust Skills 支持三种安装模式：
 - Node.js 用于运行 `install.js` 和 hook。
 - 如果没有现成的预编译 binary，需要 Rust/Cargo 来构建 native `rust-skills` CLI。
 
-触发判断在 hook 脚本内部完成：每个 prompt 提交时，hook 会启动一次 `rust-skills` CLI（约 30-70ms），只有 `route --json` 返回 `should_inject: true` 时才注入 Rust 上下文，否则静默退出。不存在独立的 hook matcher。
+完整安装会把 UserPromptSubmit hook 直接接到原生二进制——`<targetRoot>/bin/rust-skills hook claude|codex`（每条 prompt 约 10ms）。触发判断在二进制内部完成：非 Rust prompt 不输出任何内容，只有路由决策为 `should_inject: true` 时才注入 Rust 上下文。不存在独立的 hook matcher；Node hook 脚本仅作为 repo checkout / plugin 布局的回退保留。
 
 这样即使 prompt 里出现 `cargo`、`ownership`、`lifetime`、`Rocket`、`Tower`、`unsafe` 这类歧义词，非 Rust 工作也不会被打扰。
 
@@ -101,7 +101,7 @@ hooks = true
 ```bash
 npm test
 rust-skills verify --json
-rust-skills detect --json "今天天气怎么样"
+rust-skills route --json "今天天气怎么样"
 rust-skills route --json "Rust Web API Rc cannot be sent between threads"
 ```
 

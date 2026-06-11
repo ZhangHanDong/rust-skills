@@ -57,10 +57,12 @@ Node 包装 hook 只为尚未完整安装的布局保留,它们没有路由逻�
 
 判断 prompt 是否是 Rust 相关,分两级证据:
 
-- **强证据** (`regexes`,30 条):`\bE0\d{3,4}\b`、`cargo build|test|...`、`crates.io` 等,命中即通过。
-- **弱证据** (`keywords`,34 个):`rust`、`rustc`、`tokio`、`Cargo.toml`、`borrow checker` 等。
-  弱证据可被 **否决正则** (`not_regexes`,4 条) 推翻,用于排除
-  "rust stains"(铁锈)、"rust the game"、"Tokio Marine"(东京海上)、"铁锈/生锈/除锈" 这类假阳性。
+- **强证据** (`regexes`,35 条):`\bE0\d{3,4}\b`、`cargo build|test|...`、`crates.io` 等,命中即通过。
+- **弱证据** (`keywords`,39 个):`rust`、`rustc`、`tokio`、`Cargo.toml`、`borrow checker` 等。
+  弱证据可被 **否决正则** (`not_regexes`,7 条) 推翻,用于排除
+  "rust stains"(铁锈)、"rust the game"、"Tokio Marine"(东京海上)、"铁锈/生锈/除锈"、
+  "Clippy the assistant"(微软曲别针助手) 这类假阳性。
+  否决只剥除被否决的片段 (veto-span stripping),片段之外的 Rust 证据仍可路由;
   强证据始终压过否决。
 
 ### routes — 38 条路由
@@ -100,6 +102,7 @@ Node 包装 hook 只为尚未完整安装的布局保留,它们没有路由逻�
   "layers": { "router": [...], "layer1": [...], "layer2": [...], "layer3": [...], "utility": [...], "experimental": [...] },
   "matches": [ { "route": "...", "skill": "...", "priority": 930, "matched": { "kind": "regex", "value": "..." } } ],
   "paths": { "m01-ownership": "skills/m01-ownership/SKILL.md" },
+  "context_cost": 3,
   "truncated": false,
   "runtime_root": "/path/to/runtime"
 }
@@ -124,6 +127,7 @@ rust-skills hook <claude|codex>            # hook 入口: stdin 读事件 JSON, 
 rust-skills index list [--json]            # 列出注册表中所有 skill
 rust-skills index query <skill-id>         # 查询单个 skill 路径与元数据
 rust-skills verify [--json]                # 注册表完整性检查
+rust-skills --version                      # 输出运行时版本
 rust-skills detect [--json] <prompt | ->   # 已废弃, route 的别名 (输出字段更少)
 ```
 
@@ -148,7 +152,7 @@ node tests/verify-all.mjs    # 全量门, ~15s, 必须以 "verify all: PASS" 结
 包含 cargo build/test、`rust-skills verify`、Rust/JS CLI 一致性、AOM 路由评测、
 hook 路由、安装 e2e、打包安全等。两个语料各司其职:
 
-- `tests/routing-corpus.json`(56 条):与 routes.json 共同演化的**回归钉子**,期望逐条精确。
+- `tests/routing-corpus.json`(74 条):与 routes.json 共同演化的**回归钉子**,期望逐条精确。
 - `tests/fixtures/heldout-corpus.json`(71 条):**盲写的留出集**,只设泛化下限阈值;
   如果要改这个语料才能让路由通过,说明路由失去了泛化能力——应该修路由而不是改语料。
 

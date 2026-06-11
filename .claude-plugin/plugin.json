@@ -1,6 +1,6 @@
 {
   "name": "rust-skills",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Comprehensive Rust development assistant with meta-question routing, coding guidelines, version queries, and ecosystem support",
   "author": {
     "name": "ZhangHanDong",

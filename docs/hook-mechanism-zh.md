@@ -83,7 +83,11 @@ match reasons: signal: rust; regex: \bE(0382|...)\b; keyword: 交易
 ===
 
 === RUST SKILLS ROUTING CONTRACT ===
-(固定的路由契约: 以 auto route 为准, 先加载 rust-router, 再按序加载匹配 skill, ...)
+(建议式契约, 仅约束 Rust 相关工作:
+ 1. 匹配到的 skill 携带项目约定、领域约束、版本事实与已知坑, 查这些内容时以 skill 为准;
+ 2. 一般推理以 agent 自身的 Rust 专业知识优先, 不要让 skill 模板限制回答深度;
+ 3. 当匹配 skill 标注的护栏与当前任务相关时 (如跨 await 持锁、退出码契约、unsafe 不变量), 应当应用;
+ 4. 深层 skill 文件位于已安装 runtime 数据根之下)
 ===
 ```
 

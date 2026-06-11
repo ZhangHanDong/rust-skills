@@ -11,14 +11,23 @@ from this repo).
 
 `tests/fixtures/heldout-corpus.json` holds 71 queries authored blind against
 the router (it did not co-evolve with `index/routes.json`). The gate
-`tests/routing-heldout-test.mjs` enforces floor thresholds, not exact matches.
+`tests/routing-heldout-test.mjs` enforces floor thresholds (accuracy 0.9,
+recall 0.9, precision 0.85, false-positive rate 0.15), not exact matches.
 
-| Metric | Legacy regex hook (main) | Current CLI router |
-|--------|--------------------------|--------------------|
-| Accuracy | 0.592 | 0.944 |
-| Recall | — | 1.000 |
-| Precision | — | 0.900 |
-| False-positive rate | 0.80 | 0.114 |
+| Metric | Legacy regex hook (main) | Blind pre-adaptation run | Current (post-adaptation) |
+|--------|--------------------------|--------------------------|---------------------------|
+| Accuracy | 0.592 | 0.944 | 1.000 |
+| Recall | — | 1.000 | 1.000 |
+| False-positive rate | 0.80 | 0.114 | 0.000 |
+
+Honesty note: 0.944 accuracy / 1.000 recall / 0.114 false-positive rate was
+the blind PRE-adaptation estimate — the only run measured before this corpus
+influenced the router. The veto patterns (`rust_signals.not_regexes`) were
+then derived from that run's failures, after which the gate pins
+1.000 / 1.000 / 0.000 as a regression floor. The current numbers are
+therefore a floor that must not decay, NOT an unbiased generalization
+estimate. The gate also reports (but does not gate) per-case expected-skill
+recall: `skill_recall_reported` is currently 0.853.
 
 The legacy `UserPromptSubmit` matcher injected Rust context on roughly 89% of
 ALL prompts, Rust-related or not. The honest headline of this branch is not
@@ -27,17 +36,17 @@ recall at 1.000 on the held-out set.
 
 ### Pinned-corpus A/B (regression gate, not a benchmark)
 
-`tests/routing-ab-test.mjs` scores legacy 0.679 vs current 1.000 on
-`tests/routing-corpus.json`. That corpus co-evolved with the router, so 1.000
-is a regression pin that must not decay — it is NOT evidence of generalization.
-Use the held-out numbers above for any external claim.
+`tests/routing-ab-test.mjs` scores legacy 0.635 vs current 1.000 on the
+74-case `tests/routing-corpus.json`. That corpus co-evolved with the router,
+so 1.000 is a regression pin that must not decay — it is NOT evidence of
+generalization. Use the held-out numbers above for any external claim.
 
 ### Context cost
 
 Per matched Rust prompt the hook injects a compact auto-route section
-(~2.5 skills on average) instead of a static context blob on ~89% of all
-prompts. Non-Rust prompts get nothing: the hook spawns the CLI once
-(~30-70ms) and exits silently.
+(~2.4 skills on average) instead of a static context blob on ~89% of all
+prompts. Non-Rust prompts get nothing: full installs invoke the native
+binary hook directly (~10ms per prompt) and it exits silently.
 
 ### Deterministic gates
 
