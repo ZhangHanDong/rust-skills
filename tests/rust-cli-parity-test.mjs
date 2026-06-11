@@ -28,7 +28,9 @@ function run(command, args, options = {}) {
   return result;
 }
 
-run("cargo", ["build", "--release", "--workspace"]);
+if (process.env.RUST_SKILLS_PREBUILT !== "1") {
+  run("cargo", ["build", "--release", "--workspace"]);
+}
 
 const nativeBin = path.join(
   root,
@@ -70,7 +72,9 @@ function keywordMatches(text, keyword) {
     "RwLock",
     "Send",
     "Sync",
-    "Drop"
+    "Drop",
+    "Result",
+    "Option"
   ]);
 
   if (rustCaseSensitiveTokens.has(source)) {
@@ -78,7 +82,7 @@ function keywordMatches(text, keyword) {
     return pattern.test(text);
   }
 
-  if (isWordLike(source) && source.length <= 12) {
+  if (isWordLike(source)) {
     const pattern = new RegExp(`(^|[^A-Za-z0-9_])${escapeRegex(source)}([^A-Za-z0-9_]|$)`, "i");
     return pattern.test(text);
   }
@@ -103,9 +107,22 @@ function matchRoute(text, route) {
 
 function hasRustSignal(text) {
   const signals = registry.rust_signals || {};
-  if ((signals.regexes || []).some((regex) => regexMatches(text, regex))) return true;
-  if (!(signals.keywords || []).some((keyword) => keywordMatches(text, keyword))) return false;
-  return !(signals.not_regexes || []).some((regex) => regexMatches(text, regex));
+  const keywordHit = (t) => (signals.keywords || []).some((keyword) => keywordMatches(t, keyword));
+  if (keywordHit(text)) {
+    // Mirror the CLI's veto-strip: remove vetoed spans, keep remaining evidence
+    const vetoes = (signals.not_regexes || []).filter((regex) => regexMatches(text, regex));
+    if (vetoes.length === 0) return true;
+    let stripped = text;
+    for (const veto of signals.not_regexes || []) {
+      try {
+        stripped = stripped.replace(new RegExp(veto, "gi"), " ");
+      } catch {
+        // invalid pattern: never matches, nothing to strip
+      }
+    }
+    if (keywordHit(stripped)) return true;
+  }
+  return (signals.regexes || []).some((regex) => regexMatches(text, regex));
 }
 
 function uniq(values) {
@@ -187,7 +204,6 @@ function legacyRoute(prompt) {
     schema_version: 2,
     decision: shouldInject ? "inject" : "no-op",
     should_inject: shouldInject,
-    prompt_is_rust: shouldInject,
     rust_signal: rustSignal,
     skills: skillIds,
     layers: buildLayers(skillIds, skillsById),
@@ -204,7 +220,6 @@ function legacyDetect(prompt) {
   return {
     decision: route.decision,
     should_inject: route.should_inject,
-    prompt_is_rust: route.prompt_is_rust,
     rust_signal: route.rust_signal,
     skills: route.skills,
     runtime_root: route.runtime_root

@@ -552,5 +552,94 @@
       "rust": false,
       "skills": []
     }
+  },
+  {
+    "id": "rust-clippy-bare-run",
+    "prompt": "run clippy on my project and fix what it reports",
+    "expected": {
+      "rust": true,
+      "skills": [
+        "rust-router",
+        "coding-guidelines"
+      ]
+    }
+  },
+  {
+    "id": "rust-clippy-bare-cn",
+    "prompt": "clippy 报了 too_many_arguments 怎么改",
+    "expected": {
+      "rust": true,
+      "skills": [
+        "rust-router",
+        "coding-guidelines"
+      ]
+    }
+  },
+  {
+    "id": "rust-anyhow-context-cn",
+    "prompt": "用 anyhow 给错误加上下文怎么写",
+    "expected": {
+      "rust": true,
+      "skills": [
+        "rust-router",
+        "m06-error-handling"
+      ]
+    }
+  },
+  {
+    "id": "non-rust-anyhow-adverb",
+    "prompt": "anyhow, let us move on to the next topic",
+    "expected": {
+      "rust": false,
+      "skills": []
+    }
+  },
+  {
+    "id": "non-rust-ms-clippy",
+    "prompt": "Microsoft Clippy assistant history",
+    "expected": {
+      "rust": false,
+      "skills": []
+    }
+  },
+  {
+    "id": "rust-fintech-banking-transaction",
+    "prompt": "How should I design transaction rollback for transfers in my Rust banking service",
+    "expected": {
+      "rust": true,
+      "skills": [
+        "rust-router",
+        "domain-fintech"
+      ]
+    }
+  },
+  {
+    "id": "rust-ddd-repository-trait",
+    "prompt": "design a repository trait in Rust for storage abstraction",
+    "expected": {
+      "rust": true,
+      "skills": [
+        "rust-router",
+        "m09-domain"
+      ]
+    }
+  },
+  {
+    "id": "rust-veto-with-real-signal",
+    "prompt": "how to deserialize logs with serde while my kid plays rust the game",
+    "expected": {
+      "rust": true,
+      "skills": [
+        "rust-router"
+      ]
+    }
+  },
+  {
+    "id": "non-rust-veto-only",
+    "prompt": "rust stains on my shirt, how do I remove them",
+    "expected": {
+      "rust": false,
+      "skills": []
+    }
   }
 ]

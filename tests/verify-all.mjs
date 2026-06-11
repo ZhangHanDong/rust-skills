@@ -16,7 +16,8 @@ const nativeBin = path.join(
 function run(label, command, args) {
   const result = spawnSync(command, args, {
     cwd: root,
-    encoding: "utf8"
+    encoding: "utf8",
+    env: { ...process.env, RUST_SKILLS_PREBUILT: "1" }
   });
   process.stdout.write(result.stdout);
   process.stderr.write(result.stderr);

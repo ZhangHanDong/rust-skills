@@ -44,11 +44,18 @@ let tp = 0;
 let fp = 0;
 let tn = 0;
 let fn = 0;
+let skillHits = 0;
+let skillTotal = 0;
 const misses = [];
 
 for (const testCase of corpus) {
   const routed = route(testCase.prompt);
   const actual = routed.should_inject;
+  // Reported, not gated: held-out floors gate the inject decision only.
+  for (const skill of testCase.expectSkills || []) {
+    skillTotal += 1;
+    if ((routed.skills || []).includes(skill)) skillHits += 1;
+  }
   if (testCase.rust && actual) tp += 1;
   else if (!testCase.rust && actual) {
     fp += 1;
@@ -71,6 +78,7 @@ const stats = {
   recall: Number((tp / Math.max(1, tp + fn)).toFixed(3)),
   false_positive_rate: Number((fp / Math.max(1, fp + tn)).toFixed(3)),
   accuracy: Number(((tp + tn) / Math.max(1, total)).toFixed(3)),
+  skill_recall_reported: Number((skillHits / Math.max(1, skillTotal)).toFixed(3)),
   misses
 };
 

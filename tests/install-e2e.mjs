@@ -19,6 +19,7 @@ function run(command, args, options = {}) {
   const result = spawnSync(command, args, {
     cwd: root,
     encoding: "utf8",
+    shell: typeof command === "string" && command.endsWith(".cmd"),
     ...options
   });
   assert(result.status === 0, result.stderr || result.stdout);
@@ -169,6 +170,17 @@ try {
   const claudeHooks = (claudeSettings.hooks.UserPromptSubmit || [])
     .filter((entry) => JSON.stringify(entry).includes("hook claude"));
   assert(claudeHooks.length === 1, `expected one Claude hook, got ${claudeHooks.length}`);
+
+  // Reinstall must replace our hook entries, not stack duplicates.
+  run(process.execPath, [path.join(root, "install.js"), "--codex", "--claude", "--codex-dir", codexDir, "--claude-dir", claudeDir, "--home", temp]);
+  const hooksAfterReinstall = JSON.parse(fs.readFileSync(path.join(codexDir, "hooks.json"), "utf8"));
+  const codexAfter = (hooksAfterReinstall.hooks.UserPromptSubmit || [])
+    .filter((entry) => JSON.stringify(entry).includes("hook codex"));
+  assert(codexAfter.length === 1, `reinstall stacked Codex hooks: got ${codexAfter.length}`);
+  const claudeAfterSettings = JSON.parse(fs.readFileSync(path.join(claudeDir, "settings.json"), "utf8"));
+  const claudeAfter = (claudeAfterSettings.hooks.UserPromptSubmit || [])
+    .filter((entry) => JSON.stringify(entry).includes("hook claude"));
+  assert(claudeAfter.length === 1, `reinstall stacked Claude hooks: got ${claudeAfter.length}`);
 
   // The installed native hook must work end-to-end via the binary itself.
   const installedBin = path.join(codexDir, "bin", process.platform === "win32" ? "rust-skills.cmd" : "rust-skills");

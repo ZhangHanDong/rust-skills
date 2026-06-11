@@ -70,7 +70,13 @@
       "<'[a-z_]+\\b",
       "\\bclap\\b.{0,40}\\b(cli|command[- ]?line|arg(ument)?s?|parser|parsing|derive|subcommand|flag)\\b",
       "\\b(cli|command[- ]?line|arg(ument)?s?|parser|parsing|derive|subcommand|flag)\\b.{0,40}\\bclap\\b",
-      "\\brayon\\b.{0,30}\\b(par_iter|parallel|iterator|thread ?pool)\\b"
+      "\\brayon\\b.{0,30}\\b(par_iter|parallel|iterator|thread ?pool)\\b",
+      "\\bclippy\\b.{0,40}\\b(lint|warn|fix|run|report|allow|deny|error|suggest|code|project|crate|rust|cargo)\\b",
+      "\\b(lint|warn|fix|run|report|allow|deny|error|suggest|code|project|crate|rust|cargo)\\b.{0,40}\\bclippy\\b",
+      "clippy.{0,20}(报|警告|建议|怎么|修)",
+      "\\banyhow\\b.{0,30}\\b(error|context|result|crate|bail|chain)\\b",
+      "\\b(error|context|result|crate|bail|chain)\\b.{0,30}\\banyhow\\b",
+      "(用|使用|错误|上下文|处理|报错).{0,12}anyhow|anyhow.{0,12}(错误|上下文|处理|报错)"
     ],
     "not_regexes": [
       "rust[ -]?(stain|colou?r|spot|proof|remover|bucket|belt)",
@@ -595,7 +601,11 @@
         "business rule",
         "invariant",
         "validation",
-        "领域模型"
+        "领域模型",
+        "repository trait",
+        "repository abstraction",
+        "storage abstraction",
+        "aggregate root"
       ]
     },
     {
@@ -758,7 +768,13 @@
         "金融",
         "交易",
         "货币",
-        "支付"
+        "支付",
+        "banking",
+        "银行",
+        "转账",
+        "对账",
+        "financial transaction",
+        "交易系统"
       ]
     },
     {

@@ -463,11 +463,14 @@ function ensureCodexHooksFeature(targetRoot, actions) {
 
 // Matches both the current native hook command and the legacy node hook
 // scripts, so re-installs and upgrades replace our entry instead of stacking.
+// Quoting varies by platform (shellQuote single-quotes on POSIX, cmdQuote
+// double-quotes on Windows), so allow any quote characters between the binary
+// name and the hook subcommand.
 function isRustSkillsHookEntry(entry) {
   const raw = JSON.stringify(entry);
   return raw.includes("rust-skill-router-hook.js")
     || raw.includes("rust-skill-eval-hook.")
-    || /rust-skills(\.cmd)?\\?"? hook (codex|claude)/.test(raw);
+    || /rust-skills(\.cmd)?['"\\]* hook (codex|claude)/.test(raw);
 }
 
 function writeCodexHookSettings(targetRoot, actions) {
@@ -588,7 +591,7 @@ process.stdout.write(`${JSON.stringify({
   actions
 }, null, 2)}\n`);
 
-const localBin = path.join(os.homedir(), ".local", "bin");
+const localBin = homePath(".local", "bin");
 const onPath = String(process.env.PATH || "")
   .split(path.delimiter)
   .some((entry) => entry && path.resolve(entry) === localBin);

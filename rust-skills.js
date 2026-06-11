@@ -54,10 +54,14 @@ function main(argv) {
     return 1;
   }
 
-  const env = {
-    ...process.env,
-    RUST_SKILLS_ROOT: process.env.RUST_SKILLS_ROOT || root
-  };
+  // Only pin RUST_SKILLS_ROOT when this script actually sits next to a
+  // runtime (repo checkout). The installed copy lives in <targetRoot>/bin/
+  // with no index/routes.json beside it; pinning that path would make the
+  // binary hard-error instead of self-discovering the runtime root.
+  const env = { ...process.env };
+  if (!env.RUST_SKILLS_ROOT && fileExists(path.join(root, "index", "routes.json"))) {
+    env.RUST_SKILLS_ROOT = root;
+  }
   const result = childProcess.spawnSync(plan.command, plan.args, {
     cwd: plan.cwd,
     env,

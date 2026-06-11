@@ -113,7 +113,6 @@ fn run(argv: &[String]) -> Result<i32, String> {
             let value = json!({
                 "decision": route["decision"].clone(),
                 "should_inject": route["should_inject"].clone(),
-                "prompt_is_rust": route["prompt_is_rust"].clone(),
                 "rust_signal": route["rust_signal"].clone(),
                 "skills": route["skills"].clone(),
                 "runtime_root": route["runtime_root"].clone()
@@ -604,7 +603,6 @@ fn route_prompt(prompt: &str) -> Result<Value, String> {
         "schema_version": 2,
         "decision": if should_inject { "inject" } else { "no-op" },
         "should_inject": should_inject,
-        "prompt_is_rust": should_inject,
         "rust_signal": rust_signal,
         "skills": skills,
         "layers": layers,
@@ -656,29 +654,20 @@ fn select_skills(
             .and_then(|skill| skill.layer.as_deref())
             .unwrap_or("utility")
     };
-    let mut selected: Vec<&String> = Vec::new();
+    let mut kept: HashSet<&String> = HashSet::new();
     for guaranteed in ["router", "layer3", "layer2"] {
         if let Some(id) = ordered.iter().find(|id| layer_of(id) == guaranteed) {
-            if !selected.contains(&id) {
-                selected.push(id);
-            }
+            kept.insert(id);
         }
     }
     for id in &ordered {
-        if selected.len() >= MAX_INJECTED_SKILLS {
+        if kept.len() >= MAX_INJECTED_SKILLS {
             break;
         }
-        if !selected.contains(&id) {
-            selected.push(id);
-        }
+        kept.insert(id);
     }
-    // present in original priority order
-    let mut skills: Vec<String> = ordered
-        .iter()
-        .filter(|id| selected.contains(id))
-        .cloned()
-        .collect();
-    skills.truncate(MAX_INJECTED_SKILLS);
+    // kept.len() <= MAX by construction; emit in original priority order
+    let skills: Vec<String> = ordered.iter().filter(|id| kept.contains(id)).cloned().collect();
     (skills, true)
 }
 
@@ -825,7 +814,9 @@ fn verify_registry() -> Result<Value, String> {
             ));
         }
         for regex in &route.regexes {
-            if let Err(error) = compile_registry_regex(regex) {
+            if let Some(reason) = unsupported_registry_construct(regex) {
+                errors.push(format!("route {} regex {regex}: {reason}", route.id));
+            } else if let Err(error) = compile_registry_regex(regex) {
                 errors.push(format!("route {} has invalid regex {regex}: {error}", route.id));
             }
         }
@@ -838,7 +829,9 @@ fn verify_registry() -> Result<Value, String> {
         .iter()
         .chain(&runtime.registry.rust_signals.not_regexes)
     {
-        if let Err(error) = compile_registry_regex(regex) {
+        if let Some(reason) = unsupported_registry_construct(regex) {
+            errors.push(format!("rust_signals regex {regex}: {reason}"));
+        } else if let Err(error) = compile_registry_regex(regex) {
             errors.push(format!("rust_signals has invalid regex {regex}: {error}"));
         }
     }
@@ -1014,27 +1007,57 @@ fn match_route(text: &PreparedText, route: &Route) -> Option<(String, String)> {
 }
 
 fn has_rust_signal(text: &PreparedText, registry: &Registry) -> bool {
-    let strong = registry
-        .rust_signals
-        .regexes
-        .iter()
-        .any(|regex| regex_matches(text.original, regex));
-    if strong {
-        return true;
+    // Cheap substring keywords first: most prompts (Rust and non-Rust alike)
+    // resolve here without compiling any regex.
+    let keyword_hit = |t: &PreparedText| {
+        registry
+            .rust_signals
+            .keywords
+            .iter()
+            .any(|keyword| keyword_matches(t, keyword))
+    };
+    if keyword_hit(text) {
+        // Vetoes target ambiguous literal tokens ("rust stains", "Tokio
+        // Marine"). Strip only the vetoed spans and re-check: keyword
+        // evidence outside the vetoed phrase still counts, so "deserialize
+        // with serde while my kid plays rust the game" stays Rust.
+        match joined_registry_regex(&registry.rust_signals.not_regexes) {
+            Some(veto) if veto.is_match(text.original) => {
+                let stripped = veto.replace_all(text.original, " ");
+                if keyword_hit(&PreparedText::new(&stripped)) {
+                    return true;
+                }
+            }
+            _ => return true,
+        }
     }
-    let weak = registry
-        .rust_signals
-        .keywords
-        .iter()
-        .any(|keyword| keyword_matches(text, keyword));
-    if !weak {
-        return false;
+    // Strong regex evidence (error codes, cargo commands, code syntax)
+    // catches keyword-less prompts and overrides vetoes.
+    match joined_registry_regex(&registry.rust_signals.regexes) {
+        Some(strong) => strong.is_match(text.original),
+        None => registry
+            .rust_signals
+            .regexes
+            .iter()
+            .any(|regex| regex_matches(text.original, regex)),
     }
-    !registry
-        .rust_signals
-        .not_regexes
+}
+
+/// Compile a pattern list as one alternation: a single regex compile is
+/// far cheaper than N separate compiles on the per-prompt hot path. Returns
+/// None when the join fails to compile (e.g. one invalid pattern), in which
+/// case callers fall back to per-pattern matching so a single bad entry
+/// degrades only itself, not the whole signal set.
+fn joined_registry_regex(patterns: &[String]) -> Option<Regex> {
+    if patterns.is_empty() {
+        return None;
+    }
+    let joined = patterns
         .iter()
-        .any(|regex| regex_matches(text.original, regex))
+        .map(|pattern| format!("(?:{})", transform_registry_pattern(pattern)))
+        .collect::<Vec<_>>()
+        .join("|");
+    RegexBuilder::new(&joined).case_insensitive(true).build().ok()
 }
 
 const RUST_CASE_SENSITIVE_TOKENS: [&str; 12] = [
@@ -1094,12 +1117,40 @@ fn regex_matches(text: &str, regex_source: &str) -> bool {
 /// ASCII-only. The Rust regex crate defaults to Unicode semantics, which makes
 /// `\b`-bounded tokens silently fail next to CJK text ("E0382错误"). Rewrite
 /// the Unicode-sensitive escapes to their ASCII forms before compiling.
-fn compile_registry_regex(regex_source: &str) -> Result<Regex, regex::Error> {
-    let pattern = regex_source
+///
+/// This is a textual rewrite, so registry patterns must stay within a
+/// supported subset — `verify` rejects the constructs the rewrite would
+/// mangle (literal backslashes, `[\b]`, and the untranslated `\B`/`\W`/`\D`).
+fn transform_registry_pattern(regex_source: &str) -> String {
+    regex_source
         .replace("\\b", "(?-u:\\b)")
         .replace("\\w", "[0-9A-Za-z_]")
-        .replace("\\d", "[0-9]");
-    RegexBuilder::new(&pattern).case_insensitive(true).build()
+        .replace("\\d", "[0-9]")
+}
+
+fn unsupported_registry_construct(regex_source: &str) -> Option<&'static str> {
+    if regex_source.contains("\\\\") {
+        return Some("literal backslash (\\\\) — the ASCII rewrite would mangle it");
+    }
+    if regex_source.contains("[\\b]") {
+        return Some("[\\b] backspace class — the ASCII rewrite would mangle it");
+    }
+    for (escape, name) in [("\\B", "\\B"), ("\\W", "\\W"), ("\\D", "\\D")] {
+        if regex_source.contains(escape) {
+            return Some(match name {
+                "\\B" => "\\B is not rewritten to ASCII semantics; use an explicit class",
+                "\\W" => "\\W is not rewritten to ASCII semantics; use [^0-9A-Za-z_]",
+                _ => "\\D is not rewritten to ASCII semantics; use [^0-9]",
+            });
+        }
+    }
+    None
+}
+
+fn compile_registry_regex(regex_source: &str) -> Result<Regex, regex::Error> {
+    RegexBuilder::new(&transform_registry_pattern(regex_source))
+        .case_insensitive(true)
+        .build()
 }
 
 fn load_runtime() -> Result<Runtime, String> {

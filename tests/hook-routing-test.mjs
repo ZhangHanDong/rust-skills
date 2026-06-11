@@ -51,47 +51,6 @@ function runHookPayload(hookPath, payload, extraEnv = {}) {
   return result.stdout;
 }
 
-function runIsolatedHook(hookPath, prompt, fakeCli) {
-  const temp = fs.mkdtempSync(path.join(os.tmpdir(), "rust-skills-hook-"));
-  try {
-    const hookDir = hookPath.includes(`${path.sep}.claude${path.sep}`)
-      ? path.join(temp, ".claude", "hooks")
-      : path.join(temp, ".codex", "hooks");
-    fs.mkdirSync(hookDir, { recursive: true });
-    const isolatedHook = path.join(hookDir, path.basename(hookPath));
-    fs.copyFileSync(hookPath, isolatedHook);
-    const result = spawnSync(process.execPath, [isolatedHook], {
-      cwd: temp,
-      input: JSON.stringify({ prompt }),
-      encoding: "utf8",
-      env: {
-        PATH: process.env.PATH,
-        HOME: temp,
-        USERPROFILE: temp,
-        RUST_SKILLS_BIN: fakeCli,
-        RUST_SKILLS_ROOT: path.join(temp, "missing-root"),
-        CLAUDE_PLUGIN_ROOT: temp
-      }
-    });
-    assert(result.status === 0, result.stderr || result.stdout);
-    return result.stdout;
-  } finally {
-    fs.rmSync(temp, { recursive: true, force: true });
-  }
-}
-
-function writeFakeCliDetectInjectRouteNoop() {
-  const temp = fs.mkdtempSync(path.join(os.tmpdir(), "rust-skills-cli-"));
-  const fakeCli = path.join(temp, "fake-rust-skills.js");
-  fs.writeFileSync(fakeCli, `#!/usr/bin/env node
-const command = process.argv[2];
-const inject = { decision: "inject", should_inject: true, skills: ["rust-router"] };
-const noop = { decision: "no-op", should_inject: false, skills: [] };
-process.stdout.write(JSON.stringify(command === "detect" ? inject : noop));
-`);
-  return { temp, fakeCli };
-}
-
 const codexHook = path.join(root, ".codex", "hooks", "rust-skill-router-hook.js");
 const claudeHook = path.join(root, ".claude", "hooks", "rust-skill-eval-hook.js");
 
@@ -155,20 +114,21 @@ const codexNoCliContext = codexRustWithoutCli.hookSpecificOutput?.additionalCont
 assert(codexNoCliContext.includes("RUST SKILLS AUTO ROUTE"), "Codex direct route should use auto route context");
 assert(codexNoCliContext.includes("domain-web"), "Codex hook should route directly when CLI bin is missing");
 
-const fakeCli = writeFakeCliDetectInjectRouteNoop();
-try {
-  const codexSecondStage = runIsolatedHook(codexHook, "Rust maybe", fakeCli.fakeCli);
-  assert(
-    codexSecondStage.trim() === "{}",
-    `Codex hook should require route.should_inject after detect, got ${codexSecondStage}`
-  );
-  const claudeSecondStage = runIsolatedHook(claudeHook, "Rust maybe", fakeCli.fakeCli);
-  assert(
-    claudeSecondStage.length === 0,
-    `Claude hook should require route.should_inject after detect, got ${claudeSecondStage}`
-  );
-} finally {
-  fs.rmSync(fakeCli.temp, { recursive: true, force: true });
+// RUST_SKILLS_BIN must be honored end-to-end by the passthrough chain.
+if (process.platform !== "win32") {
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), "rust-skills-fakebin-"));
+  try {
+    const fakeBin = path.join(temp, "rust-skills");
+    fs.writeFileSync(fakeBin, "#!/bin/sh\necho '{\"custom\":\"envelope\"}'\n");
+    fs.chmodSync(fakeBin, 0o755);
+    const overridden = runHook(codexHook, "Rust maybe", { RUST_SKILLS_BIN: fakeBin });
+    assert(
+      overridden.trim() === '{"custom":"envelope"}',
+      `RUST_SKILLS_BIN override should be passed through verbatim, got ${overridden}`
+    );
+  } finally {
+    fs.rmSync(temp, { recursive: true, force: true });
+  }
 }
 
 const claudeNonRust = runHook(claudeHook, "今天天气怎么样");
