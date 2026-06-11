@@ -7,44 +7,17 @@ disable-model-invocation: true
 
 # Actionbook
 
-Pre-computed action manuals for browser automation. Agents receive structured page information instead of parsing entire HTML.
+Content merged into `core-agent-browser` ("Actionbook MCP selectors" section),
+which documents the full fetch chain: actionbook MCP -> agent-browser CLI ->
+WebFetch.
 
-## Workflow
+Quick reference:
 
-1. **search_actions** - Search by keyword, returns URL-based action IDs with content previews
-2. **get_action_by_id** - Get full action manual with page details, DOM structure, and element selectors
-3. **Execute** - Use returned selectors with your browser automation tool
+1. `search_actions(query, type?, limit?, sourceIds?, minScore?)` - search by
+   keyword, returns URL-based action IDs with previews and relevance scores.
+2. `get_action_by_id(id)` - full action manual: element selectors (CSS/XPath),
+   element types, allowed methods (click, type, extract).
+3. Execute the returned selectors with your browser automation tool.
 
-## MCP Tools
-
-- `search_actions` - Search by keyword. Returns: URL-based action IDs, content previews, relevance scores
-- `get_action_by_id` - Get full action details. Returns: action content, page element selectors (CSS/XPath), element types, allowed methods (click, type, extract), document metadata
-
-### Parameters
-
-**search_actions**:
-- `query` (required): Search keyword (e.g., "airbnb search", "google login")
-- `type`: `vector` | `fulltext` | `hybrid` (default)
-- `limit`: Max results (default: 5)
-- `sourceIds`: Filter by source IDs (comma-separated)
-- `minScore`: Minimum relevance score (0-1)
-
-**get_action_by_id**:
-- `id` (required): URL-based action ID (e.g., `example.com/page`)
-
-## Example Response
-
-```json
-{
-  "title": "Airbnb Search",
-  "url": "www.airbnb.com/search",
-  "elements": [
-    {
-      "name": "location_input",
-      "selector": "input[data-testid='structured-search-input-field-query']",
-      "type": "textbox",
-      "methods": ["type", "fill"]
-    }
-  ]
-}
-```
+For parameter details, the response shape, and agent-browser usage, read
+`skills/core-agent-browser/SKILL.md`.

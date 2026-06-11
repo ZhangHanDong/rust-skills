@@ -1,273 +1,95 @@
 ---
 name: rust-refactor-helper
-description: "Safe Rust refactoring with LSP analysis. Triggers on: /refactor, rename symbol, move function, extract, 重构, 重命名, 提取函数, 安全重构"
+description: "Use when: refactoring Rust code safely. Keywords: /refactor, rename symbol, move function, extract function, inline, 重构, 重命名, 提取函数, 安全重构"
 argument-hint: "<action> <target> [--dry-run]"
-allowed-tools: ["LSP", "Read", "Glob", "Grep", "Edit"]
+allowed-tools: ["Grep", "Read", "Glob", "Edit", "Bash"]
 ---
 
 # Rust Refactor Helper
 
-Perform safe refactoring with comprehensive impact analysis.
+Safe refactoring = find every affected site, edit, then prove it with
+`cargo check` and tests. No LSP rename tool exists in this environment — do
+not attempt to call an `LSP(...)` tool. Grep finds references; the compiler
+is the safety net.
 
-## Usage
+## Safety Checks (before editing)
 
-```
-/rust-refactor-helper <action> <target> [--dry-run]
-```
+| Check | How |
+|-------|-----|
+| Reference completeness | `grep -rnw "old_name" .` — include tests/, benches/, examples/, build.rs |
+| Name conflicts | `grep -rnw "new_name" src/` must be empty or clearly unrelated scopes |
+| Public API change | is the symbol `pub` or re-exported (`grep -rn "pub use"`)? Renaming it is a semver-major break for downstream crates |
+| Macro-generated code | uses inside `macro_rules!` or derive output do not all grep; check macro definitions mentioning the name |
+| Doc references | doc comments, README, docs/ mentioning the old name — update or flag |
+| String references | `stringify!`, log messages, `#[serde(rename = ...)]` may carry the name without compiler protection |
+| Affected tests | note which test files hit; run them after |
 
-**Actions:**
-- `rename <old> <new>` - Rename symbol
-- `extract-fn <selection>` - Extract to function
-- `inline <fn>` - Inline function
-- `move <symbol> <dest>` - Move to module
+## Mandatory Verification Gate (after editing)
 
-**Examples:**
-- `/rust-refactor-helper rename parse_config load_config`
-- `/rust-refactor-helper extract-fn src/main.rs:20-35`
-- `/rust-refactor-helper move UserService src/services/`
-
-## LSP Operations Used
-
-### Pre-Refactor Analysis
-
-```
-# Find all references before renaming
-LSP(
-  operation: "findReferences",
-  filePath: "src/lib.rs",
-  line: 25,
-  character: 8
-)
-
-# Get symbol info
-LSP(
-  operation: "hover",
-  filePath: "src/lib.rs",
-  line: 25,
-  character: 8
-)
-
-# Check call hierarchy for move operations
-LSP(
-  operation: "incomingCalls",
-  filePath: "src/lib.rs",
-  line: 25,
-  character: 8
-)
+```bash
+cargo check    # must pass before claiming the refactor done
+cargo test     # at least the affected tests
 ```
 
-## Refactoring Workflows
+Never present a refactor as complete without a passing `cargo check`. A
+missed rename is not silent: it fails with E0425 (cannot find value/function)
+— the compiler completes your grep.
 
-### 1. Rename Symbol
+## Rename Workflow
 
-```
-User: "Rename parse_config to load_config"
-    │
-    ▼
-[1] Find symbol definition
-    LSP(goToDefinition)
-    │
-    ▼
-[2] Find ALL references
-    LSP(findReferences)
-    │
-    ▼
-[3] Categorize by file
-    │
-    ▼
-[4] Check for conflicts
-    - Is 'load_config' already used?
-    - Are there macro-generated uses?
-    │
-    ▼
-[5] Show impact analysis (--dry-run)
-    │
-    ▼
-[6] Apply changes with Edit tool
-```
+1. `grep -rnw "old_name" .` — list all hits with file:line.
+2. Categorize: definition / call sites / imports and re-exports / tests /
+   docs / strings.
+3. Show the list (this is the `--dry-run` output), then Edit each code hit;
+   flag doc and string hits for human judgment.
+4. Run the verification gate.
 
-**Output:**
+## Extract Function: Variable Classification
 
-```
-## Rename: parse_config → load_config
+Classify every variable touched by the selected block:
 
-### Impact Analysis
+| Class | Definition | Becomes |
+|-------|------------|---------|
+| Input | used in block, defined before it | parameter (`&T`, `&mut T`, or `T` per how the block uses it) |
+| Output | assigned in block, used after it | return value (tuple if several) |
+| Local | defined and used only inside block | stays local |
 
-**Definition:** src/config.rs:25
-**References found:** 8
+Also check: `?` in the block forces a `Result`/`Option` return type;
+`return`/`break`/`continue` crossing the block boundary blocks extraction;
+`.await` requires the new fn to be `async`.
 
-| File | Line | Context | Change |
-|------|------|---------|--------|
-| src/config.rs | 25 | `pub fn parse_config(` | Definition |
-| src/config.rs | 45 | `parse_config(path)?` | Call |
-| src/main.rs | 12 | `config::parse_config` | Import |
-| src/main.rs | 30 | `let cfg = parse_config(` | Call |
-| src/lib.rs | 8 | `pub use config::parse_config` | Re-export |
-| tests/config_test.rs | 15 | `parse_config("test.toml")` | Test |
-| tests/config_test.rs | 25 | `parse_config("")` | Test |
-| docs/api.md | 42 | `parse_config` | Documentation |
+Example — extracting a file-read block:
 
-### Potential Issues
+```rust
+use std::fs::File;
+use std::io::Read;
+use std::path::Path;
 
-⚠️ **Documentation reference:** docs/api.md:42 may need manual update
-⚠️ **Re-export:** src/lib.rs:8 - public API change
-
-### Proceed?
-- [x] --dry-run (preview only)
-- [ ] Apply changes
-```
-
-### 2. Extract Function
-
-```
-User: "Extract lines 20-35 in main.rs to a function"
-    │
-    ▼
-[1] Read the selected code block
-    │
-    ▼
-[2] Analyze variables
-    - Which are inputs? (used but not defined in block)
-    - Which are outputs? (defined and used after block)
-    - Which are local? (defined and used only in block)
-    │
-    ▼
-[3] Determine function signature
-    │
-    ▼
-[4] Check for early returns, loops, etc.
-    │
-    ▼
-[5] Generate extracted function
-    │
-    ▼
-[6] Replace original code with call
-```
-
-**Output:**
-
-```
-## Extract Function: src/main.rs:20-35
-
-### Selected Code
-​```rust
-let file = File::open(&path)?;
-let mut contents = String::new();
-file.read_to_string(&mut contents)?;
-let config: Config = toml::from_str(&contents)?;
-validate_config(&config)?;
-​```
-
-### Analysis
-
-**Inputs:** path: &Path
-**Outputs:** config: Config
-**Side Effects:** File I/O, may return error
-
-### Extracted Function
-
-​```rust
-fn load_and_validate_config(path: &Path) -> Result<Config> {
-    let file = File::open(path)?;
+fn read_config_text(path: &Path) -> std::io::Result<String> {
+    let mut file = File::open(path)?; // `mut` required: read_to_string takes &mut self
     let mut contents = String::new();
     file.read_to_string(&mut contents)?;
-    let config: Config = toml::from_str(&contents)?;
-    validate_config(&config)?;
-    Ok(config)
+    Ok(contents)
 }
-​```
-
-### Replacement
-
-​```rust
-let config = load_and_validate_config(&path)?;
-​```
 ```
 
-### 3. Move Symbol
+Input: `path` (only read, so `&Path`). Output: `contents`, wrapped in the
+`Result` forced by `?`. Forgetting `mut` on `file` is E0596 (cannot borrow
+as mutable) — `cargo check` catches it.
 
-```
-User: "Move UserService to src/services/"
-    │
-    ▼
-[1] Find symbol and all its dependencies
-    │
-    ▼
-[2] Find all references (callers)
-    LSP(findReferences)
-    │
-    ▼
-[3] Analyze import changes needed
-    │
-    ▼
-[4] Check for circular dependencies
-    │
-    ▼
-[5] Generate move plan
-```
+## Move Symbol to Another Module
 
-**Output:**
-
-```
-## Move: UserService → src/services/user.rs
-
-### Current Location
-src/handlers/auth.rs:50-120
-
-### Dependencies (will be moved together)
-- struct UserService (50-80)
-- impl UserService (82-120)
-- const DEFAULT_TIMEOUT (48)
-
-### Import Changes Required
-
-| File | Current | New |
-|------|---------|-----|
-| src/main.rs | `use handlers::auth::UserService` | `use services::user::UserService` |
-| src/handlers/api.rs | `use super::auth::UserService` | `use crate::services::user::UserService` |
-| tests/auth_test.rs | `use crate::handlers::auth::UserService` | `use crate::services::user::UserService` |
-
-### New File Structure
-
-​```
-src/
-├── services/
-│   ├── mod.rs (NEW - add `pub mod user;`)
-│   └── user.rs (NEW - UserService moved here)
-├── handlers/
-│   └── auth.rs (UserService removed)
-​```
-
-### Circular Dependency Check
-✅ No circular dependencies detected
-```
-
-## Safety Checks
-
-| Check | Purpose |
-|-------|---------|
-| Reference completeness | Ensure all uses are found |
-| Name conflicts | Detect existing symbols with same name |
-| Visibility changes | Warn if pub/private scope changes |
-| Macro-generated code | Warn about code in macros |
-| Documentation | Flag doc comments mentioning symbol |
-| Test coverage | Show affected tests |
-
-## Dry Run Mode
-
-Always use `--dry-run` first to preview changes:
-
-```
-/rust-refactor-helper rename old_name new_name --dry-run
-```
-
-This shows all changes without applying them.
+1. Grep references as for rename; the imports are the blast radius.
+2. Move the item plus its private helpers and constants; declare the module
+   in the destination's parent (`pub mod user;`).
+3. If downstream churn is large, keep a temporary re-export at the old path
+   (`pub use crate::services::user::UserService;`) and remove it later.
+4. Run the verification gate.
 
 ## Related Skills
 
 | When | See |
 |------|-----|
-| Navigate to symbol | rust-code-navigator |
-| Understand call flow | rust-call-graph |
-| Project structure | rust-symbol-analyzer |
-| Trait implementations | rust-trait-explorer |
+| Find references and definitions | rust-code-navigator |
+| Call-site impact tracing | rust-call-graph |
+| Anti-pattern review while refactoring | m15-anti-pattern |

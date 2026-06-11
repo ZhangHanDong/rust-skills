@@ -10,236 +10,118 @@ agent: general-purpose
 
 # Dynamic Skills Manager
 
-> **Version:** 2.1.0 | **Last Updated:** 2025-01-27
-
-Orchestrates on-demand generation of crate-specific skills based on project dependencies.
+Orchestrates on-demand generation of crate-specific skills from project
+dependencies. Canonical procedures: `commands/sync-crate-skills.md`,
+`clean-crate-skills.md`, `update-crate-skill.md`; this is the condensed
+dual-mode copy for skills-only installs.
 
 ## Concept
 
-Dynamic skills are:
-- Generated locally at `~/.claude/skills/`
-- Based on Cargo.toml dependencies
-- Created using llms.txt from docs.rs
-- Versioned and updatable
-- Not committed to the rust-skills repository
+Dynamic skills are generated locally at `~/.claude/skills/{crate}/` from
+Cargo.toml dependencies using llms.txt from docs.rs; they are never
+committed to the rust-skills repository.
 
-Generated skills follow the skill generation contract:
-
-- concise English `SKILL.md`
-- `Use when:` and `Keywords:` frontmatter description
-- relevant calibration anchors selected from crate docs
-- stable Rust failure terminology in anchors when relevant: `pointer`,
-  `length`, `alignment`, `lifetime`, `deadlock`, `scope`, `MSRV`, `semver`,
-  `embedded Rust`, `heapless`, `allocation`
-- no decorative banners, ASCII art, exact display instructions, or prompt-like
-  role setup
-- judgment guidance as boundaries/calibration anchors, not scripted thinking
-  prompts
-- long API detail in `references/`
-- strict skill generation quality gate for newly generated output
-- benchmark improvement work must clean and regenerate skills, not patch
-  generated output by hand
+Generated skills must satisfy the generation contract: concise English
+SKILL.md with a `Use when:` / `Keywords:` description, calibration anchors
+drawn from crate docs (pointer, alignment, lifetime, deadlock, MSRV, semver,
+heapless, allocation - when relevant), long API detail under a references/
+subdirectory, no decorative banners or prompt-like role setup. Regenerate
+skills instead of hand-patching generated output.
 
 ## Trigger Scenarios
 
-### Prompt-on-Open
-
-When entering a directory with Cargo.toml:
-1. Detect Cargo.toml (single or workspace)
-2. Parse dependencies list
-3. Check which crates are missing skills
-4. If missing: "Found X dependencies without skills. Sync now?"
-5. If confirmed: run `/sync-crate-skills`
-
-### Manual Commands
-
-- `/sync-crate-skills` - Sync all dependencies
-- `/clean-crate-skills [crate]` - Remove skills
-- `/update-crate-skill <crate>` - Update specific skill
+- **Prompt-on-open**: entering a directory with Cargo.toml - find crates
+  without skills, ask "Found X dependencies without skills. Sync now?" and
+  run `/sync-crate-skills` if confirmed.
+- **Manual**: `/sync-crate-skills [--force]`, `/clean-crate-skills [crate]`,
+  `/update-crate-skill <crate>`, `/fix-skill-docs [crate]`.
 
 ## Execution Mode Detection
 
-Check whether agent and command infrastructure is available before selecting
-agent mode or inline mode.
-
-Try to read: `../../agents/` directory
-Check if `/create-llms-for-skills` and `/create-skills-via-llms` commands work.
-
----
+Try to read the `../../agents/` directory and check whether
+`/create-llms-for-skills` and `/create-skills-via-llms` work. If yes, use
+Agent Mode; otherwise fall back to Inline Mode.
 
 ## Agent Mode (Plugin Install)
 
-**When full plugin infrastructure is available:**
+For each dependency parsed from Cargo.toml:
 
-### Architecture
-
-```
-Cargo.toml
-    ↓
-Parse dependencies
-    ↓
-For each crate:
-  ├─ Check ~/.claude/skills/{crate}/
-  ├─ If missing: Check actionbook for llms.txt
-  │     ├─ Found: /create-skills-via-llms
-  │     └─ Not found: /create-llms-for-skills first
-  ├─ Run generation quality gate
-  └─ Load skill
-```
-
-### Workflow Priority
-
-1. **actionbook MCP** - Check for pre-generated llms.txt
-2. **/create-llms-for-skills** - Generate llms.txt from docs.rs
-3. **/create-skills-via-llms** - Create skills from llms.txt
-
-### Sync Command
-
-```bash
-/sync-crate-skills [--force]
-```
-
-1. Parse Cargo.toml for dependencies
-2. For each dependency:
-   - Check if skill exists at `~/.claude/skills/{crate}/`
-   - If missing (or --force): generate skill
-   - Run the skill generation quality gate for regenerated output
-3. Report results
-
-For comparative benchmarks, run the sync command with `--force` in both the
-main checkout and the current checkout after deleting their generated output
-roots. Compare only the regenerated roots.
-
----
+1. Skip if `~/.claude/skills/{crate}/` exists (unless `--force`).
+2. Check actionbook MCP for a pre-generated llms.txt.
+3. If found: `/create-skills-via-llms`. If not: `/create-llms-for-skills`
+   first, then `/create-skills-via-llms`.
+4. Run the skill generation quality gate on regenerated output, then load.
 
 ## Inline Mode (Skills-only Install)
 
-**When agent/command infrastructure is NOT available, execute manually:**
-
-### Step 1: Parse Cargo.toml
+### Step 1: Parse dependencies
 
 ```bash
-# Read dependencies
-cat Cargo.toml | grep -A 100 '\[dependencies\]' | grep -E '^[a-zA-Z]'
+# Workspace-aware; drop the select() to also include dev/build deps:
+cargo metadata --format-version 1 --no-deps \
+  | jq -r '.packages[].dependencies[] | select(.kind == null) | .name' | sort -u
 ```
 
-Or use Read tool to parse Cargo.toml and extract:
-- `[dependencies]` section
-- `[dev-dependencies]` section (optional)
-- Workspace members (if workspace project)
+If `jq` is unavailable, Read Cargo.toml directly and extract the
+`[dependencies]` table (and each workspace member's Cargo.toml plus
+`[workspace.dependencies]` for workspace projects).
 
-### Step 2: Check Existing Skills
+### Step 2: Generate missing skills
 
-```bash
-# List existing skills
-ls ~/.claude/skills/
-```
-
-Compare with dependencies to find missing skills.
-
-### Step 3: Generate Missing Skills
-
-For each missing crate:
+`ls ~/.claude/skills/`, diff against the dependency list, then for each
+missing crate:
 
 ```bash
-# 1. Fetch crate documentation
 agent-browser open "https://docs.rs/{crate}/latest/{crate}/"
-agent-browser get text ".docblock"
-# Save content
-
-# 2. Create skill directory
-mkdir -p ~/.claude/skills/{crate}
+agent-browser get text ".docblock"     # save as overview
 mkdir -p ~/.claude/skills/{crate}/references
-
-# 3. Create SKILL.md
-# Use template from rust-skill-creator inline mode
-
-# 4. Create reference files for key modules
-agent-browser open "https://docs.rs/{crate}/latest/{crate}/{module}/"
-agent-browser get text ".docblock"
-# Save to ~/.claude/skills/{crate}/references/{module}.md
-
+# Write SKILL.md using the rust-skill-creator inline template.
+# Repeat per key module into references/{module}.md, then:
 agent-browser close
 ```
 
-**WebFetch fallback:**
-```
-WebFetch("https://docs.rs/{crate}/latest/{crate}/", "Extract API documentation overview, key types, and usage examples")
-```
+WebFetch fallback if agent-browser is unavailable:
+`WebFetch("https://docs.rs/{crate}/latest/{crate}/", "Extract API overview, key types, usage examples")`
 
-### Step 4: Workspace Support
+### Cleaning generated skills (safety rules)
 
-For Cargo workspace projects:
-
-```bash
-# 1. Parse root Cargo.toml for workspace members
-cat Cargo.toml | grep -A 10 '\[workspace\]'
-
-# 2. For each member, parse their Cargo.toml
-for member in members; do
-  cat ${member}/Cargo.toml | grep -A 100 '\[dependencies\]'
-done
-
-# 3. Aggregate and deduplicate dependencies
-# 4. Generate skills for missing crates
-```
-
-### Clean Command (Inline)
+`~/.claude/skills/` also contains hand-installed skills that were NOT
+generated by this workflow. Never run a blanket
+`rm -rf ~/.claude/skills/*` or any unscoped glob there.
 
 ```bash
-# Clean specific crate
-rm -rf ~/.claude/skills/{crate_name}
-
-# Clean all generated skills
-rm -rf ~/.claude/skills/*
+# Remove one generated crate skill (plus its sub-skills like tokio-task):
+rm -rf ~/.claude/skills/{crate_name} ~/.claude/skills/{crate_name}-*
 ```
 
-For benchmark evidence, record the clean command and regeneration command for
-both compared roots. Evidence from a hand-patched generated skill is diagnostic
-only and must not be used as proof that generation improved.
+To clean all generated skills: build the list of crate names from the
+project's Cargo.toml (Step 1), show the user exactly which directories will
+be deleted, ask for confirmation, then remove only those directories one
+crate at a time with the command above. Skip any directory that does not
+match a known crate name.
 
-### Update Command (Inline)
+To update one crate: remove it with the safe clean above, then regenerate
+it via Step 2.
 
-```bash
-# Remove old skill
-rm -rf ~/.claude/skills/{crate_name}
+## Fix Generated References (/fix-skill-docs)
 
-# Re-generate (same as sync for single crate)
-# Follow Step 3 above for the specific crate
-```
+Generated SKILL.md files list their reference docs; files can be missing
+after interrupted generation. `/fix-skill-docs [crate] [--check-only]
+[--remove-invalid]`:
 
----
+1. Scan `~/.claude/skills/{crate}/` (or all skills if no crate given).
+2. Extract referenced files from the SKILL.md Documentation section
+   (lines shaped like a bullet pointing at references/{module}.md).
+3. Check each file exists under the skill's references/ subdirectory.
+4. Report per skill: each reference marked OK or MISSING, plus a summary
+   count of files needing action.
+5. Fix missing files unless `--check-only`: fetch the module page
+   (agent-browser first, WebFetch fallback, same commands as Step 2 above)
+   and write it to the missing path. In Agent Mode, fetches may run as
+   background Tasks.
+6. With `--remove-invalid`, delete the dangling reference line from the
+   generated SKILL.md instead of (or after failing at) fetching.
 
-## Local Skills Directory
-
-```
-~/.claude/skills/
-├── tokio/
-│   ├── SKILL.md
-│   └── references/
-├── serde/
-│   ├── SKILL.md
-│   └── references/
-└── axum/
-    ├── SKILL.md
-    └── references/
-```
-
----
-
-## Related Commands
-
-- `/sync-crate-skills` - Main sync command
-- `/clean-crate-skills` - Cleanup command
-- `/update-crate-skill` - Update command
-- `/create-llms-for-skills` - Generate llms.txt (Agent Mode only)
-- `/create-skills-via-llms` - Create skills from llms.txt (Agent Mode only)
-
-## Error Handling
-
-| Error | Cause | Solution |
-|-------|-------|----------|
-| Commands not found | Skills-only install | Use inline mode |
-| Cargo.toml not found | Not in Rust project | Navigate to project root |
-| docs.rs unavailable | Network issue | Retry or skip crate |
-| Permission denied | Directory issue | Check ~/.claude/skills/ permissions |
+Errors: commands not found means skills-only install (use inline mode); no
+Cargo.toml means wrong directory (go to project root); docs.rs unavailable
+means retry or skip; corrupted generated SKILL.md means regenerate it.

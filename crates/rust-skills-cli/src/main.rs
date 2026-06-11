@@ -548,8 +548,12 @@ fn hook_context(route: &Value) -> String {
         }
     }
 
+    // Advisory, not mandatory: measured A/B judging showed that forcing the
+    // agent to treat injected skills as the source of truth anchors it into
+    // shallower answers than its own knowledge produces. Skills earn their
+    // place through specific guardrails, pitfalls, and version facts.
     blocks.push(
-        "=== RUST SKILLS ROUTING CONTRACT ===\nUse this context only for Rust-related work.\n\n1. Treat the auto route above as the source of truth.\n2. Load rust-router first, then the matched skills in order.\n3. Full runtime installs expose one top-level skill: rust-skills.\n4. Deep skill files live under the installed runtime data root:\n   - ~/.claude/rust-skills/skills/<skill-id>/SKILL.md\n   - ~/.codex/rust-skills/skills/<skill-id>/SKILL.md\n5. Keep domain-matched constraints in view when applying Rust mechanics.\n===".to_string(),
+        "=== RUST SKILLS ROUTING CONTRACT ===\nThis context applies only to Rust-related work.\n\n1. The matched skills above carry project conventions, domain constraints,\n   version-specific facts, and known pitfalls. Consult them for those.\n2. Your own Rust expertise takes precedence for general reasoning; do not\n   let skill scaffolding cap the depth of your answer.\n3. When a matched skill flags a guardrail relevant to the task (e.g. lock\n   scope across await, exit-code contracts, unsafe invariants), apply it.\n4. Deep skill files live under the installed runtime data root:\n   - ~/.claude/rust-skills/skills/<skill-id>/SKILL.md\n   - ~/.codex/rust-skills/skills/<skill-id>/SKILL.md\n===".to_string(),
     );
 
     blocks.join("\n\n")

@@ -1,206 +1,50 @@
 ---
 name: rust-call-graph
-description: "Visualize Rust function call graphs using LSP. Triggers on: /call-graph, call hierarchy, who calls, what calls, 调用图, 调用关系, 谁调用了, 调用了谁"
+description: "Use when: tracing Rust function call relationships. Keywords: /call-graph, call hierarchy, who calls, what calls, callers, callees, 调用图, 调用关系, 谁调用了, 调用了谁"
 argument-hint: "<function_name> [--depth N] [--direction in|out|both]"
-allowed-tools: ["LSP", "Read", "Glob"]
+allowed-tools: ["Grep", "Read", "Glob"]
 ---
 
 # Rust Call Graph
 
-Visualize function call relationships using LSP call hierarchy.
+Trace call relationships with text search. No call-hierarchy tool exists in
+this environment — do not attempt to call an `LSP(...)` tool. Grep finds call
+sites reliably enough for impact analysis.
 
-## Usage
+## Direction Semantics
 
-```
-/rust-call-graph <function_name> [--depth N] [--direction in|out|both]
-```
+| Question | Direction | Recipe |
+|----------|-----------|--------|
+| "Who calls X?" | incoming | `grep -rn "X(" src/ tests/` then drop the `fn X(` definition line |
+| "What does X call?" | outgoing | Read X's body; each `name(...)` / `.method(...)` is a callee |
+| "Trace main to X" | outgoing, repeated | start at `fn main`, follow callees toward X |
 
-**Options:**
-- `--depth N`: How many levels to traverse (default: 3)
-- `--direction`: `in` (callers), `out` (callees), `both`
+Build depth by repeating: each discovered caller becomes the next grep target.
 
-**Examples:**
-- `/rust-call-graph process_request` - Show both callers and callees
-- `/rust-call-graph handle_error --direction in` - Show only callers
-- `/rust-call-graph main --direction out --depth 5` - Deep callee analysis
+## Blind Spots of Text-Based Call Tracing
 
-## LSP Operations
+- Method calls: search `grep -rn ".method_name(" src/` — the receiver type is
+  not in the call-site text, so same-named methods on different types collide;
+  confirm by reading the receiver.
+- Trait-object / generic dispatch: the call site names the trait method, not
+  the impl. Find impls with `grep -rn "impl.*\bTraitName\b.* for " src/` and
+  treat each as a potential callee.
+- Macros: calls inside `macro_rules!` bodies or derive-generated code do not
+  match; `cargo expand` shows generated code (needs `cargo install cargo-expand`).
+- Functions passed as values (callbacks, iterator adapters): grep the name
+  without `(` using `grep -rnw` to find where it is passed.
 
-### 1. Prepare Call Hierarchy
+## Reporting
 
-Get the call hierarchy item for a function.
-
-```
-LSP(
-  operation: "prepareCallHierarchy",
-  filePath: "src/handler.rs",
-  line: 45,
-  character: 8
-)
-```
-
-### 2. Incoming Calls (Who calls this?)
-
-```
-LSP(
-  operation: "incomingCalls",
-  filePath: "src/handler.rs",
-  line: 45,
-  character: 8
-)
-```
-
-### 3. Outgoing Calls (What does this call?)
-
-```
-LSP(
-  operation: "outgoingCalls",
-  filePath: "src/handler.rs",
-  line: 45,
-  character: 8
-)
-```
-
-## Workflow
-
-```
-User: "Show call graph for process_request"
-    │
-    ▼
-[1] Find function location
-    LSP(workspaceSymbol) or Grep
-    │
-    ▼
-[2] Prepare call hierarchy
-    LSP(prepareCallHierarchy)
-    │
-    ▼
-[3] Get incoming calls (callers)
-    LSP(incomingCalls)
-    │
-    ▼
-[4] Get outgoing calls (callees)
-    LSP(outgoingCalls)
-    │
-    ▼
-[5] Recursively expand to depth N
-    │
-    ▼
-[6] Generate ASCII visualization
-```
-
-## Output Format
-
-### Incoming Calls (Who calls this?)
-
-```
-## Callers of `process_request`
-
-main
-└── run_server
-    └── handle_connection
-        └── process_request  ◄── YOU ARE HERE
-```
-
-### Outgoing Calls (What does this call?)
-
-```
-## Callees of `process_request`
-
-process_request  ◄── YOU ARE HERE
-├── parse_headers
-│   └── validate_header
-├── authenticate
-│   ├── check_token
-│   └── load_user
-├── execute_handler
-│   └── [dynamic dispatch]
-└── send_response
-    └── serialize_body
-```
-
-### Bidirectional (Both)
-
-```
-## Call Graph for `process_request`
-
-                    ┌─────────────────┐
-                    │      main       │
-                    └────────┬────────┘
-                             │
-                    ┌────────▼────────┐
-                    │   run_server    │
-                    └────────┬────────┘
-                             │
-                    ┌────────▼────────┐
-                    │handle_connection│
-                    └────────┬────────┘
-                             │
-        ┌────────────────────┼────────────────────┐
-        │                    │                    │
-┌───────▼───────┐   ┌───────▼───────┐   ┌───────▼───────┐
-│ parse_headers │   │ authenticate  │   │send_response  │
-└───────────────┘   └───────┬───────┘   └───────────────┘
-                            │
-                    ┌───────┴───────┐
-                    │               │
-             ┌──────▼──────┐ ┌──────▼──────┐
-             │ check_token │ │  load_user  │
-             └─────────────┘ └─────────────┘
-```
-
-## Analysis Insights
-
-After generating the call graph, provide insights:
-
-```
-## Analysis
-
-**Entry Points:** main, test_process_request
-**Leaf Functions:** validate_header, serialize_body
-**Hot Path:** main → run_server → handle_connection → process_request
-**Complexity:** 12 functions, 3 levels deep
-
-**Potential Issues:**
-- `authenticate` has high fan-out (4 callees)
-- `process_request` is called from 3 places (consider if this is intentional)
-```
-
-## Common Patterns
-
-| User Says | Direction | Use Case |
-|-----------|-----------|----------|
-| "Who calls X?" | incoming | Impact analysis |
-| "What does X call?" | outgoing | Understanding implementation |
-| "Show call graph" | both | Full picture |
-| "Trace from main to X" | outgoing | Execution path |
-
-## Visualization Options
-
-| Style | Best For |
-|-------|----------|
-| Tree (default) | Simple hierarchies |
-| Box diagram | Complex relationships |
-| Flat list | Many connections |
-| Mermaid | Export to docs |
-
-### Mermaid Export
-
-```mermaid
-graph TD
-    main --> run_server
-    run_server --> handle_connection
-    handle_connection --> process_request
-    process_request --> parse_headers
-    process_request --> authenticate
-    process_request --> send_response
-```
+After tracing, summarize what matters: entry points (`main`, `#[test]`,
+`pub` API), high fan-out functions (many callees — refactor candidates), and
+functions called from many places (high blast radius for changes). Present as
+a short indented list using cargo-tree-style `├──`/`└──` lines; do not
+hand-draw box diagrams.
 
 ## Related Skills
 
 | When | See |
 |------|-----|
-| Find definition | rust-code-navigator |
-| Project structure | rust-symbol-analyzer |
-| Trait implementations | rust-trait-explorer |
-| Safe refactoring | rust-refactor-helper |
+| Definitions, references, symbols | rust-code-navigator |
+| Pre-refactor impact analysis | rust-refactor-helper |

@@ -38,15 +38,21 @@ Before fixing ownership errors, understand the data's role:
 
 ## Error → Design Question
 
-| Error | Don't Just Say | Ask Instead |
-|-------|----------------|-------------|
-| E0382 | "Clone it" | Who should own this data? |
-| E0597 | "Extend lifetime" | Is the scope boundary correct? |
-| E0506 | "End borrow first" | Should mutation happen elsewhere? |
-| E0507 | "Clone before move" | Why are we moving from a reference? |
-| E0515 | "Return owned" | Should caller own the data? |
-| E0716 | "Bind to variable" | Why is this temporary? |
-| E0106 | "Add 'a" | What is the actual lifetime relationship? |
+| Error | Cause | Mechanical Fix | Ask Instead |
+|-------|-------|----------------|-------------|
+| E0382 | Value moved | Clone, borrow | Who should own this data? |
+| E0597 | Reference outlives owner | Extend owner scope | Is the scope boundary correct? |
+| E0506 | Assign while borrowed | End borrow first | Should mutation happen elsewhere? |
+| E0507 | Move out of borrowed | Clone or `mem::take` | Why are we moving from a reference? |
+| E0515 | Return local reference | Return owned value | Should caller own the data? |
+| E0716 | Temporary dropped | Bind to variable | Why is this temporary? |
+| E0106 | Missing lifetime | Add `'a` annotation | What is the actual lifetime relationship? |
+
+## Deep Dives (load on demand)
+
+- Verified error patterns and fix options per code (E0382/E0597/E0499/E0502/E0507/E0515/E0716): see `patterns/common-errors.md`
+- Lifetime annotation, elision rules, `'static`, HRTB, outlives bounds, variance: see `patterns/lifetime-patterns.md`
+- Ownership-aware API design (borrow vs own, `impl Into<String>`, `AsRef`, `Cow`, builder): see `examples/best-practices.md`
 
 ---
 
@@ -64,7 +70,8 @@ Before fixing an ownership error, ask:
    - Accidental → consider redesign
 
 3. **Fix symptom or redesign?**
-   - If Strike 3 (3rd attempt) → escalate to Layer 2
+   - If the 3rd fix attempt on the same error still fails, stop patching:
+     treat it as a design problem and trace up (m02-resource, m09-domain)
 
 ---
 
@@ -87,23 +94,6 @@ E0382 (moved value)
 
 ---
 
-## Trace Down ↓
-
-From design decisions to implementation:
-
-```
-"Data needs to be shared immutably"
-    ↓ Use: Arc<T> (multi-thread) or Rc<T> (single-thread)
-
-"Data needs exclusive ownership"
-    ↓ Use: move semantics, take ownership
-
-"Data is read-only view"
-    ↓ Use: &T (immutable borrow)
-```
-
----
-
 ## Quick Reference
 
 | Pattern | Ownership | Cost | Use When |
@@ -112,21 +102,7 @@ From design decisions to implementation:
 | `&T` | Borrow | Zero | Read-only access |
 | `&mut T` | Exclusive borrow | Zero | Need to modify |
 | `clone()` | Duplicate | Alloc + copy | Actually need a copy |
-| `Rc<T>` | Shared (single) | Ref count | Single-thread sharing |
-| `Arc<T>` | Shared (multi) | Atomic ref count | Multi-thread sharing |
-| `Cow<T>` | Clone-on-write | Alloc if mutated | Might modify |
-
-## Error Code Reference
-
-| Error | Cause | Quick Fix |
-|-------|-------|-----------|
-| E0382 | Value moved | Clone, reference, or redesign ownership |
-| E0597 | Reference outlives owner | Extend owner scope or restructure |
-| E0506 | Assign while borrowed | End borrow before mutation |
-| E0507 | Move out of borrowed | Clone or use reference |
-| E0515 | Return local reference | Return owned value |
-| E0716 | Temporary dropped | Bind to variable |
-| E0106 | Missing lifetime | Add `'a` annotation |
+| `Rc`/`Arc`/`Cow` | Shared / clone-on-write | Ref count / lazy alloc | Sharing needed → see m02-resource |
 
 ---
 

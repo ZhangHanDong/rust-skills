@@ -47,7 +47,7 @@ criterion_main!(benches);
 
 ```rust
 // BAD: allocates on every call
-fn to_uppercase(s: &str) -> String {
+fn to_uppercase_always(s: &str) -> String {
     s.to_uppercase()
 }
 
@@ -140,7 +140,7 @@ let result = strings.join("");
 
 ```rust
 // BAD: requires allocation
-fn greet(name: String) {
+fn greet_owned(name: String) {
     println!("Hello, {}", name);
 }
 
@@ -150,8 +150,10 @@ fn greet(name: &str) {
 }
 
 // Works with both:
-greet("world");                    // &str
-greet(&String::from("world"));     // &String coerces to &str
+fn main() {
+    greet("world");                    // &str
+    greet(&String::from("world"));     // &String coerces to &str
+}
 ```
 
 ---
@@ -206,11 +208,11 @@ let count = items.iter().filter(|x| x.valid).count();
 ```rust
 use rayon::prelude::*;
 
-// Sequential
-let sum: i32 = (0..1_000_000).map(|x| x * x).sum();
+// Sequential (i64: the sum of squares overflows i32)
+let sum: i64 = (0..1_000_000i64).map(|x| x * x).sum();
 
 // Parallel (automatic work stealing)
-let sum: i32 = (0..1_000_000).into_par_iter().map(|x| x * x).sum();
+let sum: i64 = (0..1_000_000i64).into_par_iter().map(|x| x * x).sum();
 
 // Parallel with custom chunk size
 let results: Vec<_> = data
@@ -234,37 +236,49 @@ struct Item {
 }
 ```
 
-### Pack Structs Efficiently
+### Struct Layout and Padding
+
+Default `repr(Rust)` automatically reorders fields to minimize padding, so
+manual field ordering does NOT matter for plain structs:
 
 ```rust
-// BAD: 24 bytes due to padding
-struct Bad {
-    a: u8,   // 1 byte + 7 padding
-    b: u64,  // 8 bytes
-    c: u8,   // 1 byte + 7 padding
-}
+// Both are 16 bytes: repr(Rust) reorders fields itself
+struct A { a: u8, b: u64, c: u8 }
+struct B { b: u64, a: u8, c: u8 }
 
-// GOOD: 16 bytes (or use #[repr(packed)])
-struct Good {
-    b: u64,  // 8 bytes
-    a: u8,   // 1 byte
-    c: u8,   // 1 byte + 6 padding
-}
+const _: () = assert!(size_of::<A>() == 16 && size_of::<B>() == 16);
 ```
+
+Field order only matters with `#[repr(C)]` (FFI, stable layout), where fields
+are laid out in declaration order:
+
+```rust
+#[repr(C)]
+struct CBad { a: u8, b: u64, c: u8 }   // 24 bytes: 7 + 6 padding bytes
+
+#[repr(C)]
+struct CGood { b: u64, a: u8, c: u8 }  // 16 bytes: largest first
+
+const _: () = assert!(size_of::<CBad>() == 24 && size_of::<CGood>() == 16);
+```
+
+Avoid `#[repr(packed)]` for "optimization": taking a reference to a packed
+field is rejected by the compiler (unaligned references are UB), and unaligned
+access usually costs more than the saved padding.
 
 ### Box Large Values
 
 ```rust
-// Large enum variants waste space
-enum Message {
+// Large enum variants waste space: every variant is 10000+ bytes
+enum MessageInline {
     Quit,
-    Data([u8; 10000]),  // all variants are 10000+ bytes
+    Data([u8; 10000]),
 }
 
-// Better: box the large variant
+// Better: box the large variant, variants are pointer-sized
 enum Message {
     Quit,
-    Data(Box<[u8; 10000]>),  // variants are pointer-sized
+    Data(Box<[u8; 10000]>),
 }
 ```
 
@@ -275,6 +289,8 @@ enum Message {
 ### Avoid Blocking in Async
 
 ```rust
+use std::time::Duration;
+
 // BAD: blocks the executor
 async fn bad() {
     std::thread::sleep(Duration::from_secs(1));  // blocking!
@@ -298,22 +314,23 @@ async fn compute() -> i32 {
 ### Buffer Async I/O
 
 ```rust
-use tokio::io::{AsyncBufReadExt, BufReader};
+use tokio::fs::File;
+use tokio::io::{AsyncBufReadExt, AsyncReadExt, BufReader};
 
 // BAD: many small reads
-async fn bad(file: File) {
+async fn read_unbuffered(mut file: File) {
     let mut byte = [0u8];
     while file.read(&mut byte).await.unwrap() > 0 {
-        process(byte[0]);
+        process_byte(byte[0]);
     }
 }
 
 // GOOD: buffered reading
-async fn good(file: File) {
+async fn read_buffered(file: File) {
     let reader = BufReader::new(file);
     let mut lines = reader.lines();
     while let Some(line) = lines.next_line().await.unwrap() {
-        process(&line);
+        process_line(&line);
     }
 }
 ```

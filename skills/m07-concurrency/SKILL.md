@@ -12,11 +12,6 @@ user-invocable: false
 
 **Is this CPU-bound or I/O-bound, and what's the sharing model?**
 
-Before choosing concurrency primitives:
-- What's the workload type?
-- What data needs to be shared?
-- What's the thread safety requirement?
-
 ## Async Locking Guardrails
 
 - Do not hold a `std::sync::MutexGuard` across `.await`. The task can be
@@ -38,27 +33,6 @@ Before choosing concurrency primitives:
 | E0277 Sync | "Wrap in Mutex" | Is shared access really needed? |
 | Future not Send | "Use spawn_local" | Is async the right choice? |
 | Deadlock | "Reorder locks" | Is the locking design correct? |
-
----
-
-## Thinking Prompt
-
-Before adding concurrency:
-
-1. **What's the workload?**
-   - CPU-bound → threads (std::thread, rayon)
-   - I/O-bound → async (tokio, async-std)
-   - Mixed → hybrid approach
-
-2. **What's the sharing model?**
-   - No sharing → message passing (channels)
-   - Immutable sharing → Arc<T>
-   - Mutable sharing → Arc<Mutex<T>> or Arc<RwLock<T>>
-
-3. **What are the Send/Sync requirements?**
-   - Cross-thread ownership → Send
-   - Cross-thread references → Sync
-   - Single-thread async → spawn_local
 
 ---
 
@@ -104,50 +78,6 @@ Before adding concurrency:
 
 ---
 
-## Trace Down ↓
-
-From design to implementation:
-
-```
-"Need parallelism for CPU work"
-    ↓ Use: std::thread or rayon
-
-"Need concurrency for I/O"
-    ↓ Use: async/await with tokio
-
-"Need to share immutable data across threads"
-    ↓ Use: Arc<T>
-
-"Need to share mutable data across threads"
-    ↓ Use: Arc<Mutex<T>> or Arc<RwLock<T>>
-    ↓ Or: channels for message passing
-
-"Need simple atomic operations"
-    ↓ Use: AtomicBool, AtomicUsize, etc.
-```
-
----
-
-## Send/Sync Markers
-
-| Marker | Meaning | Example |
-|--------|---------|---------|
-| `Send` | Can transfer ownership between threads | Most types |
-| `Sync` | Can share references between threads | `Arc<T>` |
-| `!Send` | Must stay on one thread | `Rc<T>` |
-| `!Sync` | No shared refs across threads | `RefCell<T>` |
-
-## Quick Reference
-
-| Pattern | Thread-Safe | Blocking | Use When |
-|---------|-------------|----------|----------|
-| `std::thread` | Yes | Yes | CPU-bound parallelism |
-| `async/await` | Yes | No | I/O-bound concurrency |
-| `Mutex<T>` | Yes | Yes | Shared mutable state |
-| `RwLock<T>` | Yes | Yes | Read-heavy shared state |
-| `mpsc::channel` | Yes | Optional | Message passing |
-| `Arc<Mutex<T>>` | Yes | Yes | Shared mutable across threads |
-
 ## Decision Flowchart
 
 ```
@@ -169,6 +99,10 @@ Async context?
 ├─ Type is !Send → spawn_local
 └─ Blocking code → spawn_blocking
 ```
+
+Async runtime: use **tokio**. async-std was discontinued in 2025 (its
+maintainers recommend smol for lightweight needs) — do not start new
+projects on it.
 
 ---
 
@@ -195,31 +129,13 @@ Async context?
 
 ---
 
-## Async-Specific Patterns
+## Deep Dives (load on demand)
 
-### Avoid MutexGuard Across Await
-
-```rust
-// Bad: guard held across await
-let guard = mutex.lock().await;
-do_async().await;  // guard still held!
-
-// Good: scope the lock
-{
-    let guard = mutex.lock().await;
-    // use guard
-}  // guard dropped
-do_async().await;
-```
-
-### Non-Send Types in Async
-
-```rust
-// Rc is !Send, can't cross await in spawned task
-// Option 1: use Arc instead
-// Option 2: use spawn_local (single-thread runtime)
-// Option 3: ensure Rc is dropped before .await
-```
+| File | Read when |
+|------|-----------|
+| `patterns/common-errors.md` | Fixing E0277 Send/Sync, deadlock patterns, guard-across-await — with code fixes |
+| `patterns/async-patterns.md` | JoinSet, cancellation/graceful shutdown, semaphore backpressure, scoped async tasks |
+| `examples/thread-patterns.md` | std scoped threads; OnceLock/LazyLock global init (edition 2024 static-mut note) |
 
 ---
 

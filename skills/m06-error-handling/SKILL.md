@@ -33,8 +33,8 @@ Before choosing error handling strategy:
 - E0308 around `Result<T, AppError>` usually means the error boundary is
   unclear. Convert with `From` or `map_err`, and preserve the source chain when
   the lower-level error matters.
-- In library APIs, prefer typed errors with `thiserror`; in applications, add
-  context at the call site without erasing recoverability.
+- Add context at call sites without erasing recoverability (see Library vs
+  Application table below for crate choice).
 
 ---
 
@@ -161,6 +161,15 @@ Use ? → Need context?
 | Ignore errors silently | Bugs hidden | Handle or propagate |
 | `panic!` for expected errors | Bad UX, no recovery | Result |
 | Box<dyn Error> everywhere | Lost type info | thiserror |
+
+---
+
+## Deep Dives (load on demand)
+
+| File | Read when |
+|------|-----------|
+| `patterns/error-patterns.md` | Lazy `.with_context()` at boundaries, transparent wrappers, early-return vs combinator choice |
+| `examples/library-vs-app.md` | Designing a library error enum (thiserror) vs app-level handling; axum IntoResponse error mapping |
 
 ---
 

@@ -34,7 +34,8 @@
       "clippy warning",
       "clippy::",
       "anyhow::",
-      "anyhow crate"
+      "anyhow crate",
+      "par_iter"
     ],
     "regexes": [
       "\\bE0\\d{3,4}\\b",
@@ -66,7 +67,10 @@
       "\\b(serde|tokio|axum|actix|sqlx|rayon|reqwest)_[a-z0-9_]+\\b",
       "\\b(serde_json|serde_yaml|serde|tokio|axum|actix|sqlx|anyhow|thiserror)::",
       "&'[a-z_]+\\b",
-      "<'[a-z_]+\\b"
+      "<'[a-z_]+\\b",
+      "\\bclap\\b.{0,40}\\b(cli|command[- ]?line|arg(ument)?s?|parser|parsing|derive|subcommand|flag)\\b",
+      "\\b(cli|command[- ]?line|arg(ument)?s?|parser|parsing|derive|subcommand|flag)\\b.{0,40}\\bclap\\b",
+      "\\brayon\\b.{0,30}\\b(par_iter|parallel|iterator|thread ?pool)\\b"
     ],
     "not_regexes": [
       "rust[ -]?(stain|colou?r|spot|proof|remover|bucket|belt)",

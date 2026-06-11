@@ -47,6 +47,32 @@ routing AOM, evaluator self-test, fixture audits, routing A/B, held-out
 routing, hook routing, install e2e, and package safety. It must end
 `verify all: PASS`.
 
+## Content Effectiveness A/B (2026-06-11, frontier-model agents)
+
+Blind-judged A/B of skills-injected vs no-skills answers, run after the
+calibration-anchor removal. 5 cargo-test-gated codegen tasks + 12 expert QA
+prompts, 3 judge lenses each (correctness / constraint coverage / signal
+density), arms blinded and order-swapped.
+
+- Codegen: 5/5 pass in BOTH arms (ceiling on correctness), but the
+  skills-injected arm produced cleaner code in 4/5 (clippy pedantic clean,
+  better error docs, CLI conventions like `--` separators and idempotent
+  flags).
+- Expert QA, pre-optimization content: baseline won 25 of 36 judge votes
+  (avg 8.86 vs 8.47). Skills only won where they carried specific guardrails
+  (MutexGuard-across-await, stdout/stderr contracts). Template scaffolding
+  measurably anchored answers into shallower coverage.
+- After the content optimization (47% line cut, 158 code blocks
+  compile-verified, all flagged wrong examples fixed) the 4 worst cases
+  improved from 0:12 to 2:9:1 — better, still net-negative for open-ended QA
+  against a frontier model's own knowledge.
+
+Honest conclusion: with frontier-model agents, skill injection earns its keep
+on codegen polish, guardrail-matching questions, and routing precision — not
+on open-ended expert QA depth. The injected routing contract is therefore
+advisory ("your own expertise takes precedence"), not mandatory. Effectiveness
+for smaller/older models is untested and plausibly higher.
+
 ## Historical Agent-Quality Tables (UNVERIFIABLE FROM REPO)
 
 The tables below cite `report.json` paths under `tests/results/**`, which is

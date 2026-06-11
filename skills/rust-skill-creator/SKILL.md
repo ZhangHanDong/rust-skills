@@ -8,9 +8,7 @@ agent: general-purpose
 
 # Rust Skill Creator
 
-> **Version:** 2.1.0 | **Last Updated:** 2025-01-27
->
-> Create dynamic skills for Rust crates and std library documentation.
+Create dynamic skills for Rust crates and std library documentation.
 
 ## When to Use
 
@@ -215,16 +213,6 @@ quality improved.
 
 ---
 
-## URL Construction Helper
-
-| Target | URL Template |
-|--------|--------------|
-| Crate overview | `https://docs.rs/{crate}/latest/{crate}/` |
-| Crate module | `https://docs.rs/{crate}/latest/{crate}/{module}/` |
-| Std trait | `https://doc.rust-lang.org/std/{module}/trait.{Name}.html` |
-| Std struct | `https://doc.rust-lang.org/std/{module}/struct.{Name}.html` |
-| Std module | `https://doc.rust-lang.org/std/{module}/index.html` |
-
 ## Common Std Library Paths
 
 | Item | Path |
@@ -241,51 +229,8 @@ quality improved.
 
 ---
 
-## Example Interactions
-
-### Example 1: Create Crate Skill (Agent Mode)
-
-```
-User: "Create a dynamic skill for tokio"
-
-Claude:
-1. Identify: Third-party crate "tokio"
-2. Execute: /create-llms-for-skills https://docs.rs/tokio/latest/tokio/
-3. Wait for llms.txt generation
-4. Execute: /create-skills-via-llms tokio ~/tmp/{timestamp}-tokio-llms.txt
-```
-
-### Example 2: Create Crate Skill (Inline Mode)
-
-```
-User: "Create a dynamic skill for tokio"
-
-Claude:
-1. Identify: Third-party crate "tokio"
-2. Fetch: agent-browser open "https://docs.rs/tokio/latest/tokio/"
-3. Extract documentation
-4. Create: ~/.claude/skills/tokio/SKILL.md
-5. Create: ~/.claude/skills/tokio/references/
-6. Save reference files for key modules (sync, task, runtime, etc.)
-```
-
-### Example 3: Create Std Library Skill
-
-```
-User: "Create a skill for Send and Sync traits"
-
-Claude:
-1. Identify: Std library traits
-2. (Agent Mode) Execute: /create-llms-for-skills https://doc.rust-lang.org/std/marker/trait.Send.html https://doc.rust-lang.org/std/marker/trait.Sync.html
-   (Inline Mode) Fetch each URL, create skill manually
-3. Complete skill creation
-```
-
----
-
 ## DO NOT
 
-- Use `best-skill-creator` for Rust-related skill creation
 - Guess documentation URLs without verification
 - Skip documentation fetching step
 

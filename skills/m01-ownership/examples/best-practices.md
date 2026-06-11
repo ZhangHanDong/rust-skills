@@ -9,7 +9,9 @@
 fn print_name(name: String) {
     println!("Name: {}", name);
 }
+```
 
+```rust
 // GOOD: borrows instead
 fn print_name(name: &str) {
     println!("Name: {}", name);
@@ -24,26 +26,19 @@ print_name(&name);  // still valid
 ### 2. Return Owned Values from Constructors
 
 ```rust
-// GOOD: return owned value
-impl User {
-    fn new(name: &str) -> Self {
-        User {
-            name: name.to_string(),
-        }
-    }
+struct User {
+    name: String,
 }
 
-// GOOD: accept Into<String> for flexibility
+// GOOD: accept impl Into<String> for flexibility, return owned Self
 impl User {
     fn new(name: impl Into<String>) -> Self {
-        User {
-            name: name.into(),
-        }
+        User { name: name.into() }
     }
 }
 
 // Usage:
-let u1 = User::new("Alice");        // &str
+let u1 = User::new("Alice");              // &str
 let u2 = User::new(String::from("Bob"));  // String
 ```
 
@@ -113,6 +108,16 @@ impl User {
 ### 2. Builder Pattern with Ownership
 
 ```rust
+struct Request {
+    url: String,
+    method: String,
+    body: Vec<u8>,
+}
+
+enum Error {
+    MissingUrl,
+}
+
 #[derive(Default)]
 struct RequestBuilder {
     url: Option<String>,
@@ -149,7 +154,7 @@ impl RequestBuilder {
 let req = RequestBuilder::new()
     .url("https://example.com")
     .method("POST")
-    .build()?;
+    .build();
 ```
 
 ### 3. Interior Mutability When Needed
@@ -193,15 +198,15 @@ impl Counter {
 ### 1. Efficient Iteration
 
 ```rust
-let items = vec![1, 2, 3, 4, 5];
+let mut items = vec![1, 2, 3, 4, 5];
 
 // Iterate by reference (no move)
 for item in &items {
     println!("{}", item);
 }
 
-// Iterate by mutable reference
-for item in &mut items.clone() {
+// Iterate by mutable reference to mutate in place
+for item in &mut items {
     *item *= 2;
 }
 
@@ -249,7 +254,7 @@ map.entry("key".to_string())
 
 ## Error Handling with Ownership
 
-### 1. Preserve Context in Errors
+### Preserve Context in Errors
 
 ```rust
 use std::error::Error;
@@ -275,17 +280,6 @@ fn parse(input: &str) -> Result<i32, ParseError> {
 }
 ```
 
-### 2. Ownership in Result Chains
-
-```rust
-fn process_data(path: &str) -> Result<ProcessedData, Error> {
-    let content = std::fs::read_to_string(path)?;  // owned String
-    let parsed = parse_content(&content)?;          // borrow
-    let processed = transform(parsed)?;             // ownership moves
-    Ok(processed)                                   // return owned
-}
-```
-
 ---
 
 ## Performance Considerations
@@ -297,7 +291,9 @@ fn process_data(path: &str) -> Result<ProcessedData, Error> {
 fn contains_item(items: &[String], target: &str) -> bool {
     items.iter().any(|s| s.clone() == target)  // unnecessary clone
 }
+```
 
+```rust
 // GOOD: compare references
 fn contains_item(items: &[String], target: &str) -> bool {
     items.iter().any(|s| s == target)  // String implements PartialEq<str>
@@ -311,13 +307,16 @@ fn contains_item(items: &[String], target: &str) -> bool {
 fn sum(numbers: &Vec<i32>) -> i32 {
     numbers.iter().sum()
 }
+```
 
+```rust
 // GOOD: accepts any slice
 fn sum(numbers: &[i32]) -> i32 {
     numbers.iter().sum()
 }
 
 // Now works with:
+let array = [0, 1, 2, 3];
 sum(&vec![1, 2, 3]);     // Vec
 sum(&[1, 2, 3]);         // array
 sum(&array[1..3]);       // slice
@@ -330,7 +329,9 @@ sum(&array[1..3]);       // slice
 fn make_uppercase(s: &str) -> String {
     s.to_uppercase()
 }
+```
 
+```rust
 // GOOD when you own the data: mutate in place
 fn make_uppercase(mut s: String) -> String {
     s.make_ascii_uppercase();  // in-place for ASCII

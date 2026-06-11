@@ -8,92 +8,46 @@ user-invocable: false
 
 > **Layer 3: Domain Constraints**
 
-## Domain Constraints → Design Implications
+## Domain Constraints -> Rust Implications
 
-| Domain Rule | Design Constraint | Rust Implication |
-|-------------|-------------------|------------------|
-| 12-Factor | Config from env | Environment-based config |
-| Observability | Metrics + traces | tracing + opentelemetry |
-| Health checks | Liveness/readiness | Dedicated endpoints |
-| Graceful shutdown | Clean termination | Signal handling |
-| Horizontal scale | Stateless design | No local state |
-| Container-friendly | Small binaries | Release optimization |
+| Domain Rule | Rust Implication |
+|-------------|------------------|
+| Pods are killed/rescheduled anytime | Stateless: external state (Redis, DB), no local files, no `static mut` |
+| Kubernetes sends SIGTERM, then SIGKILL after grace period | Handle **SIGTERM** (not just ctrl_c) + graceful connection draining |
+| 12-Factor config | Config from env vars + mounted secrets (`figment`, `config`) |
+| Distributed debugging | `tracing` spans + opentelemetry export on every request |
+| Container-friendly | Small static binaries, release profile optimization |
 
----
+## Liveness vs Readiness
 
-## Critical Constraints
+| Probe | Question | On failure | Should check |
+|-------|----------|------------|--------------|
+| `/health` (liveness) | Is the process alive? | Pod restarted | Nothing but the process itself |
+| `/ready` (readiness) | Can it serve traffic? | Removed from load balancer | Dependencies (DB, cache, downstream) |
 
-### Stateless Design
-
-```
-RULE: No local persistent state
-WHY: Pods can be killed/rescheduled anytime
-RUST: External state (Redis, DB), no static mut
-```
-
-### Graceful Shutdown
-
-```
-RULE: Handle SIGTERM, drain connections
-WHY: Zero-downtime deployments
-RUST: tokio::signal + graceful shutdown
-```
-
-### Observability
-
-```
-RULE: Every request must be traceable
-WHY: Debugging distributed systems
-RUST: tracing spans, opentelemetry export
-```
-
----
-
-## Trace Down ↓
-
-From constraints to design (Layer 2):
-
-```
-"Need distributed tracing"
-    ↓ m12-lifecycle: Span lifecycle
-    ↓ tracing + opentelemetry
-
-"Need graceful shutdown"
-    ↓ m07-concurrency: Signal handling
-    ↓ m12-lifecycle: Connection draining
-
-"Need health checks"
-    ↓ domain-web: HTTP endpoints
-    ↓ m06-error-handling: Health status
-```
-
----
+Never check dependencies in liveness -- a flaky DB would restart-loop every pod.
 
 ## Key Crates
 
 | Purpose | Crate |
 |---------|-------|
 | gRPC | tonic |
-| Kubernetes | kube, kube-runtime |
+| Kubernetes API | kube, kube-runtime |
 | Docker | bollard |
 | Tracing | tracing, opentelemetry |
 | Metrics | prometheus, metrics |
 | Config | config, figment |
-| Health | HTTP endpoints |
 
-## Design Patterns
+## Code Pattern: Graceful Shutdown (axum 0.8)
 
-| Pattern | Purpose | Implementation |
-|---------|---------|----------------|
-| gRPC services | Service mesh | tonic + tower |
-| K8s operators | Custom resources | kube-runtime Controller |
-| Observability | Debugging | tracing + OTEL |
-| Health checks | Orchestration | `/health`, `/ready` |
-| Config | 12-factor | Env vars + secrets |
-
-## Code Pattern: Graceful Shutdown
+`axum::Server` was removed in axum 0.7 -- use `axum::serve` with a
+`TcpListener`. The shutdown future must race ctrl_c with SIGTERM, or
+Kubernetes will hard-kill the pod after the grace period.
 
 ```rust
+use std::net::SocketAddr;
+use axum::{routing::get, Router};
+use tokio::net::TcpListener;
 use tokio::signal;
 
 async fn run_server() -> anyhow::Result<()> {
@@ -101,23 +55,36 @@ async fn run_server() -> anyhow::Result<()> {
         .route("/health", get(health))
         .route("/ready", get(ready));
 
-    let addr = SocketAddr::from(([0, 0, 0, 0], 8080));
-
-    axum::Server::bind(&addr)
-        .serve(app.into_make_service())
+    let listener = TcpListener::bind(SocketAddr::from(([0, 0, 0, 0], 8080))).await?;
+    axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal())
         .await?;
-
     Ok(())
 }
 
 async fn shutdown_signal() {
-    signal::ctrl_c().await.expect("failed to listen for ctrl+c");
-    tracing::info!("shutdown signal received");
+    let ctrl_c = async {
+        signal::ctrl_c().await.expect("ctrl_c handler");
+    };
+    #[cfg(unix)]
+    let terminate = async {
+        signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("SIGTERM handler")
+            .recv()
+            .await;
+    };
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => {},
+        _ = terminate => {},
+    }
+    tracing::info!("shutdown signal received, draining connections");
 }
 ```
 
-## Health Check Pattern
+## Code Pattern: Probes
 
 ```rust
 async fn health() -> StatusCode {
@@ -132,35 +99,21 @@ async fn ready(State(db): State<Arc<DbPool>>) -> StatusCode {
 }
 ```
 
----
-
 ## Common Mistakes
 
 | Mistake | Domain Violation | Fix |
 |---------|-----------------|-----|
-| Local file state | Not stateless | External storage |
-| No SIGTERM handling | Hard kills | Graceful shutdown |
-| No tracing | Can't debug | tracing spans |
-| Static config | Not 12-factor | Env vars |
-
----
-
-## Trace to Layer 1
-
-| Constraint | Layer 2 Pattern | Layer 1 Implementation |
-|------------|-----------------|------------------------|
-| Stateless | External state | Arc<Client> for external |
-| Graceful shutdown | Signal handling | tokio::signal |
-| Tracing | Span lifecycle | tracing + OTEL |
-| Health checks | HTTP endpoints | Dedicated routes |
-
----
+| Only handling ctrl_c | SIGTERM ignored -> hard kill in k8s | Race ctrl_c with `SignalKind::terminate()` |
+| Checking DB in liveness probe | Restart loop on flaky dependency | Dependencies belong in readiness only |
+| Local file state | Lost on reschedule | External storage |
+| Static/baked-in config | Not 12-factor | Env vars + secrets |
+| No trace propagation | Cannot debug across services | tracing + opentelemetry context |
 
 ## Related Skills
 
 | When | See |
 |------|-----|
-| Async patterns | m07-concurrency |
-| HTTP endpoints | domain-web |
-| Error handling | m13-domain-error |
-| Resource lifecycle | m12-lifecycle |
+| Axum handlers, extractors, middleware | domain-web |
+| Async patterns, signals | m07-concurrency |
+| Error handling, retries | m13-domain-error |
+| Span/resource lifecycle | m12-lifecycle |

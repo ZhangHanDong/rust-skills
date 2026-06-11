@@ -10,121 +10,30 @@ user-invocable: false
 
 ## Core Question
 
-**Is this pattern hiding a design problem?**
+**Is this pattern hiding a design problem?** Treat the anti-pattern as a symptom: clone-to-escape-borrows means the ownership design is wrong (E0382 root cause), unwrap-"because it can't fail" means an unhandled case, fighting lifetimes means the data structure should change.
 
-When reviewing code:
-- Is this solving the symptom or the cause?
-- Is there a more idiomatic approach?
-- Does this fight or flow with Rust?
+## Anti-Pattern -> Fix
 
----
+| Anti-Pattern | Signal | Fix |
+|--------------|--------|-----|
+| `.clone()` everywhere | Ownership design unclear | Borrow or restructure ownership (m01) |
+| `.unwrap()` in libraries | Panics reach users | `?`, `expect` with context, or handle (m06) |
+| `Rc`/`Arc` when single owner | Memory bloat, unclear design | Plain ownership tree |
+| Fighting lifetimes | Reference-heavy structs | Restructure to own the data (m14 escape patterns) |
+| `unsafe` for convenience | UB risk | Find the safe pattern first (unsafe-checker) |
+| OOP inheritance via `Deref` | Misleading API | Composition, traits |
+| `String` parameters/fields everywhere | Forced allocations | `&str` params, `Cow<str>` (m10) |
+| Index loops over `vec[i]` | Bounds checks, off-by-one | Iterators, `.enumerate()` |
+| Lock held across `.await` | Deadlock / not-Send future | Drop the `MutexGuard` before `.await`: scope it in a block, clone out the data (m07) |
+| `pub` fields with invariants | Invariants violated externally | Private fields + validated constructor |
+| Giant match arms / long functions | Unmaintainable | Extract methods |
+| Giant enums doing many jobs | Missing abstraction | Trait + per-case types |
+| Ignoring `#[must_use]` | Lost errors | Handle or explicit `let _ =` |
+| Boolean parameters | Unreadable call sites | Options struct or enums |
 
-## Anti-Pattern → Better Pattern
+Worked examples (type-system smells, API design, macros): `patterns/common-mistakes.md`.
 
-| Anti-Pattern | Why Bad | Better |
-|--------------|---------|--------|
-| `.clone()` everywhere | Hides ownership issues | Proper references or ownership |
-| `.unwrap()` in production | Runtime panics | `?`, `expect`, or handling |
-| `Rc` when single owner | Unnecessary overhead | Simple ownership |
-| `unsafe` for convenience | UB risk | Find safe pattern |
-| OOP via `Deref` | Misleading API | Composition, traits |
-| Giant match arms | Unmaintainable | Extract to methods |
-| `String` everywhere | Allocation waste | `&str`, `Cow<str>` |
-| Ignoring `#[must_use]` | Lost errors | Handle or `let _ =` |
-
----
-
-## Thinking Prompt
-
-When seeing suspicious code:
-
-1. **Is this symptom or cause?**
-   - Clone to avoid borrow? → Ownership design issue
-   - Unwrap "because it won't fail"? → Unhandled case
-
-2. **What would idiomatic code look like?**
-   - References instead of clones
-   - Iterators instead of index loops
-   - Pattern matching instead of flags
-
-3. **Does this fight Rust?**
-   - Fighting borrow checker → restructure
-   - Excessive unsafe → find safe pattern
-
----
-
-## Trace Up ↑
-
-To design understanding:
-
-```
-"Why does my code have so many clones?"
-    ↑ Ask: Is the ownership model correct?
-    ↑ Check: m09-domain (data flow design)
-    ↑ Check: m01-ownership (reference patterns)
-```
-
-| Anti-Pattern | Trace To | Question |
-|--------------|----------|----------|
-| Clone everywhere | m01-ownership | Who should own this data? |
-| Unwrap everywhere | m06-error-handling | What's the error strategy? |
-| Rc everywhere | m09-domain | Is ownership clear? |
-| Fighting lifetimes | m09-domain | Should data structure change? |
-
----
-
-## Trace Down ↓
-
-To implementation (Layer 1):
-
-```
-"Replace clone with proper ownership"
-    ↓ m01-ownership: Reference patterns
-    ↓ m02-resource: Smart pointer if needed
-
-"Replace unwrap with proper handling"
-    ↓ m06-error-handling: ? operator
-    ↓ m06-error-handling: expect with message
-```
-
----
-
-## Top 5 Beginner Mistakes
-
-| Rank | Mistake | Fix |
-|------|---------|-----|
-| 1 | Clone to escape borrow checker | Use references |
-| 2 | Unwrap in production | Propagate with `?` |
-| 3 | String for everything | Use `&str` |
-| 4 | Index loops | Use iterators |
-| 5 | Fighting lifetimes | Restructure to own data |
-
-## Code Smell → Refactoring
-
-| Smell | Indicates | Refactoring |
-|-------|-----------|-------------|
-| Many `.clone()` | Ownership unclear | Clarify data flow |
-| Many `.unwrap()` | Error handling missing | Add proper handling |
-| Many `pub` fields | Encapsulation broken | Private + accessors |
-| Deep nesting | Complex logic | Extract methods |
-| Long functions | Multiple responsibilities | Split |
-| Giant enums | Missing abstraction | Trait + types |
-
----
-
-## Common Error Patterns
-
-| Error | Anti-Pattern Cause | Fix |
-|-------|-------------------|-----|
-| E0382 use after move | Cloning vs ownership | Proper references |
-| Panic in production | Unwrap everywhere | ?, matching |
-| Slow performance | String for all text | &str, Cow |
-| Borrow checker fights | Wrong structure | Restructure |
-| Memory bloat | Rc/Arc everywhere | Simple ownership |
-
----
-
-## Deprecated → Better
+## Deprecated -> Better
 
 | Deprecated | Better |
 |------------|--------|
@@ -133,9 +42,7 @@ To implementation (Layer 1):
 | Manual unsafe cell | `Cell`, `RefCell` |
 | `mem::transmute` for casts | `as` or `TryFrom` |
 | Custom linked list | `Vec`, `VecDeque` |
-| `lazy_static!` | `std::sync::OnceLock` |
-
----
+| `lazy_static!` | `std::sync::OnceLock` / `LazyLock` (canonical: m12-lifecycle) |
 
 ## Quick Review Checklist
 
@@ -144,17 +51,17 @@ To implementation (Layer 1):
 - [ ] No `pub` fields with invariants
 - [ ] No index loops when iterator works
 - [ ] No `String` where `&str` suffices
+- [ ] No `MutexGuard` alive across `.await`
 - [ ] No ignored `#[must_use]` warnings
 - [ ] No `unsafe` without SAFETY comment
 - [ ] No giant functions (>50 lines)
-
----
 
 ## Related Skills
 
 | When | See |
 |------|-----|
-| Ownership patterns | m01-ownership |
-| Error handling | m06-error-handling |
-| Mental models | m14-mental-model |
-| Performance | m10-performance |
+| Clone/borrow mechanics, E0382 | m01-ownership |
+| unwrap/panic policy | m06-error-handling |
+| Lock-across-await, blocking-in-async (correct code) | m07-concurrency |
+| Perf-motivated versions (string concat, collect, spawn_blocking) | m10-performance |
+| Borrow-checker escape patterns | m14-mental-model |

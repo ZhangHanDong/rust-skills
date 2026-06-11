@@ -5,27 +5,19 @@ globs: ["**/Cargo.toml", "**/.cargo/config.toml"]
 user-invocable: false
 ---
 
-## Project Context (Auto-Injected)
-
-**Target configuration:**
-!`cat .cargo/config.toml 2>/dev/null || echo "No .cargo/config.toml found"`
-
----
-
 # Embedded Domain
 
 > **Layer 3: Domain Constraints**
 
-## Domain Constraints → Design Implications
+## Domain Constraints -> Rust Implications
 
-| Domain Rule | Design Constraint | Rust Implication |
-|-------------|-------------------|------------------|
-| No heap | Stack allocation | heapless, no Box/Vec |
-| No std | Core only | #![no_std] |
-| Real-time | Predictable timing | No dynamic alloc |
-| Resource limited | Minimal memory | Static buffers |
-| Hardware safety | Safe peripheral access | HAL + ownership |
-| Interrupt safe | No blocking in ISR | Atomic, critical sections |
+| Domain Rule | Rust Implication |
+|-------------|------------------|
+| No heap, no allocator | `#![no_std]`, `heapless::Vec<T, N>`, static buffers -- no `Box`/`Vec`/`String` |
+| ISR can preempt at any time | Shared state in `Mutex<RefCell<Option<T>>>` (runtime-checked borrow) inside critical sections |
+| Peripherals must have one owner | HAL takes ownership; `Peripherals::take()` singleton |
+| Real-time, predictable timing | No dynamic allocation, no blocking in ISRs (defer work to main loop/task) |
+| Resource limited | Capacity is part of the design (see below) |
 
 ## Buffering Without a Heap
 
@@ -36,62 +28,12 @@ user-invocable: false
   (drop oldest, drop newest, or surface an error) instead of assuming the
   buffer can grow at runtime.
 
----
-
-## Critical Constraints
-
-### No Dynamic Allocation
-
-```
-RULE: Cannot use heap (no allocator)
-WHY: Deterministic memory, no OOM
-RUST: heapless::Vec<T, N>, arrays
-```
-
-### Interrupt Safety
-
-```
-RULE: Shared state must be interrupt-safe
-WHY: ISR can preempt at any time
-RUST: Mutex<RefCell<T>> + critical section
-```
-
-### Hardware Ownership
-
-```
-RULE: Peripherals must have clear ownership
-WHY: Prevent conflicting access
-RUST: HAL takes ownership, singletons
-```
-
----
-
-## Trace Down ↓
-
-From constraints to design (Layer 2):
-
-```
-"Need no_std compatible data structures"
-    ↓ m02-resource: heapless collections
-    ↓ Static sizing: heapless::Vec<T, N>
-
-"Need interrupt-safe state"
-    ↓ m03-mutability: Mutex<RefCell<Option<T>>>
-    ↓ m07-concurrency: Critical sections
-
-"Need peripheral ownership"
-    ↓ m01-ownership: Singleton pattern
-    ↓ m12-lifecycle: RAII for hardware
-```
-
----
-
 ## Layer Stack
 
 | Layer | Examples | Purpose |
 |-------|----------|---------|
 | PAC | stm32f4, esp32c3 | Register access |
-| HAL | stm32f4xx-hal | Hardware abstraction |
+| HAL | stm32f4xx-hal, esp-hal | Hardware abstraction |
 | Framework | RTIC, Embassy | Concurrency |
 | Traits | embedded-hal | Portable drivers |
 
@@ -99,8 +41,8 @@ From constraints to design (Layer 2):
 
 | Framework | Style | Best For |
 |-----------|-------|----------|
-| RTIC | Priority-based | Interrupt-driven apps |
-| Embassy | Async | Complex state machines |
+| RTIC | Priority-based, interrupt-driven | Hard real-time, static scheduling |
+| Embassy | async/await | Complex state machines, multi-peripheral apps |
 | Bare metal | Manual | Simple apps |
 
 ## Key Crates
@@ -111,77 +53,56 @@ From constraints to design (Layer 2):
 | Panic handler | panic-halt, panic-probe |
 | Collections | heapless |
 | HAL traits | embedded-hal |
+| Critical sections | critical-section |
 | Logging | defmt |
-| Flash/debug | probe-run |
+| Flash/debug | probe-rs (`probe-rs run`, cargo-embed) -- replaces deprecated probe-run |
 
-## Design Patterns
+## Code Pattern: ISR-Safe Static State
 
-| Pattern | Purpose | Implementation |
-|---------|---------|----------------|
-| no_std setup | Bare metal | `#![no_std]` + `#![no_main]` |
-| Entry point | Startup | `#[entry]` or embassy |
-| Static state | ISR access | `Mutex<RefCell<Option<T>>>` |
-| Fixed buffers | No heap | `heapless::Vec<T, N>` |
-
-## Code Pattern: Static Peripheral
+Use the `critical-section` crate: portable across cortex-m, esp32, and
+RISC-V (each chip crate provides the implementation). The cortex-m-only
+equivalent is `cortex_m::interrupt::free`.
 
 ```rust
 #![no_std]
-#![no_main]
 
-use cortex_m::interrupt::{self, Mutex};
 use core::cell::RefCell;
+use critical_section::Mutex;
 
+// Led = your HAL pin type
 static LED: Mutex<RefCell<Option<Led>>> = Mutex::new(RefCell::new(None));
 
-#[entry]
-fn main() -> ! {
-    let dp = pac::Peripherals::take().unwrap();
-    let led = Led::new(dp.GPIOA);
-
-    interrupt::free(|cs| {
-        LED.borrow(cs).replace(Some(led));
+fn init(led: Led) {
+    critical_section::with(|cs| {
+        LED.borrow_ref_mut(cs).replace(led);
     });
+}
 
-    loop {
-        interrupt::free(|cs| {
-            if let Some(led) = LED.borrow(cs).borrow_mut().as_mut() {
-                led.toggle();
-            }
-        });
-    }
+// callable from main loop or ISR alike
+fn toggle_led() {
+    critical_section::with(|cs| {
+        if let Some(led) = LED.borrow_ref_mut(cs).as_mut() {
+            led.toggle();
+        }
+    });
 }
 ```
-
----
 
 ## Common Mistakes
 
 | Mistake | Domain Violation | Fix |
 |---------|-----------------|-----|
-| Using Vec | Heap allocation | heapless::Vec |
-| No critical section | Race with ISR | Mutex + interrupt::free |
-| Blocking in ISR | Missed interrupts | Defer to main loop |
-| Unsafe peripheral | Hardware conflict | HAL ownership |
-
----
-
-## Trace to Layer 1
-
-| Constraint | Layer 2 Pattern | Layer 1 Implementation |
-|------------|-----------------|------------------------|
-| No heap | Static collections | heapless::Vec<T, N> |
-| ISR safety | Critical sections | Mutex<RefCell<T>> |
-| Hardware ownership | Singleton | take().unwrap() |
-| no_std | Core-only | #![no_std], #![no_main] |
-
----
+| Using `Vec`/`Box` | Heap allocation, no allocator | `heapless::Vec<T, N>` |
+| Touching shared static without critical section | Data race with ISR | `critical_section::with` + `Mutex<RefCell<T>>` |
+| Blocking in ISR | Missed interrupts, jitter | Set a flag/queue, defer to main loop or task |
+| Bypassing HAL with raw registers | Conflicting peripheral access | HAL ownership; unsafe only with review |
 
 ## Related Skills
 
 | When | See |
 |------|-----|
-| Static memory | m02-resource |
+| Static memory, fixed capacity | m02-resource |
 | Interior mutability | m03-mutability |
-| Interrupt patterns | m07-concurrency |
-| Unsafe for hardware | unsafe-checker |
+| Interrupt/concurrency patterns | m07-concurrency |
+| Unsafe for hardware access | unsafe-checker |
+| MQTT, gateway-side IoT | domain-iot |

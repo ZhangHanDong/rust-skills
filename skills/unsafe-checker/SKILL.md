@@ -5,8 +5,6 @@ globs: ["**/*.rs"]
 allowed-tools: ["Read", "Grep", "Glob"]
 ---
 
----
-
 # Unsafe Rust Checker
 
 ## When Unsafe is Valid
@@ -22,12 +20,14 @@ allowed-tools: ["Read", "Grep", "Glob"]
 ## Required Documentation
 
 ```rust
-// SAFETY: <why this is safe>
-unsafe { ... }
-
 /// # Safety
 /// <caller requirements>
-pub unsafe fn dangerous() { ... }
+pub unsafe fn dangerous() { /* ... */ }
+
+fn caller() {
+    // SAFETY: <why this call is sound here>
+    unsafe { dangerous() }
+}
 ```
 
 ## Raw Pointer Contracts

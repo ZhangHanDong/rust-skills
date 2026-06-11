@@ -1,6 +1,6 @@
 ---
 name: m05-type-driven
-description: "CRITICAL: Use for type-driven design. Triggers: type state, PhantomData, newtype, marker trait, builder pattern, make invalid states unrepresentable, compile-time validation, sealed trait, ZST, 类型状态, 新类型模式, 类型驱动设计"
+description: "Use when: type-driven design. Triggers: type state, PhantomData, newtype, marker trait, builder pattern, make invalid states unrepresentable, compile-time validation, sealed trait, ZST, 类型状态, 新类型模式, 类型驱动设计"
 user-invocable: false
 ---
 
@@ -99,7 +99,7 @@ From design to implementation:
 |---------|---------|---------|
 | Newtype | Type safety | `struct UserId(u64);` |
 | Type State | State machine | `Connection<Connected>` |
-| PhantomData | Variance/lifetime | `PhantomData<&'a T>` |
+| PhantomData | Zero-sized marker (typestate, variance, lifetime) | `PhantomData<State>` |
 | Marker Trait | Capability flag | `trait Validated {}` |
 | Builder | Gradual construction | `Builder::new().name("x").build()` |
 | Sealed Trait | Prevent external impl | `mod private { pub trait Sealed {} }` |

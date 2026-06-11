@@ -9,74 +9,24 @@ user-invocable: false
 
 > **Layer 3: Domain Constraints**
 
-## Domain Constraints → Design Implications
+## Domain Constraints -> Rust Implications
 
-| Domain Rule | Design Constraint | Rust Implication |
-|-------------|-------------------|------------------|
-| Stateless HTTP | No request-local globals | State in extractors |
-| Concurrency | Handle many connections | Async, Send + Sync |
-| Latency SLA | Fast response | Efficient ownership |
-| Security | Input validation | Type-safe extractors |
-| Observability | Request tracing | tracing + tower layers |
-
----
-
-## Critical Constraints
-
-### Async by Default
-
-```
-RULE: Web handlers must not block
-WHY: Block one task = block many requests
-RUST: async/await, spawn_blocking for CPU work
-```
-
-### State Management
-
-```
-RULE: Shared state must be thread-safe
-WHY: Handlers run on any thread
-RUST: Arc<T>, Arc<RwLock<T>> for mutable
-```
-
-### Request Lifecycle
-
-```
-RULE: Resources live only for request duration
-WHY: Memory management, no leaks
-RUST: Extractors, proper ownership
-```
-
----
-
-## Trace Down ↓
-
-From constraints to design (Layer 2):
-
-```
-"Need shared application state"
-    ↓ m07-concurrency: Use Arc for thread-safe sharing
-    ↓ m02-resource: Arc<RwLock<T>> for mutable state
-
-"Need request validation"
-    ↓ m05-type-driven: Validated extractors
-    ↓ m06-error-handling: IntoResponse for errors
-
-"Need middleware stack"
-    ↓ m12-lifecycle: Tower layers
-    ↓ m04-zero-cost: Trait-based composition
-```
-
----
+| Domain Rule | Rust Implication |
+|-------------|------------------|
+| Handlers must not block (one blocked task stalls many requests) | async handlers; `tokio::task::spawn_blocking` for CPU-bound work |
+| Handlers run on any worker thread | Shared state must be `Send + Sync`: `Arc<T>`, `Arc<RwLock<T>>` for mutable |
+| Stateless HTTP, no request-local globals | State injected via extractors (`State<Arc<AppState>>`) |
+| Input is untrusted | Type-safe extractors (`Json<T>`, `Path<T>`), validated newtypes |
+| Requests must be traceable | `tracing` spans + tower layers |
 
 ## Framework Comparison
 
 | Framework | Style | Best For |
 |-----------|-------|----------|
-| axum | Functional, tower | Modern APIs |
-| actix-web | Actor-based | High performance |
-| warp | Filter composition | Composable APIs |
+| axum | Functional, tower-native | Modern APIs (default choice) |
+| actix-web | Tokio-based, mature ecosystem | High performance services |
 | rocket | Macro-driven | Rapid development |
+| warp | Filter composition | Maintenance mode -- avoid for new projects |
 
 ## Key Crates
 
@@ -90,18 +40,15 @@ From constraints to design (Layer 2):
 | Database | sqlx, diesel |
 | Middleware | tower |
 
-## Design Patterns
-
-| Pattern | Purpose | Implementation |
-|---------|---------|----------------|
-| Extractors | Request parsing | `State(db)`, `Json(payload)` |
-| Error response | Unified errors | `impl IntoResponse` |
-| Middleware | Cross-cutting | Tower layers |
-| Shared state | App config | `Arc<AppState>` |
-
-## Code Pattern: Axum Handler
+## Code Pattern: Axum Handler (axum 0.8)
 
 ```rust
+use std::sync::Arc;
+use axum::extract::{Json, State};
+use axum::http::StatusCode;
+use axum::response::{IntoResponse, Response};
+use serde_json::json;
+
 async fn handler(
     State(db): State<Arc<DbPool>>,
     Json(payload): Json<CreateUser>,
@@ -110,7 +57,7 @@ async fn handler(
     Ok(Json(user))
 }
 
-// Error handling
+// One unified error type for the whole API surface
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         let (status, message) = match self {
@@ -122,35 +69,22 @@ impl IntoResponse for AppError {
 }
 ```
 
----
-
 ## Common Mistakes
 
-| Mistake | Domain Violation | Fix |
-|---------|-----------------|-----|
-| Blocking in handler | Latency spike | spawn_blocking |
-| Rc in state | Not Send + Sync | Use Arc |
-| No validation | Security risk | Type-safe extractors |
-| No error response | Bad UX | IntoResponse impl |
-
----
-
-## Trace to Layer 1
-
-| Constraint | Layer 2 Pattern | Layer 1 Implementation |
-|------------|-----------------|------------------------|
-| Async handlers | Async/await | tokio runtime |
-| Thread-safe state | Shared state | Arc<T>, Arc<RwLock<T>> |
-| Request lifecycle | Extractors | Ownership via From<Request> |
-| Middleware | Tower layers | Trait-based composition |
-
----
+| Mistake | Consequence | Fix |
+|---------|-------------|-----|
+| Blocking call in async handler | Latency spike across requests | `spawn_blocking` |
+| `Rc`/`RefCell` in shared state | E0277: not `Send + Sync` | `Arc<T>`, `Arc<RwLock<T>>` |
+| Holding `MutexGuard` across `.await` | Future not `Send`; deadlock risk | Drop the guard before `.await` |
+| Returning raw errors from handlers | Leaks internals, inconsistent responses | Single `AppError` with `IntoResponse` |
+| No input validation | Security risk | Typed extractors + `validator` |
 
 ## Related Skills
 
 | When | See |
 |------|-----|
-| Async patterns | m07-concurrency |
-| State management | m02-resource |
-| Error handling | m06-error-handling |
-| Middleware design | m12-lifecycle |
+| Async patterns, Send/Sync errors | m07-concurrency |
+| Shared state design | m02-resource |
+| Error handling design | m06-error-handling |
+| Middleware lifecycle | m12-lifecycle |
+| Server bootstrap, graceful shutdown, health endpoints | domain-cloud-native |

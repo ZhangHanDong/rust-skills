@@ -59,7 +59,8 @@ pub struct CBuffer {
     len: usize,
 }
 
-extern "C" {
+// Edition 2024: extern blocks must be declared `unsafe extern`.
+unsafe extern "C" {
     fn c_alloc(size: usize) -> *mut u8;
     fn c_free(ptr: *mut u8);
 }
@@ -91,8 +92,8 @@ impl Drop for CBuffer {
     }
 }
 
-// Prevent double-free
-impl !Clone for CBuffer {}
+// Prevent double-free: deliberately do NOT implement Clone or Copy.
+// (`impl !Clone` is unstable; simply omitting the impl is the guarantee.)
 
 // Safe to send between threads (assuming c_alloc is thread-safe)
 unsafe impl Send for CBuffer {}

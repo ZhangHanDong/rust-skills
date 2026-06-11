@@ -21,13 +21,13 @@ Before choosing between generics and trait objects:
 
 ## Error → Design Question
 
-| Error | Don't Just Say | Ask Instead |
-|-------|----------------|-------------|
-| E0277 | "Add trait bound" | Is this abstraction at the right level? |
-| E0282 | "Add a type" | Where should the type boundary be explicit? |
-| E0308 | "Fix the type" | Should types be unified or distinct? |
-| E0599 | "Import the trait" | Is the trait the right abstraction? |
-| E0038 | "Make object-safe" | Do we really need dynamic dispatch? |
+| Error | Cause | Mechanical Fix | Ask Instead |
+|-------|-------|----------------|-------------|
+| E0277 | Type doesn't impl trait | Add impl or change bound | Is this abstraction at the right level? |
+| E0282 | Inference ran out of constraints | Annotation or turbofish | Where should the type boundary be explicit? |
+| E0308 | Type mismatch | Check generic params | Should types be unified or distinct? |
+| E0599 | No method found | Import trait with `use` | Is the trait the right abstraction? |
+| E0038 | Trait not dyn-compatible | Use generics or redesign | Do we really need dynamic dispatch? |
 
 ## Inference Guidance
 
@@ -72,7 +72,7 @@ E0277 (trait bound not satisfied)
 | Persistent Error | Trace To | Question |
 |-----------------|----------|----------|
 | Complex trait bounds | m09-domain | Is the abstraction right? |
-| Object safety issues | m05-type-driven | Can typestate help? |
+| Dyn compatibility issues | m05-type-driven | Can typestate help? |
 | Type explosion | m10-performance | Accept dyn overhead? |
 
 ---
@@ -109,25 +109,17 @@ From design to implementation:
 ## Syntax Comparison
 
 ```rust
+use std::fmt::Display;
+
 // Static dispatch - type known at compile time
-fn process(x: impl Display) { }      // argument position
-fn process<T: Display>(x: T) { }     // explicit generic
-fn get() -> impl Display { }         // return position
+fn show(x: impl Display) { println!("{x}"); }            // argument position
+fn show_generic<T: Display>(x: T) { println!("{x}"); }   // explicit generic
+fn answer() -> impl Display { 42 }                       // return position
 
 // Dynamic dispatch - type determined at runtime
-fn process(x: &dyn Display) { }      // reference
-fn process(x: Box<dyn Display>) { }  // owned
+fn show_ref(x: &dyn Display) { println!("{x}"); }        // reference
+fn show_boxed(x: Box<dyn Display>) { println!("{x}"); }  // owned
 ```
-
-## Error Code Reference
-
-| Error | Cause | Quick Fix |
-|-------|-------|-----------|
-| E0277 | Type doesn't impl trait | Add impl or change bound |
-| E0282 | Type inference ambiguous | Add annotation, turbofish, or explicit boundary |
-| E0308 | Type mismatch | Check generic params |
-| E0599 | No method found | Import trait with `use` |
-| E0038 | Trait not object-safe | Use generics or redesign |
 
 ---
 
@@ -143,13 +135,16 @@ fn process(x: Box<dyn Display>) { }  // owned
 
 ---
 
-## Object Safety
+## Dyn Compatibility (formerly "Object Safety")
 
-A trait is object-safe if it:
-- Doesn't have `Self: Sized` bound
-- Doesn't return `Self`
-- Doesn't have generic methods
-- Uses `where Self: Sized` for non-object-safe methods
+A trait is dyn-compatible (usable as `dyn Trait`) when:
+- The trait itself doesn't require `Self: Sized`
+- No method returns `Self` or takes generic type parameters —
+  UNLESS that method is opted out with `where Self: Sized`
+  (the escape hatch: such methods just aren't callable on `dyn Trait`)
+- `async fn` and `-> impl Trait` methods (RPITIT) are NOT dyn-compatible —
+  the most common E0038 trap since their stabilization; for dyn dispatch
+  return `Pin<Box<dyn Future<...>>>` or use the `async-trait` crate
 
 ---
 
@@ -160,7 +155,7 @@ A trait is object-safe if it:
 | Over-generic everything | Compile time, complexity | Concrete types when possible |
 | `dyn` for known types | Unnecessary indirection | Generics |
 | Complex trait hierarchies | Hard to understand | Simpler design |
-| Ignore object safety | Limits flexibility | Plan for dyn if needed |
+| Ignore dyn compatibility | Limits flexibility | Plan for dyn if needed |
 
 ---
 

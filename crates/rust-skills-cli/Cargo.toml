@@ -10,9 +10,11 @@ name = "rust-skills"
 path = "src/main.rs"
 
 [dependencies]
+async-scoped = { version = "0.9", features = ["use-tokio"] }
 regex = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["preserve_order"] }
+tokio = { version = "1", features = ["full"] }
 
 [lints]
 workspace = true
