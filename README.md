@@ -344,14 +344,51 @@ Layer 1: Language Mechanics (HOW)
 
 ## Commands
 
+### Query & Info
+
 | Command | Description |
 |---------|-------------|
 | `/rust-features [version]` | Get Rust version features |
 | `/crate-info <crate>` | Get crate information |
 | `/docs <crate> [item]` | Get API documentation |
+| `/guideline [--clippy] <rule>` | Query coding guidelines |
+| `/skill-index <category>` | Search skills by category |
+| `/rust-daily [day\|week\|month]` | Rust ecosystem news |
+| `/ai-daily [day\|week\|month]` | AI community news from Reddit |
+
+### Audit & Review
+
+| Command | Description |
+|---------|-------------|
+| `/unsafe-check <file>` | Analyze file for unsafe issues |
+| `/unsafe-review <file>` | Interactive unsafe code review |
+| `/rust-review <file>` | Lightweight Clippy-style review |
+| `/audit [security\|safety\|concurrency\|full]` | Comprehensive code audit |
+
+### Dynamic Skills
+
+| Command | Description |
+|---------|-------------|
 | `/sync-crate-skills` | Sync skills from Cargo.toml dependencies |
 | `/update-crate-skill <crate>` | Update specific crate skill |
 | `/clean-crate-skills` | Clean local crate skills |
+| `/create-skills-via-llms <crate> <path>` | Create skill from llms.txt |
+| `/create-llms-for-skills <urls>` | Generate llms.txt from URLs |
+| `/create-llms-from-source [path]` | Generate llms.txt from local source |
+| `/fix-skill-docs [--check-only]` | Fix skill documentation |
+
+### Cache
+
+| Command | Description |
+|---------|-------------|
+| `/cache-status [--verbose]` | Show docs cache status |
+| `/cache-clean [--all\|--expired]` | Clean cache entries |
+
+### Other
+
+| Command | Description |
+|---------|-------------|
+| `/achievement [list\|stats]` | View coding achievements and progress |
 
 ## Dynamic Skills
 

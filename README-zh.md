@@ -298,6 +298,7 @@ Layer 1: 语言机制 (HOW - 怎么做)
 ### 核心 Skills
 - `rust-router` - Rust 问题主路由器 (首先调用)
 - `rust-learner` - 获取最新 Rust/crate 版本信息
+- `rust-env-setup` - Rust 工具链、Cargo 与 rust-skills runtime 安装配置
 - `coding-guidelines` - 编码规范查询
 
 ### Layer 1: 语言机制 (m01-m07)
@@ -338,14 +339,51 @@ Layer 1: 语言机制 (HOW - 怎么做)
 
 ## 命令
 
+### 查询与信息
+
 | 命令 | 说明 |
 |------|------|
 | `/rust-features [version]` | 获取 Rust 版本特性 |
 | `/crate-info <crate>` | 获取 crate 信息 |
 | `/docs <crate> [item]` | 获取 API 文档 |
+| `/guideline [--clippy] <rule>` | 查询编码规范 |
+| `/skill-index <category>` | 按分类搜索 skills |
+| `/rust-daily [day\|week\|month]` | Rust 生态新闻 |
+| `/ai-daily [day\|week\|month]` | Reddit AI 社区日报 |
+
+### 审计与代码审查
+
+| 命令 | 说明 |
+|------|------|
+| `/unsafe-check <file>` | 分析文件的 unsafe 问题 |
+| `/unsafe-review <file>` | 交互式 unsafe 代码审查 |
+| `/rust-review <file>` | 轻量级 Clippy 风格审查 |
+| `/audit [security\|safety\|concurrency\|full]` | 综合代码审计 |
+
+### 动态 Skills
+
+| 命令 | 说明 |
+|------|------|
 | `/sync-crate-skills` | 从 Cargo.toml 同步 skills |
 | `/update-crate-skill <crate>` | 更新指定 crate skill |
 | `/clean-crate-skills` | 清理本地 crate skills |
+| `/create-skills-via-llms <crate> <path>` | 从 llms.txt 创建 skill |
+| `/create-llms-for-skills <urls>` | 从 URL 生成 llms.txt |
+| `/create-llms-from-source [path]` | 从本地源码生成 llms.txt |
+| `/fix-skill-docs [--check-only]` | 修复 skill 文档 |
+
+### 缓存管理
+
+| 命令 | 说明 |
+|------|------|
+| `/cache-status [--verbose]` | 查看文档缓存状态 |
+| `/cache-clean [--all\|--expired]` | 清理缓存条目 |
+
+### 其他
+
+| 命令 | 说明 |
+|------|------|
+| `/achievement [list\|stats]` | 查看编程成就与进度 |
 
 ## 动态 Skills
 

@@ -17,8 +17,8 @@
       "p_rules": 80,
       "g_rules_compressed": true
     },
-    "agents": 8,
-    "commands": 16,
+    "agents": 11,
+    "commands": 22,
     "templates": 5
   },
   "skills": {
@@ -82,7 +82,10 @@
     "std-docs-researcher",
     "layer1-analyzer",
     "layer2-analyzer",
-    "layer3-analyzer"
+    "layer3-analyzer",
+    "browser-fetcher",
+    "docs-cache",
+    "rust-daily-reporter"
   ],
   "commands": [
     "guideline",
@@ -99,14 +102,20 @@
     "update-crate-skill",
     "create-skills-via-llms",
     "create-llms-for-skills",
+    "create-llms-from-source",
     "fix-skill-docs",
-    "meta-parallel"
+    "meta-parallel",
+    "rust-daily",
+    "ai-daily",
+    "cache-status",
+    "cache-clean",
+    "achievement"
   ],
   "compatibility": {
     "claude_code_min_version": "1.0.0",
     "rust_version_coverage": "1.0.0 - 1.85.0"
   },
-  "last_updated": "2026-05-18",
+  "last_updated": "2026-06-11",
   "quality_checks": {
     "skill_frontmatter": true,
     "agent_tools_declared": true,

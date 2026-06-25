@@ -299,6 +299,7 @@ Layer 1: 言語機構 (HOW - どのように)
 ### コア Skills
 - `rust-router` - すべての Rust 質問のマスタールーター（最初に呼び出し）
 - `rust-learner` - 最新の Rust/crate バージョン情報を取得
+- `rust-env-setup` - Rust ツールチェーン、Cargo、rust-skills runtime のセットアップ
 - `coding-guidelines` - コーディング規約の検索
 
 ### Layer 1: 言語機構 (m01-m07)
@@ -339,14 +340,51 @@ Layer 1: 言語機構 (HOW - どのように)
 
 ## コマンド
 
+### クエリと情報
+
 | コマンド | 説明 |
 |----------|------|
 | `/rust-features [version]` | Rust バージョン機能を取得 |
 | `/crate-info <crate>` | crate 情報を取得 |
 | `/docs <crate> [item]` | API ドキュメントを取得 |
+| `/guideline [--clippy] <rule>` | コーディング規約を検索 |
+| `/skill-index <category>` | カテゴリ別 skills を検索 |
+| `/rust-daily [day\|week\|month]` | Rust エコシステムニュース |
+| `/ai-daily [day\|week\|month]` | Reddit AI コミュニティ日報 |
+
+### 監査とレビュー
+
+| コマンド | 説明 |
+|----------|------|
+| `/unsafe-check <file>` | ファイルの unsafe 問題を分析 |
+| `/unsafe-review <file>` | インタラクティブ unsafe コードレビュー |
+| `/rust-review <file>` | 軽量 Clippy スタイルレビュー |
+| `/audit [security\|safety\|concurrency\|full]` | 包括的コード監査 |
+
+### 動的 Skills
+
+| コマンド | 説明 |
+|----------|------|
 | `/sync-crate-skills` | Cargo.toml から skills を同期 |
 | `/update-crate-skill <crate>` | 指定 crate skill を更新 |
 | `/clean-crate-skills` | ローカル crate skills をクリーン |
+| `/create-skills-via-llms <crate> <path>` | llms.txt から skill を作成 |
+| `/create-llms-for-skills <urls>` | URL から llms.txt を生成 |
+| `/create-llms-from-source [path]` | ローカルソースから llms.txt を生成 |
+| `/fix-skill-docs [--check-only]` | skill ドキュメントを修正 |
+
+### キャッシュ
+
+| コマンド | 説明 |
+|----------|------|
+| `/cache-status [--verbose]` | ドキュメントキャッシュ状態を表示 |
+| `/cache-clean [--all\|--expired]` | キャッシュエントリをクリーン |
+
+### その他
+
+| コマンド | 説明 |
+|----------|------|
+| `/achievement [list\|stats]` | コーディング実績と進捗を確認 |
 
 ## 動的 Skills
 
