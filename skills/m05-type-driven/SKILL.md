@@ -95,9 +95,11 @@ From design to implementation:
 
 ## Quick Reference
 
+**Orphan rule**: You can only implement a trait if you own the trait OR the type. To implement an external trait for an external type, wrap it in a newtype — the wrapper type is yours. Add `Deref`, `AsRef`, and `From`/`Into` to keep usage ergonomic.
+
 | Pattern | Purpose | Example |
 |---------|---------|---------|
-| Newtype | Type safety | `struct UserId(u64);` |
+| Newtype | Type safety / orphan workaround | `struct MyVec<T>(Vec<T>);` |
 | Type State | State machine | `Connection<Connected>` |
 | PhantomData | Zero-sized marker (typestate, variance, lifetime) | `PhantomData<State>` |
 | Marker Trait | Capability flag | `trait Validated {}` |

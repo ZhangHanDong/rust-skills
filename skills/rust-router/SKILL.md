@@ -43,9 +43,11 @@ skill.
 | Box, Rc, Arc, RefCell, Cell | m02-resource |
 | mut, interior mutability, E0499, E0502, E0596 | m03-mutability |
 | generic, trait, inline, monomorphization | m04-zero-cost |
-| type state, phantom, newtype | m05-type-driven |
+| type state, phantom, newtype, orphan rule, coherence, impl trait for external type | m05-type-driven |
 | Result, Error, panic, ?, anyhow, thiserror | m06-error-handling |
 | Send, Sync, thread, async, channel | m07-concurrency |
+| backpressure, cancellation, CancellationToken, graceful shutdown, spawn_blocking, OnceLock, LazyLock, loom | m07-concurrency |
+| Pin, self-referential, pin-project, Unpin, structural pinning | m07-concurrency |
 | unsafe, FFI, extern, raw pointer, transmute | **unsafe-checker** |
 
 ### Layer 2 Skills (Design Choices)
@@ -88,7 +90,7 @@ skill.
 | E0502 | m03-mutability | Borrow conflict |
 | E0277 | m04/m07 | Trait bound not satisfied |
 | E0282 | m04-zero-cost | Type inference needs an annotation |
-| E0308 | m04-zero-cost | Type mismatch |
+| E0308 | m04-zero-cost (+ m06-error-handling when Result/From/map_err context) | Type mismatch |
 | E0599 | m04-zero-cost | No method found |
 | E0038 | m04-zero-cost | Trait not object-safe |
 | E0433 | m11-ecosystem | Cannot find crate/module |

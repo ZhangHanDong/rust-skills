@@ -106,6 +106,15 @@ projects on it.
 
 ---
 
+## Backpressure & Cancellation
+
+- **Backpressure**: bound queues with `mpsc::channel(capacity)` or `Arc<Semaphore>`. When full, callers wait (backpressure) or overflow is dropped (load shedding). Never grow queues unbounded on external input.
+- **CancellationToken** (`tokio_util::sync`): cooperative cancellation across a task tree. Signal with `token.cancel()`, await with `token.cancelled().await`, propagate with `token.child_token()`. Required for graceful shutdown.
+- **Blocking work**: `spawn_blocking` offloads CPU-heavy or blocking-I/O calls to a dedicated thread pool, keeping async executor threads free.
+- **Global init**: `OnceLock<T>` / `LazyLock<T>` for thread-safe lazy initialization — prefer over `static mut` (unsound, deprecated in edition 2024).
+
+---
+
 ## Common Errors
 
 | Error | Cause | Fix |

@@ -62,6 +62,7 @@ Cargo-level failures (not compiler codes):
 | Feature not enabled | Optional API behind flag | Enable in `features = [...]` |
 | Version conflict | Incompatible transitive deps | `cargo update`, pin, or unify in `[workspace.dependencies]` |
 | Duplicate trait/type errors | Two semver-incompatible copies of one crate | `cargo tree -d` to find, then unify versions |
+| `no_std` crate pulls in `std` features accidentally | Default features of a dep enable `std` | Set `default-features = false`; use `resolver = "2"` in workspace to prevent feature unification across crate types |
 
 ## Crate Selection Criteria
 

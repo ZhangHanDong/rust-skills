@@ -25,7 +25,7 @@ Before adding interior mutability, understand:
 |-------|-------|----------------|-------------|
 | E0596 | Borrowing immutable as mutable | Add `mut` | Should this really be mutable? |
 | E0499 | Two `&mut` at once | Restructure code flow | Is the data structure right? |
-| E0502 | `&mut` while `&` exists | Separate borrow scopes | Why do we need both borrows? |
+| E0502 | `&mut` while `&` exists | Separate borrow scopes; for slices/Vec use `split_at_mut` or index both ends | Why do we need both borrows? |
 | RefCell panic | Borrow conflict at runtime | `try_borrow` | Is runtime check appropriate? |
 
 ---
