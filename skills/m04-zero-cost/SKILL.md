@@ -1,6 +1,6 @@
 ---
 name: m04-zero-cost
-description: "Use when: generics, traits, or zero-cost abstraction. Triggers: E0277, E0282, E0308, E0599, generic, trait, impl, dyn, where, monomorphization, static dispatch, dynamic dispatch, impl Trait, trait bound not satisfied, type inference, 泛型, 特征, 零成本抽象, 单态化"
+description: "Use when: generics, traits, or zero-cost abstraction. Keywords: E0277, E0282, E0308, E0599, generic, trait, impl, dyn, where, monomorphization, static dispatch, dynamic dispatch, impl Trait, trait bound not satisfied, type inference, 泛型, 特征, 零成本抽象, 单态化"
 user-invocable: false
 ---
 
