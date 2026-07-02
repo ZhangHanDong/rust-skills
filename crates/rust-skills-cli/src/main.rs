@@ -846,6 +846,59 @@ fn verify_registry() -> Result<Value, String> {
         }
     }
 
+    // C1: skill directories on disk that are neither registered nor opted out as
+    // internal tooling — i.e. "added a skill dir but never wired it into routes".
+    match fs::read_dir(runtime.root.join("skills")) {
+        Ok(entries) => {
+            let mut dirs: Vec<String> = entries
+                .filter_map(Result::ok)
+                .filter(|entry| entry.path().join("SKILL.md").is_file())
+                .filter_map(|entry| entry.file_name().into_string().ok())
+                .collect();
+            dirs.sort();
+            for orphan in orphan_skill_dirs(&dirs, &skill_ids, &INTERNAL_UNROUTED_SKILLS) {
+                errors.push(format!(
+                    "skill directory {orphan} has a SKILL.md but no route (register it in routes.json, or add it to INTERNAL_UNROUTED_SKILLS)"
+                ));
+            }
+        }
+        Err(error) => errors.push(format!("cannot read skills directory: {error}")),
+    }
+
+    // C2: every layer1/layer2 skill id must appear in the rust-router routing table.
+    let required_ids: Vec<&str> = runtime
+        .registry
+        .skills
+        .iter()
+        .filter(|skill| matches!(skill.layer.as_deref(), Some("layer1") | Some("layer2")))
+        .map(|skill| skill.id.as_str())
+        .collect();
+    let router_table_path = runtime.root.join("skills").join("rust-router").join("SKILL.md");
+    match fs::read_to_string(&router_table_path) {
+        Ok(body) => {
+            for missing in skills_missing_from_router_table(&required_ids, &body) {
+                errors.push(format!(
+                    "layer1/layer2 skill {missing} is missing from the rust-router routing table"
+                ));
+            }
+        }
+        Err(error) => errors.push(format!("cannot read rust-router SKILL.md for table check: {error}")),
+    }
+
+    // T3: routes.json must be in canonical (regeneratable) form — catches hand-edit
+    // formatting / ordering / duplicate-key drift with no schema knowledge.
+    let routes_path = runtime.root.join("index").join("routes.json");
+    match fs::read_to_string(&routes_path) {
+        Ok(raw) => {
+            if !routes_json_is_canonical(&raw) {
+                errors.push(
+                    "index/routes.json is not in canonical form (serde_json pretty, 2-space indent, preserve order, single trailing newline)".to_string(),
+                );
+            }
+        }
+        Err(error) => errors.push(format!("cannot read routes.json for canonical check: {error}")),
+    }
+
     let router_result = verify_rust_router_skill(&runtime.root);
     errors.extend(router_result.errors);
     warnings.extend(router_result.warnings);
@@ -878,6 +931,53 @@ fn verify_registry() -> Result<Value, String> {
         "errors": errors,
         "warnings": warnings
     }))
+}
+
+/// Skill directories that intentionally ship without a route (internal tooling,
+/// not Rust-question skills). verify's orphan-dir check opts these out so a clean
+/// repo stays green; adding a genuinely routed skill still fails loudly.
+const INTERNAL_UNROUTED_SKILLS: [&str; 4] = [
+    "core-actionbook",
+    "core-agent-browser",
+    "core-fix-skill-docs",
+    "meta-cognition-parallel",
+];
+
+/// T3: routes.json is in the canonical form the registry is generated/normalized to
+/// (serde_json pretty, 2-space, preserve_order, single trailing newline). Detects
+/// hand-edit formatting / ordering / duplicate-key drift with no schema knowledge.
+fn routes_json_is_canonical(raw: &str) -> bool {
+    match serde_json::from_str::<Value>(raw) {
+        Ok(value) => match serde_json::to_string_pretty(&value) {
+            Ok(pretty) => raw == format!("{pretty}\n"),
+            Err(_) => false,
+        },
+        Err(_) => false,
+    }
+}
+
+/// C1: skill directories on disk that are neither registered nor explicitly opted
+/// out as internal — i.e. "added a skill dir but never wired it in".
+fn orphan_skill_dirs<'a>(
+    skill_dirs: &'a [String],
+    registered: &HashSet<&str>,
+    internal_optout: &[&str],
+) -> Vec<&'a str> {
+    skill_dirs
+        .iter()
+        .map(String::as_str)
+        .filter(|dir| !registered.contains(dir) && !internal_optout.contains(dir))
+        .collect()
+}
+
+/// C2: required skill ids (layer1/layer2) absent from the rust-router table body.
+/// Whole-id substring match tolerates bare / `backtick` / **bold** / compound cells.
+fn skills_missing_from_router_table<'a>(required_ids: &'a [&str], table_body: &str) -> Vec<&'a str> {
+    required_ids
+        .iter()
+        .copied()
+        .filter(|id| !table_body.contains(*id))
+        .collect()
 }
 
 struct VerifySkillResult {
@@ -1278,10 +1378,48 @@ fn file_exists(path: &Path) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::{PreparedText, is_word_like, keyword_matches, prompt_from, regex_matches};
+    use super::{
+        PreparedText, is_word_like, keyword_matches, orphan_skill_dirs, prompt_from,
+        regex_matches, routes_json_is_canonical, skills_missing_from_router_table,
+    };
+    use std::collections::HashSet;
 
     fn matches(text: &str, keyword: &str) -> bool {
         keyword_matches(&PreparedText::new(text), keyword)
+    }
+
+    #[test]
+    fn canonical_form_accepts_pretty_and_rejects_drift() {
+        // serde_json to_string_pretty form + trailing newline
+        let canon = "{\n  \"a\": 1,\n  \"b\": [\n    2\n  ]\n}\n";
+        assert!(routes_json_is_canonical(canon));
+        // compact / reordered / no-trailing-newline / non-json all fail
+        assert!(!routes_json_is_canonical("{\"a\":1,\"b\":[2]}"));
+        assert!(!routes_json_is_canonical("{\n  \"a\": 1,\n  \"b\": [\n    2\n  ]\n}"));
+        assert!(!routes_json_is_canonical("not json"));
+    }
+
+    #[test]
+    fn orphan_dirs_flag_unregistered_non_optout_only() {
+        let dirs = vec![
+            "m01-ownership".to_string(),
+            "core-actionbook".to_string(),
+            "m99-new".to_string(),
+        ];
+        let registered: HashSet<&str> = ["m01-ownership"].into_iter().collect();
+        let optout = ["core-actionbook"];
+        let orphans = orphan_skill_dirs(&dirs, &registered, &optout);
+        // registered skill passes, opted-out helper passes, only the unregistered new dir flags
+        assert_eq!(orphans, vec!["m99-new"]);
+    }
+
+    #[test]
+    fn router_table_omission_detects_missing_and_tolerates_formatting() {
+        // ids appear bare, backticked, and bold — all should count as present
+        let table = "| move | m01-ownership |\n| lock | `m07-concurrency` |\n| unsafe | **unsafe-checker** |\n";
+        let required = ["m01-ownership", "m07-concurrency", "unsafe-checker", "m06-error-handling"];
+        let missing = skills_missing_from_router_table(&required, table);
+        assert_eq!(missing, vec!["m06-error-handling"]);
     }
 
     #[test]
