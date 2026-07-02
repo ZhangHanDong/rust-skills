@@ -5,6 +5,47 @@ All notable changes to rust-skills will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.1] - 2026-07-02
+
+Routing correctness, injection hygiene, and measurement — **not** an answer-quality
+change. On common Rust questions a strong model already answers well without the
+plugin, so injection lift measures ~0pp; the value here is that the right skill is
+routed cleanly and that knowledge delivery is now measurable.
+
+### Added
+- Routing-recall eval (`tests/routing-eval/`): 69 annotated bench prompts scored
+  against ground-truth expected skills; wired into `verify-all`.
+- Discriminating knowledge-delivery eval (`tests/discriminating-eval/`) with a
+  `--floor` gate: for a question needing specific Rust guidance, checks whether the
+  routed skill's injected window delivers a correct-answer fact (baseline 0/12,
+  plugin 11/12). Deterministic, agent-free; wired into `verify-all`.
+- Skill-generation gate regression ratchet (`--baseline` / `--write-baseline`):
+  grandfathers existing soft warnings and fails on any new one; baseline shrunk
+  66 → 8. Enforced via `test:skill-generation` and `verify-all`.
+- `verify` registration hygiene: fails on an unroutable skill directory, a
+  layer1/2 skill missing from the rust-router table, or a non-canonical
+  `index/routes.json`.
+
+### Fixed
+- Routing recall: closed 13 systematic misses — word-boundary keyword gaps
+  (`borrow`≠`borrowing`, `transmute`≠`transmutes`, `deprecate`≠`deprecates`) plus
+  missing tokens (`MaybeUninit`, `loom`, `state machine`, `malformed`, `exitCode`,
+  `rustdoc`, …). `domain-fintech` now routes CJK trading prompts (`撮合` / matching
+  engine), validated on the blind held-out corpus (skill_recall 0.853 → 0.867, FPR 0).
+- Guardrails-first ordering: reordered `m01`/`m04`/`m06`/`m07` so anti-patterns,
+  common-errors, and the key domain section sit inside the injection window
+  (content byte-identical — order only).
+
+### Changed
+- Skill description hygiene: removed the contract-banned `CRITICAL:` manipulation
+  prefix from 5 descriptions and standardized `Triggers:` → `Keywords:` across 11
+  skills. Descriptions do not drive routing (`routes.json` does), so routing
+  behavior is unchanged; this cleans the first line of the injection window.
+- Skill-generation gate `non_ascii` is now a generated-skill rule: static curated
+  skills may use CJK routing keywords and technical typography; genuinely suspicious
+  non-ASCII (emoji, smart quotes, accents) still flags. The anchor check is
+  route-aware — only Rust-knowledge (layer1/2/3) and generated skills require an anchor.
+
 ## [2.2.0] - 2026-06-11
 
 ### Added

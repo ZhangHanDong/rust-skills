@@ -1,6 +1,6 @@
 {
   "name": "rust-skills",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "Comprehensive Rust development skills with local routing runtime for Codex and Claude Code",
   "author": "ZhangHanDong",
   "license": "MIT",
