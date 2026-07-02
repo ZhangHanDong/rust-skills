@@ -423,7 +423,9 @@
         "moved",
         "所有权",
         "借用",
-        "生命周期"
+        "生命周期",
+        "borrowing",
+        "borrows"
       ],
       "regexes": [
         "\\bE(0382|0597|0506|0507|0515|0716|0106)\\b"
@@ -502,7 +504,10 @@
         "type state",
         "PhantomData",
         "marker trait",
-        "builder pattern"
+        "builder pattern",
+        "state machine",
+        "state transition",
+        "state transitions"
       ]
     },
     {
@@ -527,7 +532,19 @@
         "non-zero",
         "catches every error",
         "catch every error",
-        "错误处理"
+        "错误处理",
+        "typed error",
+        "error enum",
+        "type-erased",
+        "malformed",
+        "malformed input",
+        "reject invalid",
+        "reject empty",
+        "invalid input",
+        "error source",
+        "source chain",
+        "exitCode",
+        "exit_code"
       ]
     },
     {
@@ -553,7 +570,9 @@
         "channel",
         "spawn",
         "并发",
-        "异步"
+        "异步",
+        "loom",
+        "lock-free"
       ]
     },
     {
@@ -574,7 +593,16 @@
         "SAFETY",
         "from_raw_parts",
         "*mut",
-        "*const"
+        "*const",
+        "MaybeUninit",
+        "uninitialized",
+        "repr(packed)",
+        "packed",
+        "alignment",
+        "transmutes",
+        "miri",
+        "undefined behavior",
+        "aliasing"
       ]
     },
     {
@@ -592,7 +620,10 @@
         "lint",
         "guidelines",
         "best practice",
-        "最佳实践"
+        "最佳实践",
+        "rustdoc",
+        "doctest",
+        "doctests"
       ]
     },
     {
@@ -666,7 +697,8 @@
         "changelog",
         "crate upgrade",
         "API evolution",
-        "behavior change"
+        "behavior change",
+        "deprecates"
       ]
     },
     {
@@ -800,7 +832,6 @@
         "CLI",
         "command line",
         "clap",
-        "terminal",
         "TUI",
         "ratatui",
         "crossterm",
