@@ -55,6 +55,10 @@ run("agent matrix dry-run", process.execPath, [
 run("routing ab", process.execPath, [path.join(root, "tests", "routing-ab-test.mjs")]);
 run("routing heldout", process.execPath, [path.join(root, "tests", "routing-heldout-test.mjs")]);
 run("routing eval", process.execPath, [path.join(root, "tests", "routing-eval", "routing-eval.mjs")]);
+run("discriminating eval", process.execPath, [
+  path.join(root, "tests", "discriminating-eval", "discriminating-eval.mjs"),
+  "--floor", "11"
+]);
 run("skill generation gate", process.execPath, [
   path.join(root, "tests", "aom", "run-skill-generation-gate.mjs"),
   "--skills", "skills",

@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "note": "Discriminating knowledge-delivery eval. Each case is a Rust question needing SPECIFIC, checkable guidance. keyFacts are correct-answer elements defined from Rust correctness (NOT copied from skill content). The eval measures whether the plugin routes to a skill whose injected window actually DELIVERS at least one keyFact. Baseline (no plugin) delivers 0 by construction. Skills must NOT be edited to make cases pass — a miss is a revealed content gap.",
+  "windowChars": 2500,
+  "cases": [
+    {
+      "id": "fintech-money-float",
+      "prompt": "撮合引擎用 Rust 实现，订单金额怎么避免浮点误差",
+      "keyFacts": ["integer", "decimal", "fixed-point", "fixed point", "minor unit", "i64", "i128", "rust_decimal", "cents"]
+    },
+    {
+      "id": "embedded-nostd-logging",
+      "prompt": "A Rust firmware module must run with no_std and cannot allocate. Design logging without Vec or String.",
+      "keyFacts": ["heapless", "fixed-capacity", "fixed capacity", "ring buffer", "static buffer", "no_std", "stack"]
+    },
+    {
+      "id": "concurrency-mutex-across-await",
+      "prompt": "A Rust async handler locks a std::sync::Mutex and does network I/O while holding the guard, and stalls under load.",
+      "keyFacts": ["drop the guard", "drop", "before .await", "before the await", "lock scope", "tokio::sync::Mutex", "hold across"]
+    },
+    {
+      "id": "unsafe-maybeuninit",
+      "prompt": "A Rust wrapper fills an out-parameter buffer from a C function using MaybeUninit. How to avoid reading uninitialized memory?",
+      "keyFacts": ["assume_init", "initialized", "uninitialized", "track", "MaybeUninit"]
+    },
+    {
+      "id": "error-boundary-typed",
+      "prompt": "A Rust library exposes anyhow::Error from public functions. When should it expose typed errors instead?",
+      "keyFacts": ["thiserror", "typed error", "typed", "error enum", "library", "boundary"]
+    },
+    {
+      "id": "ecosystem-msrv-stabilization",
+      "prompt": "A Rust crate wants a newly stabilized std API but promises an older MSRV to downstream users.",
+      "keyFacts": ["MSRV", "feature detection", "cfg", "version", "fallback", "semver"]
+    },
+    {
+      "id": "ownership-e0382-redesign",
+      "prompt": "A Rust API returns E0382 after a value is moved into a helper and reused by the caller. Redesign without clone-everywhere.",
+      "keyFacts": ["borrow", "reference", "&mut", "ownership", "&"]
+    },
+    {
+      "id": "trait-object-safety",
+      "prompt": "A plugin registry wants Vec<Box<dyn Plugin>>, but Plugin has generic methods and returns Self. Why is this not object safe?",
+      "keyFacts": ["object safe", "object-safe", "dyn compatib", "generic method", "Self", "erase"]
+    },
+    {
+      "id": "mutability-e0502-split-borrow",
+      "prompt": "A Rust function iterates a Vec immutably while pushing derived items into the same Vec and hits E0502.",
+      "keyFacts": ["collect", "split", "index", "separate", "clone", "into a new"]
+    },
+    {
+      "id": "pin-self-referential",
+      "prompt": "A Rust async type stores a pointer to one of its own fields then moves the struct after polling.",
+      "keyFacts": ["Pin", "self-referential", "Unpin", "pin-project", "structural pin"]
+    },
+    {
+      "id": "static-mut-cache",
+      "prompt": "A Rust global cache uses static mut and raw pointers. What are the data-race risks and safer primitives?",
+      "keyFacts": ["OnceLock", "LazyLock", "Mutex", "RwLock", "data race", "aliasing", "atomic"]
+    },
+    {
+      "id": "unsafe-ffi-slice-contract",
+      "prompt": "Review the safety contract for exposing a Rust slice over a raw C pointer and length before a safe wrapper.",
+      "keyFacts": ["SAFETY", "pointer valid", "validity", "alignment", "length", "lifetime", "aliasing", "from_raw_parts"]
+    }
+  ]
+}
