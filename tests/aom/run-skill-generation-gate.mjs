@@ -24,6 +24,24 @@ const ANCHOR_FAMILIES = {
   quality: ["cargo fmt", "clippy", "cargo test", "doc test"]
 };
 
+// Layers whose skills teach Rust mechanics and therefore MUST front-load a Rust
+// calibration anchor. Internal tooling / utility / router skills are exempt.
+const RUST_KNOWLEDGE_LAYERS = new Set(["layer1", "layer2", "layer3"]);
+
+// Map skill id -> layer from the registry, so the anchor check is route-aware.
+// Returns null when the registry is unavailable, in which case the check falls
+// back to applying to every skill (preserve the stricter legacy behavior).
+function loadSkillLayers() {
+  try {
+    const registry = JSON.parse(fs.readFileSync(path.join(root, "index", "routes.json"), "utf8"));
+    const map = {};
+    for (const skill of registry.skills || []) map[skill.id] = skill.layer || null;
+    return map;
+  } catch {
+    return null;
+  }
+}
+
 function argValue(name, fallback = null) {
   const index = process.argv.indexOf(name);
   if (index === -1) return fallback;
@@ -226,7 +244,15 @@ function auditSkill(skillPath, options) {
       pushIssue(soft, "banned_phrase", "legacy or prompt-like phrase found", { phrase });
     }
   }
-  if (anchors.length === 0) {
+  // Route-aware: only Rust-knowledge skills (layer1/2/3) and generated crate
+  // skills must carry an early anchor. Internal tooling / utility / router
+  // skills (core-*, navigators, rust-daily) legitimately have none.
+  const skillId = metadata.name || path.basename(skillDir);
+  const layer = options.skillLayers ? options.skillLayers[skillId] : undefined;
+  const anchorApplies = options.skillLayers === null
+    ? true
+    : RUST_KNOWLEDGE_LAYERS.has(layer) || options.strictGenerated;
+  if (anchorApplies && anchors.length === 0) {
     pushIssue(soft, "no_early_anchor", "no Rust calibration anchor found in the early activation window", {
       windowChars: options.windowChars
     });
@@ -265,6 +291,7 @@ const options = {
   warnBodyLines: Number(argValue("--warn-body-lines", "120")),
   windowChars: Number(argValue("--window-chars", "2500")),
   strictGenerated: hasFlag("--strict-generated"),
+  skillLayers: loadSkillLayers(),
   // Regression ratchet: grandfather existing soft warnings; any NEW warning
   // beyond the baseline counts becomes a hard failure. Counts only shrink.
   baselinePath: argValue("--baseline", null),
