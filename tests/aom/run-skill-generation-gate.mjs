@@ -187,8 +187,12 @@ function auditSkill(skillPath, options) {
   if (!description.includes("Keywords")) {
     pushIssue(soft, "description_keywords", "description should include Keywords");
   }
-  if (!isAscii(content)) {
-    pushIssue(soft, "non_ascii", "skill contains non-ASCII content; generated repo-owned skills should be English/ASCII");
+  // ASCII is a GENERATED-skill rule (per this check's own message). Static
+  // curated skills are intentionally bilingual — CJK routing keywords in the
+  // description are a feature, not drift — so only enforce this for generated
+  // skills (--strict-generated), where it is promoted to a hard failure below.
+  if (!isAscii(content) && options.strictGenerated) {
+    pushIssue(soft, "non_ascii", "generated skill contains non-ASCII content; generated crate skills must be English/ASCII");
   }
   for (const phrase of BANNED_PHRASES) {
     if (content.includes(phrase)) {
