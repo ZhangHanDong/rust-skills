@@ -135,6 +135,9 @@ function pushIssue(collection, kind, message, extra = {}) {
 function auditSkill(skillPath, options) {
   const content = fs.readFileSync(skillPath, "utf8");
   const relativePath = path.relative(root, skillPath);
+  // Stable, location-independent key (relative to the skills dir being audited)
+  // so a baseline captured from skills/ still matches a copy elsewhere.
+  const keyPath = path.relative(path.resolve(root, options.skillsPath), skillPath);
   const skillDir = path.dirname(skillPath);
   const { metadata, body, hasFrontmatter } = parseFrontmatter(content);
   const hard = [];
@@ -208,6 +211,7 @@ function auditSkill(skillPath, options) {
 
   return {
     path: relativePath,
+    keyPath,
     name: metadata.name || null,
     descriptionLength: description.length,
     bodyLines,
@@ -229,19 +233,69 @@ const options = {
   maxBodyLines: Number(argValue("--max-body-lines", "500")),
   warnBodyLines: Number(argValue("--warn-body-lines", "120")),
   windowChars: Number(argValue("--window-chars", "2500")),
-  strictGenerated: hasFlag("--strict-generated")
+  strictGenerated: hasFlag("--strict-generated"),
+  // Regression ratchet: grandfather existing soft warnings; any NEW warning
+  // beyond the baseline counts becomes a hard failure. Counts only shrink.
+  baselinePath: argValue("--baseline", null),
+  writeBaseline: argValue("--write-baseline", null)
 };
+
+// Key a warning by (skills-relative path, kind) — location-independent so the
+// baseline matches whether the same skills tree is audited in place or copied.
+function warningKey(warning) {
+  return `${warning.keyPath}::${warning.kind}`;
+}
+
+function countWarnings(warningList) {
+  const counts = {};
+  for (const warning of warningList) {
+    const key = warningKey(warning);
+    counts[key] = (counts[key] || 0) + 1;
+  }
+  return counts;
+}
 
 const files = listSkillFiles(options.skillsPath);
 const skills = files.map((file) => auditSkill(file, options));
 const hardFailures = skills.flatMap((skill) => skill.hard.map((issue) => ({
   path: skill.path,
+  keyPath: skill.keyPath,
   ...issue
 })));
 const warnings = skills.flatMap((skill) => skill.soft.map((issue) => ({
   path: skill.path,
+  keyPath: skill.keyPath,
   ...issue
 })));
+
+// --write-baseline: snapshot current warnings as the grandfathered baseline.
+if (options.writeBaseline) {
+  const baseline = {
+    note: "Grandfathered soft warnings for the skill-generation gate. A NEW warning beyond these per-(path,kind) counts fails the gate (regression ratchet). Reduce these over time; never hand-raise them.",
+    generatedFrom: options.skillsPath,
+    counts: countWarnings(warnings)
+  };
+  writeJson(path.resolve(root, options.writeBaseline), baseline);
+  console.log(JSON.stringify({ status: "BASELINE_WRITTEN", path: options.writeBaseline, total: warnings.length }, null, 2));
+  process.exit(0);
+}
+
+// --baseline: promote warnings exceeding the baseline counts to hard regressions.
+let regressions = [];
+if (options.baselinePath) {
+  const baseline = JSON.parse(fs.readFileSync(path.resolve(root, options.baselinePath), "utf8"));
+  const allowed = baseline.counts || {};
+  const currentCounts = countWarnings(warnings);
+  const seen = {};
+  for (const warning of warnings) {
+    const key = warningKey(warning);
+    seen[key] = (seen[key] || 0) + 1;
+    if (seen[key] > (allowed[key] || 0)) {
+      regressions.push({ ...warning, baselineAllowed: allowed[key] || 0, current: currentCounts[key] });
+    }
+  }
+  hardFailures.push(...regressions.map((r) => ({ ...r, kind: `regression:${r.kind}` })));
+}
 
 const report = {
   status: hardFailures.length === 0 ? "PASS" : "FAIL",
