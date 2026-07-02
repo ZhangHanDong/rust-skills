@@ -102,6 +102,23 @@ function isAscii(text) {
   return /^[\x00-\x7F]*$/.test(text);
 }
 
+// Non-ASCII that is INTENTIONAL in static curated skills: CJK (bilingual routing
+// keywords) and technical typography actually used in skill diagrams/tables —
+// dashes, arrows, box-drawing, bullet, ellipsis, middle dot. Smart quotes are
+// deliberately NOT allowed (usually accidental copy-paste drift).
+const ALLOWED_STATIC_NONASCII =
+  /[‐-―•…·←-⇿─-╿　-〿぀-ヿ㐀-鿿가-힯＀-￯]/;
+
+// First non-ASCII char that is NOT intentional typography/CJK — genuinely
+// suspicious drift (emoji, smart quotes, accented Latin, exotic symbols).
+function suspiciousNonAscii(text) {
+  for (const ch of text) {
+    if (ch.codePointAt(0) < 128) continue;
+    if (!ALLOWED_STATIC_NONASCII.test(ch)) return ch;
+  }
+  return null;
+}
+
 function findLocalReferences(body) {
   const searchable = body.replace(/```[\s\S]*?```/g, "");
   const refs = new Set();
@@ -187,12 +204,22 @@ function auditSkill(skillPath, options) {
   if (!description.includes("Keywords")) {
     pushIssue(soft, "description_keywords", "description should include Keywords");
   }
-  // ASCII is a GENERATED-skill rule (per this check's own message). Static
-  // curated skills are intentionally bilingual — CJK routing keywords in the
-  // description are a feature, not drift — so only enforce this for generated
-  // skills (--strict-generated), where it is promoted to a hard failure below.
-  if (!isAscii(content) && options.strictGenerated) {
-    pushIssue(soft, "non_ascii", "generated skill contains non-ASCII content; generated crate skills must be English/ASCII");
+  // Generated crate skills must be pure ASCII (English). Static curated skills
+  // may use intentional non-ASCII — CJK routing keywords + technical typography
+  // (arrows, dashes, box-drawing) — but genuinely suspicious non-ASCII (emoji,
+  // smart quotes, accented Latin) is likely accidental drift and still flags.
+  if (options.strictGenerated) {
+    if (!isAscii(content)) {
+      pushIssue(soft, "non_ascii", "generated skill contains non-ASCII content; generated crate skills must be English/ASCII");
+    }
+  } else {
+    const suspicious = suspiciousNonAscii(content);
+    if (suspicious) {
+      pushIssue(soft, "non_ascii", "skill contains suspicious non-ASCII (emoji / smart quote / accent) — likely accidental drift", {
+        char: suspicious,
+        codePoint: `U+${suspicious.codePointAt(0).toString(16).toUpperCase().padStart(4, "0")}`
+      });
+    }
   }
   for (const phrase of BANNED_PHRASES) {
     if (content.includes(phrase)) {
