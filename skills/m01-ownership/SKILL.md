@@ -48,6 +48,17 @@ Before fixing ownership errors, understand the data's role:
 | E0716 | Temporary dropped | Bind to variable | Why is this temporary? |
 | E0106 | Missing lifetime | Add `'a` annotation | What is the actual lifetime relationship? |
 
+## Anti-Patterns
+
+| Anti-Pattern | Why Bad | Better |
+|--------------|---------|--------|
+| `.clone()` everywhere | Hides design issues | Design ownership properly |
+| Fight borrow checker | Increases complexity | Work with the compiler |
+| `'static` for everything | Restricts flexibility | Use appropriate lifetimes |
+| Leak with `Box::leak` | Memory leak | Proper lifetime design |
+
+---
+
 ## Deep Dives (load on demand)
 
 - Verified error patterns and fix options per code (E0382/E0597/E0499/E0502/E0507/E0515/E0716): see `patterns/common-errors.md`
@@ -103,17 +114,6 @@ E0382 (moved value)
 | `&mut T` | Exclusive borrow | Zero | Need to modify |
 | `clone()` | Duplicate | Alloc + copy | Actually need a copy |
 | `Rc`/`Arc`/`Cow` | Shared / clone-on-write | Ref count / lazy alloc | Sharing needed → see m02-resource |
-
----
-
-## Anti-Patterns
-
-| Anti-Pattern | Why Bad | Better |
-|--------------|---------|--------|
-| `.clone()` everywhere | Hides design issues | Design ownership properly |
-| Fight borrow checker | Increases complexity | Work with the compiler |
-| `'static` for everything | Restricts flexibility | Use appropriate lifetimes |
-| Leak with `Box::leak` | Memory leak | Proper lifetime design |
 
 ---
 

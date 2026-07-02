@@ -36,6 +36,66 @@ user-invocable: false
 
 ---
 
+## Anti-Patterns
+
+| Anti-Pattern | Why Bad | Better |
+|--------------|---------|--------|
+| Arc<Mutex<T>> everywhere | Contention, complexity | Message passing |
+| thread::sleep in async | Blocks executor | tokio::time::sleep |
+| Holding locks across await | Blocks other tasks | Scope locks tightly |
+| Ignoring deadlock risk | Hard to debug | Lock ordering, try_lock |
+
+---
+
+## Common Errors
+
+| Error | Cause | Fix |
+|-------|-------|-----|
+| E0277 `Send` not satisfied | Non-Send in async | Use Arc or spawn_local |
+| E0277 `Sync` not satisfied | Non-Sync shared | Wrap with Mutex |
+| Deadlock | Lock ordering | Consistent lock order |
+| `future is not Send` | Non-Send across await | Drop before await |
+| `MutexGuard` across await | Guard held during suspend | Scope guard properly |
+
+---
+
+## Backpressure & Cancellation
+
+- **Backpressure**: bound queues with `mpsc::channel(capacity)` or `Arc<Semaphore>`. When full, callers wait (backpressure) or overflow is dropped (load shedding). Never grow queues unbounded on external input.
+- **CancellationToken** (`tokio_util::sync`): cooperative cancellation across a task tree. Signal with `token.cancel()`, await with `token.cancelled().await`, propagate with `token.child_token()`. Required for graceful shutdown.
+- **Blocking work**: `spawn_blocking` offloads CPU-heavy or blocking-I/O calls to a dedicated thread pool, keeping async executor threads free.
+- **Global init**: `OnceLock<T>` / `LazyLock<T>` for thread-safe lazy initialization — prefer over `static mut` (unsound, deprecated in edition 2024).
+
+---
+
+## Decision Flowchart
+
+```
+What type of work?
+├─ CPU-bound → std::thread or rayon
+├─ I/O-bound → async/await
+└─ Mixed → hybrid (spawn_blocking)
+
+Need to share data?
+├─ No → message passing (channels)
+├─ Immutable → Arc<T>
+└─ Mutable →
+   ├─ Read-heavy → Arc<RwLock<T>>
+   └─ Write-heavy → Arc<Mutex<T>>
+   └─ Simple counter → AtomicUsize
+
+Async context?
+├─ Type is Send → tokio::spawn
+├─ Type is !Send → spawn_local
+└─ Blocking code → spawn_blocking
+```
+
+Async runtime: use **tokio**. async-std was discontinued in 2025 (its
+maintainers recommend smol for lightweight needs) — do not start new
+projects on it.
+
+---
+
 ## Trace Up ↑ (MANDATORY)
 
 **CRITICAL**: Don't just fix the error. Trace UP to find domain constraints.
@@ -75,66 +135,6 @@ user-invocable: false
 | Send/Sync in CLI | **domain-cli** | Is multi-thread really needed? |
 | Mutex vs channels | m09-domain | Shared state or message passing? |
 | Async vs threads | m10-performance | What's the workload profile? |
-
----
-
-## Decision Flowchart
-
-```
-What type of work?
-├─ CPU-bound → std::thread or rayon
-├─ I/O-bound → async/await
-└─ Mixed → hybrid (spawn_blocking)
-
-Need to share data?
-├─ No → message passing (channels)
-├─ Immutable → Arc<T>
-└─ Mutable →
-   ├─ Read-heavy → Arc<RwLock<T>>
-   └─ Write-heavy → Arc<Mutex<T>>
-   └─ Simple counter → AtomicUsize
-
-Async context?
-├─ Type is Send → tokio::spawn
-├─ Type is !Send → spawn_local
-└─ Blocking code → spawn_blocking
-```
-
-Async runtime: use **tokio**. async-std was discontinued in 2025 (its
-maintainers recommend smol for lightweight needs) — do not start new
-projects on it.
-
----
-
-## Backpressure & Cancellation
-
-- **Backpressure**: bound queues with `mpsc::channel(capacity)` or `Arc<Semaphore>`. When full, callers wait (backpressure) or overflow is dropped (load shedding). Never grow queues unbounded on external input.
-- **CancellationToken** (`tokio_util::sync`): cooperative cancellation across a task tree. Signal with `token.cancel()`, await with `token.cancelled().await`, propagate with `token.child_token()`. Required for graceful shutdown.
-- **Blocking work**: `spawn_blocking` offloads CPU-heavy or blocking-I/O calls to a dedicated thread pool, keeping async executor threads free.
-- **Global init**: `OnceLock<T>` / `LazyLock<T>` for thread-safe lazy initialization — prefer over `static mut` (unsound, deprecated in edition 2024).
-
----
-
-## Common Errors
-
-| Error | Cause | Fix |
-|-------|-------|-----|
-| E0277 `Send` not satisfied | Non-Send in async | Use Arc or spawn_local |
-| E0277 `Sync` not satisfied | Non-Sync shared | Wrap with Mutex |
-| Deadlock | Lock ordering | Consistent lock order |
-| `future is not Send` | Non-Send across await | Drop before await |
-| `MutexGuard` across await | Guard held during suspend | Scope guard properly |
-
----
-
-## Anti-Patterns
-
-| Anti-Pattern | Why Bad | Better |
-|--------------|---------|--------|
-| Arc<Mutex<T>> everywhere | Contention, complexity | Message passing |
-| thread::sleep in async | Blocks executor | tokio::time::sleep |
-| Holding locks across await | Blocks other tasks | Scope locks tightly |
-| Ignoring deadlock risk | Hard to debug | Lock ordering, try_lock |
 
 ---
 

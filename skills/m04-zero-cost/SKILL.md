@@ -19,6 +19,15 @@ Before choosing between generics and trait objects:
 
 ---
 
+## Inference Guidance
+
+E0282 means inference ran out of constraints. Add the explicit type at the
+boundary that best communicates intent: a binding annotation, turbofish
+(`::<...>`) on the call, the channel's item type, or the collection/error
+type, rather than wherever the compiler happens to point.
+
+---
+
 ## Error → Design Question
 
 | Error | Cause | Mechanical Fix | Ask Instead |
@@ -29,12 +38,39 @@ Before choosing between generics and trait objects:
 | E0599 | No method found | Import trait with `use` | Is the trait the right abstraction? |
 | E0038 | Trait not dyn-compatible | Use generics or redesign | Do we really need dynamic dispatch? |
 
-## Inference Guidance
+## Anti-Patterns
 
-E0282 means inference ran out of constraints. Add the explicit type at the
-boundary that best communicates intent: a binding annotation, turbofish
-(`::<...>`) on the call, the channel's item type, or the collection/error
-type, rather than wherever the compiler happens to point.
+| Anti-Pattern | Why Bad | Better |
+|--------------|---------|--------|
+| Over-generic everything | Compile time, complexity | Concrete types when possible |
+| `dyn` for known types | Unnecessary indirection | Generics |
+| Complex trait hierarchies | Hard to understand | Simpler design |
+| Ignore dyn compatibility | Limits flexibility | Plan for dyn if needed |
+
+---
+
+## Dyn Compatibility (formerly "Object Safety")
+
+A trait is dyn-compatible (usable as `dyn Trait`) when:
+- The trait itself doesn't require `Self: Sized`
+- No method returns `Self` or takes generic type parameters —
+  UNLESS that method is opted out with `where Self: Sized`
+  (the escape hatch: such methods just aren't callable on `dyn Trait`)
+- `async fn` and `-> impl Trait` methods (RPITIT) are NOT dyn-compatible —
+  the most common E0038 trap since their stabilization; for dyn dispatch
+  return `Pin<Box<dyn Future<...>>>` or use the `async-trait` crate
+
+---
+
+## Decision Guide
+
+| Scenario | Choose | Why |
+|----------|--------|-----|
+| Performance critical | Generics | Zero runtime cost |
+| Heterogeneous collection | `dyn Trait` | Different types at runtime |
+| Plugin architecture | `dyn Trait` | Unknown types at compile |
+| Reduce compile time | `dyn Trait` | Less monomorphization |
+| Small, known type set | `enum` | No indirection |
 
 ---
 
@@ -120,42 +156,6 @@ fn answer() -> impl Display { 42 }                       // return position
 fn show_ref(x: &dyn Display) { println!("{x}"); }        // reference
 fn show_boxed(x: Box<dyn Display>) { println!("{x}"); }  // owned
 ```
-
----
-
-## Decision Guide
-
-| Scenario | Choose | Why |
-|----------|--------|-----|
-| Performance critical | Generics | Zero runtime cost |
-| Heterogeneous collection | `dyn Trait` | Different types at runtime |
-| Plugin architecture | `dyn Trait` | Unknown types at compile |
-| Reduce compile time | `dyn Trait` | Less monomorphization |
-| Small, known type set | `enum` | No indirection |
-
----
-
-## Dyn Compatibility (formerly "Object Safety")
-
-A trait is dyn-compatible (usable as `dyn Trait`) when:
-- The trait itself doesn't require `Self: Sized`
-- No method returns `Self` or takes generic type parameters —
-  UNLESS that method is opted out with `where Self: Sized`
-  (the escape hatch: such methods just aren't callable on `dyn Trait`)
-- `async fn` and `-> impl Trait` methods (RPITIT) are NOT dyn-compatible —
-  the most common E0038 trap since their stabilization; for dyn dispatch
-  return `Pin<Box<dyn Future<...>>>` or use the `async-trait` crate
-
----
-
-## Anti-Patterns
-
-| Anti-Pattern | Why Bad | Better |
-|--------------|---------|--------|
-| Over-generic everything | Compile time, complexity | Concrete types when possible |
-| `dyn` for known types | Unnecessary indirection | Generics |
-| Complex trait hierarchies | Hard to understand | Simpler design |
-| Ignore dyn compatibility | Limits flexibility | Plan for dyn if needed |
 
 ---
 
