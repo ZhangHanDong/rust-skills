@@ -671,7 +671,11 @@ fn select_skills(
         kept.insert(id);
     }
     // kept.len() <= MAX by construction; emit in original priority order
-    let skills: Vec<String> = ordered.iter().filter(|id| kept.contains(id)).cloned().collect();
+    let skills: Vec<String> = ordered
+        .iter()
+        .filter(|id| kept.contains(id))
+        .cloned()
+        .collect();
     (skills, true)
 }
 
@@ -821,7 +825,10 @@ fn verify_registry() -> Result<Value, String> {
             if let Some(reason) = unsupported_registry_construct(regex) {
                 errors.push(format!("route {} regex {regex}: {reason}", route.id));
             } else if let Err(error) = compile_registry_regex(regex) {
-                errors.push(format!("route {} has invalid regex {regex}: {error}", route.id));
+                errors.push(format!(
+                    "route {} has invalid regex {regex}: {error}",
+                    route.id
+                ));
             }
         }
     }
@@ -842,71 +849,14 @@ fn verify_registry() -> Result<Value, String> {
 
     for skill in &runtime.registry.skills {
         if !routed_skills.contains(skill.id.as_str()) {
-            warnings.push(format!("skill {} is not reachable from any route", skill.id));
+            warnings.push(format!(
+                "skill {} is not reachable from any route",
+                skill.id
+            ));
         }
     }
 
-    // C1: skill directories on disk that are neither registered nor marked
-    // `internal: true` in their own frontmatter — i.e. "added a skill dir but
-    // never wired it into routes".
-    match fs::read_dir(runtime.root.join("skills")) {
-        Ok(entries) => {
-            let mut dirs: Vec<String> = entries
-                .filter_map(Result::ok)
-                .filter(|entry| entry.path().join("SKILL.md").is_file())
-                .filter_map(|entry| entry.file_name().into_string().ok())
-                .collect();
-            dirs.sort();
-            let internal: Vec<String> = dirs
-                .iter()
-                .filter(|dir| {
-                    is_internal_skill(&runtime.root.join("skills").join(dir).join("SKILL.md"))
-                })
-                .cloned()
-                .collect();
-            let internal_refs: Vec<&str> = internal.iter().map(String::as_str).collect();
-            for orphan in orphan_skill_dirs(&dirs, &skill_ids, &internal_refs) {
-                errors.push(format!(
-                    "skill directory {orphan} has a SKILL.md but no route (register it in routes.json, or mark it `internal: true` in its frontmatter)"
-                ));
-            }
-        }
-        Err(error) => errors.push(format!("cannot read skills directory: {error}")),
-    }
-
-    // C2: every layer1/layer2 skill id must appear in the rust-router routing table.
-    let required_ids: Vec<&str> = runtime
-        .registry
-        .skills
-        .iter()
-        .filter(|skill| matches!(skill.layer.as_deref(), Some("layer1") | Some("layer2")))
-        .map(|skill| skill.id.as_str())
-        .collect();
-    let router_table_path = runtime.root.join("skills").join("rust-router").join("SKILL.md");
-    match fs::read_to_string(&router_table_path) {
-        Ok(body) => {
-            for missing in skills_missing_from_router_table(&required_ids, &body) {
-                errors.push(format!(
-                    "layer1/layer2 skill {missing} is missing from the rust-router routing table"
-                ));
-            }
-        }
-        Err(error) => errors.push(format!("cannot read rust-router SKILL.md for table check: {error}")),
-    }
-
-    // T3: routes.json must be in canonical (regeneratable) form — catches hand-edit
-    // formatting / ordering / duplicate-key drift with no schema knowledge.
-    let routes_path = runtime.root.join("index").join("routes.json");
-    match fs::read_to_string(&routes_path) {
-        Ok(raw) => {
-            if !routes_json_is_canonical(&raw) {
-                errors.push(
-                    "index/routes.json is not in canonical form (serde_json pretty, 2-space indent, preserve order, single trailing newline)".to_string(),
-                );
-            }
-        }
-        Err(error) => errors.push(format!("cannot read routes.json for canonical check: {error}")),
-    }
+    verify_registration_hygiene(&runtime, &skill_ids, &mut errors);
 
     let router_result = verify_rust_router_skill(&runtime.root);
     errors.extend(router_result.errors);
@@ -955,7 +905,7 @@ fn is_internal_skill(skill_md_path: &Path) -> bool {
 }
 
 /// T3: routes.json is in the canonical form the registry is generated/normalized to
-/// (serde_json pretty, 2-space, preserve_order, single trailing newline). Detects
+/// (`serde_json` pretty, 2-space, `preserve_order`, single trailing newline). Detects
 /// hand-edit formatting / ordering / duplicate-key drift with no schema knowledge.
 fn routes_json_is_canonical(raw: &str) -> bool {
     match serde_json::from_str::<Value>(raw) {
@@ -983,12 +933,88 @@ fn orphan_skill_dirs<'a>(
 
 /// C2: required skill ids (layer1/layer2) absent from the rust-router table body.
 /// Whole-id substring match tolerates bare / `backtick` / **bold** / compound cells.
-fn skills_missing_from_router_table<'a>(required_ids: &'a [&str], table_body: &str) -> Vec<&'a str> {
+fn skills_missing_from_router_table<'a>(
+    required_ids: &'a [&str],
+    table_body: &str,
+) -> Vec<&'a str> {
     required_ids
         .iter()
         .copied()
         .filter(|id| !table_body.contains(*id))
         .collect()
+}
+
+/// Registration-hygiene checks: C1 orphan skill dirs (frontmatter
+/// `internal: true` opts out), C2 rust-router table omissions for layer1/2
+/// skills, and T3 canonical routes.json form.
+fn verify_registration_hygiene(
+    runtime: &Runtime,
+    skill_ids: &HashSet<&str>,
+    errors: &mut Vec<String>,
+) {
+    match fs::read_dir(runtime.root.join("skills")) {
+        Ok(entries) => {
+            let mut dirs: Vec<String> = entries
+                .filter_map(Result::ok)
+                .filter(|entry| entry.path().join("SKILL.md").is_file())
+                .filter_map(|entry| entry.file_name().into_string().ok())
+                .collect();
+            dirs.sort();
+            let internal: Vec<String> = dirs
+                .iter()
+                .filter(|dir| {
+                    is_internal_skill(&runtime.root.join("skills").join(dir).join("SKILL.md"))
+                })
+                .cloned()
+                .collect();
+            let internal_refs: Vec<&str> = internal.iter().map(String::as_str).collect();
+            for orphan in orphan_skill_dirs(&dirs, skill_ids, &internal_refs) {
+                errors.push(format!(
+                    "skill directory {orphan} has a SKILL.md but no route (register it in routes.json, or mark it `internal: true` in its frontmatter)"
+                ));
+            }
+        }
+        Err(error) => errors.push(format!("cannot read skills directory: {error}")),
+    }
+
+    let required_ids: Vec<&str> = runtime
+        .registry
+        .skills
+        .iter()
+        .filter(|skill| matches!(skill.layer.as_deref(), Some("layer1" | "layer2")))
+        .map(|skill| skill.id.as_str())
+        .collect();
+    let router_table_path = runtime
+        .root
+        .join("skills")
+        .join("rust-router")
+        .join("SKILL.md");
+    match fs::read_to_string(&router_table_path) {
+        Ok(body) => {
+            for missing in skills_missing_from_router_table(&required_ids, &body) {
+                errors.push(format!(
+                    "layer1/layer2 skill {missing} is missing from the rust-router routing table"
+                ));
+            }
+        }
+        Err(error) => errors.push(format!(
+            "cannot read rust-router SKILL.md for table check: {error}"
+        )),
+    }
+
+    let routes_path = runtime.root.join("index").join("routes.json");
+    match fs::read_to_string(&routes_path) {
+        Ok(raw) => {
+            if !routes_json_is_canonical(&raw) {
+                errors.push(
+                    "index/routes.json is not in canonical form (serde_json pretty, 2-space indent, preserve order, single trailing newline)".to_string(),
+                );
+            }
+        }
+        Err(error) => errors.push(format!(
+            "cannot read routes.json for canonical check: {error}"
+        )),
+    }
 }
 
 struct VerifySkillResult {
@@ -1182,7 +1208,10 @@ fn joined_registry_regex(patterns: &[String]) -> Option<Regex> {
         .map(|pattern| format!("(?:{})", transform_registry_pattern(pattern)))
         .collect::<Vec<_>>()
         .join("|");
-    RegexBuilder::new(&joined).case_insensitive(true).build().ok()
+    RegexBuilder::new(&joined)
+        .case_insensitive(true)
+        .build()
+        .ok()
 }
 
 const RUST_CASE_SENSITIVE_TOKENS: [&str; 12] = [
@@ -1390,8 +1419,8 @@ fn file_exists(path: &Path) -> bool {
 #[cfg(test)]
 mod tests {
     use super::{
-        PreparedText, is_word_like, keyword_matches, orphan_skill_dirs, prompt_from,
-        regex_matches, routes_json_is_canonical, skills_missing_from_router_table,
+        PreparedText, is_word_like, keyword_matches, orphan_skill_dirs, prompt_from, regex_matches,
+        routes_json_is_canonical, skills_missing_from_router_table,
     };
     use std::collections::HashSet;
 
@@ -1437,7 +1466,9 @@ mod tests {
         assert!(routes_json_is_canonical(canon));
         // compact / reordered / no-trailing-newline / non-json all fail
         assert!(!routes_json_is_canonical("{\"a\":1,\"b\":[2]}"));
-        assert!(!routes_json_is_canonical("{\n  \"a\": 1,\n  \"b\": [\n    2\n  ]\n}"));
+        assert!(!routes_json_is_canonical(
+            "{\n  \"a\": 1,\n  \"b\": [\n    2\n  ]\n}"
+        ));
         assert!(!routes_json_is_canonical("not json"));
     }
 
@@ -1459,7 +1490,12 @@ mod tests {
     fn router_table_omission_detects_missing_and_tolerates_formatting() {
         // ids appear bare, backticked, and bold — all should count as present
         let table = "| move | m01-ownership |\n| lock | `m07-concurrency` |\n| unsafe | **unsafe-checker** |\n";
-        let required = ["m01-ownership", "m07-concurrency", "unsafe-checker", "m06-error-handling"];
+        let required = [
+            "m01-ownership",
+            "m07-concurrency",
+            "unsafe-checker",
+            "m06-error-handling",
+        ];
         let missing = skills_missing_from_router_table(&required, table);
         assert_eq!(missing, vec!["m06-error-handling"]);
     }
@@ -1495,7 +1531,10 @@ mod tests {
     #[test]
     fn registry_regexes_use_ascii_boundaries() {
         assert!(regex_matches("E0382错误怎么解决", r"\bE0\d{3,4}\b"));
-        assert!(regex_matches("main.rs报错", r"(^|[\s`'\x22])[\w./-]+\.rs\b"));
+        assert!(regex_matches(
+            "main.rs报错",
+            r"(^|[\s`'\x22])[\w./-]+\.rs\b"
+        ));
         assert!(regex_matches("交易系统E0382怎么办", r"\bE0\d{3,4}\b"));
         assert!(!regex_matches("CE03821", r"\bE0\d{3,4}\b"));
     }
@@ -1504,14 +1543,23 @@ mod tests {
     fn prompt_parsing_keeps_dashed_text_and_separator() {
         let args = |items: &[&str]| items.iter().map(|s| (*s).to_string()).collect::<Vec<_>>();
         assert_eq!(prompt_from(&args(&["--json", "fix E0382"])), "fix E0382");
-        assert_eq!(prompt_from(&args(&["--json", "--", "--weird prompt"])), "--weird prompt");
-        assert_eq!(prompt_from(&args(&["--why is rust fast"])), "--why is rust fast");
+        assert_eq!(
+            prompt_from(&args(&["--json", "--", "--weird prompt"])),
+            "--weird prompt"
+        );
+        assert_eq!(
+            prompt_from(&args(&["--why is rust fast"])),
+            "--why is rust fast"
+        );
     }
 
     #[test]
     fn hook_prompt_extraction_handles_common_payload_shapes() {
         use super::extract_hook_prompt;
-        assert_eq!(extract_hook_prompt(r#"{"prompt":"fix E0382"}"#), "fix E0382");
+        assert_eq!(
+            extract_hook_prompt(r#"{"prompt":"fix E0382"}"#),
+            "fix E0382"
+        );
         assert_eq!(
             extract_hook_prompt(r#"{"user_input":{"text":"cargo build fails"}}"#),
             "cargo build fails"
@@ -1527,7 +1575,10 @@ mod tests {
             "nested prompt"
         );
         // non-JSON input is treated as the raw prompt
-        assert_eq!(extract_hook_prompt("plain text prompt"), "plain text prompt");
+        assert_eq!(
+            extract_hook_prompt("plain text prompt"),
+            "plain text prompt"
+        );
         // unknown JSON shapes fail closed
         assert_eq!(extract_hook_prompt(r#"{"transcript":"cargo test"}"#), "");
     }
@@ -1579,8 +1630,14 @@ mod tests {
         assert!(truncated);
         assert_eq!(skills.len(), 5);
         assert!(skills.contains(&"rust-router".to_string()));
-        assert!(skills.contains(&"l3-a".to_string()), "layer3 must keep a slot");
-        assert!(skills.contains(&"l2-a".to_string()), "layer2 must keep a slot");
+        assert!(
+            skills.contains(&"l3-a".to_string()),
+            "layer3 must keep a slot"
+        );
+        assert!(
+            skills.contains(&"l2-a".to_string()),
+            "layer2 must keep a slot"
+        );
         // under-cap input passes through untouched
         let (few, t) = select_skills(&matches[..3], &by_id);
         assert_eq!(few.len(), 3);
