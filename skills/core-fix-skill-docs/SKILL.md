@@ -1,5 +1,6 @@
 ---
 name: core-fix-skill-docs
+internal: true
 description: "Internal maintenance support for checking and fixing generated Rust skill documentation references. Use when explicitly invoked by /fix-skill-docs. Keywords: Rust skill docs, generated references, fix skill docs."
 user-invocable: false
 disable-model-invocation: true

@@ -2,6 +2,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { parseFrontmatter } from "../lib/frontmatter.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
@@ -79,41 +80,6 @@ function listSkillFiles(targetPath) {
     if (fs.existsSync(skillPath)) files.push(skillPath);
   }
   return files;
-}
-
-function parseFrontmatter(content) {
-  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
-  if (!match) return { metadata: {}, body: content, hasFrontmatter: false };
-
-  const metadata = {};
-  const lines = match[1].split(/\r?\n/);
-  for (let index = 0; index < lines.length; index += 1) {
-    const line = lines[index];
-    const field = line.match(/^([A-Za-z0-9_-]+):\s*(.*)$/);
-    if (!field) continue;
-    const key = field[1];
-    let value = field[2].trim();
-    if (value === "|" || value === ">") {
-      const block = [];
-      for (index += 1; index < lines.length; index += 1) {
-        const blockLine = lines[index];
-        if (/^[A-Za-z0-9_-]+:\s*/.test(blockLine)) {
-          index -= 1;
-          break;
-        }
-        block.push(blockLine.replace(/^ {2}/, ""));
-      }
-      metadata[key] = block.join("\n").trim();
-    } else {
-      metadata[key] = value.replace(/^["']|["']$/g, "");
-    }
-  }
-
-  return {
-    metadata,
-    body: content.slice(match[0].length),
-    hasFrontmatter: true
-  };
 }
 
 function isAscii(text) {

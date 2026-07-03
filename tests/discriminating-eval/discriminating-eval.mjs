@@ -21,10 +21,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { spawnSync } from "node:child_process";
+import { repoRoot as REPO_ROOT, routedSkills as routeSkills } from "../lib/route-cli.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(HERE, "..", "..");
 
 function argValue(name, fallback = null) {
   const i = process.argv.indexOf(name);
@@ -36,27 +35,8 @@ function argValue(name, fallback = null) {
 const jsonOut = process.argv.includes("--json");
 const floor = argValue("--floor", null);
 
-function resolveBin() {
-  for (const rel of ["target/release/rust-skills", "target/debug/rust-skills", "bin/rust-skills"]) {
-    const p = path.join(REPO_ROOT, rel);
-    if (fs.existsSync(p)) return p;
-  }
-  throw new Error("rust-skills binary not found; run `cargo build --release`");
-}
-const bin = resolveBin();
 const dataset = JSON.parse(fs.readFileSync(path.join(HERE, "dataset.json"), "utf8"));
 const windowChars = dataset.windowChars || 2500;
-
-function routeSkills(prompt) {
-  const res = spawnSync(bin, ["route", "--json", prompt], {
-    env: { ...process.env, RUST_SKILLS_ROOT: REPO_ROOT },
-    encoding: "utf8",
-    maxBuffer: 16 * 1024 * 1024
-  });
-  if (res.status !== 0) throw new Error(`route failed: ${(res.stderr || res.stdout || "").slice(0, 200)}`);
-  const parsed = JSON.parse(res.stdout);
-  return { skills: (parsed.skills || []).filter((s) => s !== "rust-router"), paths: parsed.paths || {} };
-}
 
 // The injected window a model would actually read for a routed skill.
 function injectedWindow(relPath) {
@@ -96,7 +76,7 @@ if (jsonOut) {
   process.stdout.write(JSON.stringify({ summary, perCase }, null, 2) + "\n");
 } else {
   process.stdout.write("=== Discriminating Knowledge-Delivery Eval ===\n");
-  process.stdout.write(`binary: ${bin}\n\n`);
+  process.stdout.write(`root: ${REPO_ROOT}\n\n`);
   process.stdout.write(`cases: ${total}\n`);
   process.stdout.write(`plugin delivered a key fact: ${delivered}/${total} (${(rate * 100).toFixed(1)}%)\n`);
   process.stdout.write(`baseline (no plugin): 0/${total} — injects no skill\n`);

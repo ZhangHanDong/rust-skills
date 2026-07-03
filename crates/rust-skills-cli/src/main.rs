@@ -846,8 +846,9 @@ fn verify_registry() -> Result<Value, String> {
         }
     }
 
-    // C1: skill directories on disk that are neither registered nor opted out as
-    // internal tooling — i.e. "added a skill dir but never wired it into routes".
+    // C1: skill directories on disk that are neither registered nor marked
+    // `internal: true` in their own frontmatter — i.e. "added a skill dir but
+    // never wired it into routes".
     match fs::read_dir(runtime.root.join("skills")) {
         Ok(entries) => {
             let mut dirs: Vec<String> = entries
@@ -856,9 +857,17 @@ fn verify_registry() -> Result<Value, String> {
                 .filter_map(|entry| entry.file_name().into_string().ok())
                 .collect();
             dirs.sort();
-            for orphan in orphan_skill_dirs(&dirs, &skill_ids, &INTERNAL_UNROUTED_SKILLS) {
+            let internal: Vec<String> = dirs
+                .iter()
+                .filter(|dir| {
+                    is_internal_skill(&runtime.root.join("skills").join(dir).join("SKILL.md"))
+                })
+                .cloned()
+                .collect();
+            let internal_refs: Vec<&str> = internal.iter().map(String::as_str).collect();
+            for orphan in orphan_skill_dirs(&dirs, &skill_ids, &internal_refs) {
                 errors.push(format!(
-                    "skill directory {orphan} has a SKILL.md but no route (register it in routes.json, or add it to INTERNAL_UNROUTED_SKILLS)"
+                    "skill directory {orphan} has a SKILL.md but no route (register it in routes.json, or mark it `internal: true` in its frontmatter)"
                 ));
             }
         }
@@ -933,15 +942,17 @@ fn verify_registry() -> Result<Value, String> {
     }))
 }
 
-/// Skill directories that intentionally ship without a route (internal tooling,
-/// not Rust-question skills). verify's orphan-dir check opts these out so a clean
-/// repo stays green; adding a genuinely routed skill still fails loudly.
-const INTERNAL_UNROUTED_SKILLS: [&str; 4] = [
-    "core-actionbook",
-    "core-agent-browser",
-    "core-fix-skill-docs",
-    "meta-cognition-parallel",
-];
+/// A skill directory may opt out of the orphan-dir check by declaring
+/// `internal: true` in its SKILL.md frontmatter — internal tooling that
+/// intentionally ships without a route. Kept in the skill itself (not a
+/// hardcoded list) so adding an internal skill needs no binary change.
+fn is_internal_skill(skill_md_path: &Path) -> bool {
+    fs::read_to_string(skill_md_path)
+        .ok()
+        .and_then(|content| parse_skill_frontmatter(&content).map(|(metadata, _)| metadata))
+        .and_then(|metadata| metadata.get("internal").cloned())
+        .is_some_and(|value| value == "true")
+}
 
 /// T3: routes.json is in the canonical form the registry is generated/normalized to
 /// (serde_json pretty, 2-space, preserve_order, single trailing newline). Detects
@@ -1386,6 +1397,37 @@ mod tests {
 
     fn matches(text: &str, keyword: &str) -> bool {
         keyword_matches(&PreparedText::new(text), keyword)
+    }
+
+    #[test]
+    fn frontmatter_parity_fixtures() {
+        // Rust side of the parity contract with the JS parser
+        // (tests/lib/frontmatter.mjs); both read the same fixtures. See
+        // tests/frontmatter-parity-test.mjs for the JS side.
+        use super::parse_skill_frontmatter;
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../tests/fixtures/frontmatter-parity.json");
+        let raw = std::fs::read_to_string(path).expect("read parity fixtures");
+        let fixtures: serde_json::Value = serde_json::from_str(&raw).expect("parse fixtures");
+        for case in fixtures["cases"].as_array().expect("cases array") {
+            let id = case["id"].as_str().unwrap_or("?");
+            let content = case["content"].as_str().expect("content");
+            let expect = case["expect"].as_object().expect("expect object");
+            let parsed = parse_skill_frontmatter(content);
+            if expect.is_empty() {
+                assert!(parsed.is_none(), "case {id}: expected no frontmatter");
+                continue;
+            }
+            let (metadata, _) = parsed.unwrap_or_else(|| panic!("case {id}: frontmatter expected"));
+            for (key, value) in expect {
+                let expected = value.as_str().expect("expect values are strings");
+                assert_eq!(
+                    metadata.get(key).map(String::as_str),
+                    Some(expected),
+                    "case {id}, key {key}"
+                );
+            }
+        }
     }
 
     #[test]

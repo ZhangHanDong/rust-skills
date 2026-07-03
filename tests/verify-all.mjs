@@ -57,7 +57,7 @@ run("routing heldout", process.execPath, [path.join(root, "tests", "routing-held
 run("routing eval", process.execPath, [path.join(root, "tests", "routing-eval", "routing-eval.mjs")]);
 run("discriminating eval", process.execPath, [
   path.join(root, "tests", "discriminating-eval", "discriminating-eval.mjs"),
-  "--floor", "11"
+  "--floor", "12"
 ]);
 run("skill generation gate", process.execPath, [
   path.join(root, "tests", "aom", "run-skill-generation-gate.mjs"),
@@ -65,6 +65,9 @@ run("skill generation gate", process.execPath, [
   "--baseline", path.join(root, "tests", "aom", "skill-gate-baseline.json"),
   "--json"
 ]);
+run("router table pin", process.execPath, [path.join(root, "tests", "router-table-pin-test.mjs")]);
+run("version consistency", process.execPath, [path.join(root, "tests", "version-consistency-test.mjs")]);
+run("frontmatter parity", process.execPath, [path.join(root, "tests", "frontmatter-parity-test.mjs")]);
 run("hook routing", process.execPath, [path.join(root, "tests", "hook-routing-test.mjs")]);
 run("install e2e", process.execPath, [path.join(root, "tests", "install-e2e.mjs")]);
 run("package safety", process.execPath, [path.join(root, "tests", "package-safety-test.mjs")]);

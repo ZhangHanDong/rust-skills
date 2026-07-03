@@ -1,5 +1,6 @@
 ---
 name: meta-cognition-parallel
+internal: true
 description: "EXPERIMENTAL: launches three parallel analyzers (language mechanics, design choices, domain constraints) and synthesizes a cross-layer answer. Use when explicitly invoked as /meta-cognition-parallel for cross-domain Rust questions. Keywords: meta-cognition, parallel analysis, three-layer analysis, cross-layer synthesis."
 argument-hint: "<rust_question>"
 ---

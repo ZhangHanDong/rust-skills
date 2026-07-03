@@ -23,10 +23,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { spawnSync } from "node:child_process";
+import { repoRoot, resolveBin, routedSkills } from "../lib/route-cli.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(HERE, "..", "..");
 
 function argValue(name, fallback = null) {
   const i = process.argv.indexOf(name);
@@ -36,30 +35,11 @@ function argValue(name, fallback = null) {
   return v;
 }
 const jsonOut = process.argv.includes("--json");
-const root = path.resolve(argValue("--root", REPO_ROOT));
-
-function resolveBin() {
-  const explicit = argValue("--bin", null);
-  if (explicit) return path.resolve(explicit);
-  for (const rel of ["target/release/rust-skills", "target/debug/rust-skills", "bin/rust-skills"]) {
-    const p = path.join(REPO_ROOT, rel);
-    if (fs.existsSync(p)) return p;
-  }
-  throw new Error("rust-skills binary not found; run `cargo build --release` or pass --bin");
-}
-const bin = resolveBin();
+const root = path.resolve(argValue("--root", repoRoot));
+const bin = argValue("--bin", null) ? path.resolve(argValue("--bin", null)) : resolveBin();
 
 function routeSkills(prompt) {
-  const res = spawnSync(bin, ["route", "--json", prompt], {
-    env: { ...process.env, RUST_SKILLS_ROOT: root },
-    encoding: "utf8",
-    maxBuffer: 16 * 1024 * 1024
-  });
-  if (res.status !== 0) {
-    throw new Error(`route failed (${res.status}): ${(res.stderr || res.stdout || "").slice(0, 300)}`);
-  }
-  const parsed = JSON.parse(res.stdout);
-  return (parsed.skills || []).filter((s) => s !== "rust-router");
+  return routedSkills(prompt, { root, bin }).skills;
 }
 
 const dataset = JSON.parse(fs.readFileSync(path.join(HERE, "expected-skills.json"), "utf8"));

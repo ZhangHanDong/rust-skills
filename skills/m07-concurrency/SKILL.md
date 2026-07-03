@@ -44,6 +44,7 @@ user-invocable: false
 | thread::sleep in async | Blocks executor | tokio::time::sleep |
 | Holding locks across await | Blocks other tasks | Scope locks tightly |
 | Ignoring deadlock risk | Hard to debug | Lock ordering, try_lock |
+| Moving a self-referential future after polling | Dangling self-pointer, UB | Pin it (Box::pin or pin-project); once polled, never move a !Unpin future |
 
 ---
 
