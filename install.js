@@ -285,8 +285,15 @@ function installRuntimeCli(targetRoot, actions) {
   return targetNative;
 }
 
-function posixUserBinShim(installedHome) {
+// Pinned install locations (actual --codex-dir/--claude-dir targets) take
+// priority over the conventional $installed_home/$HOME probing so custom-dir
+// installs resolve without RUST_SKILLS_BIN/ROOT being exported manually.
+function posixUserBinShim(installedHome, pinnedRuntimes = []) {
   const quotedHome = shellQuote(installedHome);
+  const pinnedLines = (profileFilter) => pinnedRuntimes
+    .filter((entry) => profileFilter === null || entry.profile === profileFilter)
+    .map((entry) => `    try_exec ${shellQuote(entry.bin)} ${shellQuote(entry.root)} "$@"`)
+    .join("\n");
   return `#!/bin/sh
 set -e
 
@@ -317,14 +324,17 @@ fi
 
 case "$profile" in
   codex)
+${pinnedLines("codex")}
     try_exec "$installed_home/.codex/bin/rust-skills" "$installed_home/.codex/rust-skills" "$@"
     try_exec "\${HOME:-}/.codex/bin/rust-skills" "\${HOME:-}/.codex/rust-skills" "$@"
     ;;
   claude|claude-code)
+${pinnedLines("claude")}
     try_exec "$installed_home/.claude/bin/rust-skills" "$installed_home/.claude/rust-skills" "$@"
     try_exec "\${HOME:-}/.claude/bin/rust-skills" "\${HOME:-}/.claude/rust-skills" "$@"
     ;;
   "")
+${pinnedLines(null)}
     try_exec "$installed_home/.codex/bin/rust-skills" "$installed_home/.codex/rust-skills" "$@"
     try_exec "$installed_home/.claude/bin/rust-skills" "$installed_home/.claude/rust-skills" "$@"
     try_exec "\${HOME:-}/.codex/bin/rust-skills" "\${HOME:-}/.codex/rust-skills" "$@"
@@ -341,8 +351,13 @@ exit 127
 `;
 }
 
-function windowsUserBinShim(installedHome) {
+function windowsUserBinShim(installedHome, pinnedRuntimes = []) {
   const escapedHome = String(installedHome).replace(/%/g, "%%");
+  const winPath = (value) => String(value).replace(/%/g, "%%").replace(/\//g, "\\");
+  const pinnedLines = (profileFilter) => pinnedRuntimes
+    .filter((entry) => profileFilter === null || entry.profile === profileFilter)
+    .map((entry) => `if exist "${winPath(entry.bin)}" call :run "${winPath(entry.bin)}" "${winPath(entry.root)}" %* & exit /b %ERRORLEVEL%\r`)
+    .join("\n");
   return `@echo off\r
 setlocal\r
 set "INSTALLED_HOME=${escapedHome}"\r
@@ -352,16 +367,19 @@ if /I "%RUST_SKILLS_PROFILE%"=="claude" goto claude\r
 if /I "%RUST_SKILLS_PROFILE%"=="claude-code" goto claude\r
 if not "%RUST_SKILLS_PROFILE%"=="" goto bad_profile\r
 :default\r
+${pinnedLines(null)}
 if exist "%INSTALLED_HOME%\\.codex\\bin\\rust-skills.exe" call :run "%INSTALLED_HOME%\\.codex\\bin\\rust-skills.exe" "%INSTALLED_HOME%\\.codex\\rust-skills" %* & exit /b %ERRORLEVEL%\r
 if exist "%INSTALLED_HOME%\\.claude\\bin\\rust-skills.exe" call :run "%INSTALLED_HOME%\\.claude\\bin\\rust-skills.exe" "%INSTALLED_HOME%\\.claude\\rust-skills" %* & exit /b %ERRORLEVEL%\r
 if exist "%USERPROFILE%\\.codex\\bin\\rust-skills.exe" call :run "%USERPROFILE%\\.codex\\bin\\rust-skills.exe" "%USERPROFILE%\\.codex\\rust-skills" %* & exit /b %ERRORLEVEL%\r
 if exist "%USERPROFILE%\\.claude\\bin\\rust-skills.exe" call :run "%USERPROFILE%\\.claude\\bin\\rust-skills.exe" "%USERPROFILE%\\.claude\\rust-skills" %* & exit /b %ERRORLEVEL%\r
 goto missing\r
 :codex\r
+${pinnedLines("codex")}
 if exist "%INSTALLED_HOME%\\.codex\\bin\\rust-skills.exe" call :run "%INSTALLED_HOME%\\.codex\\bin\\rust-skills.exe" "%INSTALLED_HOME%\\.codex\\rust-skills" %* & exit /b %ERRORLEVEL%\r
 if exist "%USERPROFILE%\\.codex\\bin\\rust-skills.exe" call :run "%USERPROFILE%\\.codex\\bin\\rust-skills.exe" "%USERPROFILE%\\.codex\\rust-skills" %* & exit /b %ERRORLEVEL%\r
 goto missing\r
 :claude\r
+${pinnedLines("claude")}
 if exist "%INSTALLED_HOME%\\.claude\\bin\\rust-skills.exe" call :run "%INSTALLED_HOME%\\.claude\\bin\\rust-skills.exe" "%INSTALLED_HOME%\\.claude\\rust-skills" %* & exit /b %ERRORLEVEL%\r
 if exist "%USERPROFILE%\\.claude\\bin\\rust-skills.exe" call :run "%USERPROFILE%\\.claude\\bin\\rust-skills.exe" "%USERPROFILE%\\.claude\\rust-skills" %* & exit /b %ERRORLEVEL%\r
 goto missing\r
@@ -381,8 +399,19 @@ exit /b %ERRORLEVEL%\r
 `;
 }
 
-function installUserBin(sourceBin, actions) {
+// Actual install locations recorded by installUserBin calls; the shim pins
+// these so --codex-dir/--claude-dir installs outside --home still resolve.
+// The second install target rewrites the shim with both entries included.
+const pinnedRuntimes = [];
+
+function installUserBin(sourceBin, actions, profile) {
   if (noUserBin) return;
+  const targetRoot = path.dirname(path.dirname(sourceBin));
+  pinnedRuntimes.push({
+    profile,
+    bin: sourceBin,
+    root: path.join(targetRoot, "rust-skills")
+  });
   const installHome = valueAfter("--home", process.platform === "win32"
     ? (process.env.USERPROFILE || os.homedir() || process.env.HOME)
     : (process.env.HOME || os.homedir() || process.env.USERPROFILE));
@@ -392,9 +421,9 @@ function installUserBin(sourceBin, actions) {
   if (dryRun) return;
   ensureDir(userBinDir);
   if (process.platform === "win32") {
-    fs.writeFileSync(target, windowsUserBinShim(installHome));
+    fs.writeFileSync(target, windowsUserBinShim(installHome, pinnedRuntimes));
   } else {
-    fs.writeFileSync(target, posixUserBinShim(installHome));
+    fs.writeFileSync(target, posixUserBinShim(installHome, pinnedRuntimes));
     fs.chmodSync(target, 0o755);
   }
 }
@@ -555,7 +584,7 @@ function installCodexTarget(actions) {
   copyInstall(path.join(root, ".codex", "hooks"), path.join(targetRoot, "hooks"), actions);
   copyRuntimeData(targetRoot, actions);
   const bin = installRuntimeCli(targetRoot, actions);
-  installUserBin(bin, actions);
+  installUserBin(bin, actions, "codex");
   writeCodexHookSettings(targetRoot, actions);
 }
 
@@ -565,7 +594,7 @@ function installClaudeTarget(actions) {
   copyInstall(path.join(root, ".claude", "hooks"), path.join(targetRoot, "hooks"), actions);
   copyRuntimeData(targetRoot, actions);
   const bin = installRuntimeCli(targetRoot, actions);
-  installUserBin(bin, actions);
+  installUserBin(bin, actions, "claude");
   writeClaudeHookSettings(targetRoot, actions);
 }
 
