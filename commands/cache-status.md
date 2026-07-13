@@ -1,6 +1,6 @@
 ---
 description: Show Rust docs cache status
-argument-hint: [--verbose]
+argument-hint: "[--verbose]"
 ---
 
 # Cache Status

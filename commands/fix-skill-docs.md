@@ -1,6 +1,6 @@
 ---
 description: Check and fix missing reference files in dynamic skills
-argument-hint: [crate_name] [--check-only] [--remove-invalid]
+argument-hint: "[crate_name] [--check-only] [--remove-invalid]"
 ---
 
 # Fix Skill Documentation

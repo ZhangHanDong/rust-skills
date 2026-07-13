@@ -1,6 +1,6 @@
 ---
 description: Generate llms.txt from local Rust source code
-argument-hint: [source_path] [output_path]
+argument-hint: "[source_path] [output_path]"
 ---
 
 # Create llms.txt from Rust Source Code

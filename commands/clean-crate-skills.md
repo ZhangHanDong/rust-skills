@@ -1,6 +1,6 @@
 ---
 description: Remove local dynamic crate skills
-argument-hint: [crate_names...] [--all]
+argument-hint: "[crate_names...] [--all]"
 ---
 
 # Clean Crate Skills
