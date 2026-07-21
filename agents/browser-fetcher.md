@@ -1,3 +1,8 @@
+---
+name: browser-fetcher
+description: "Generic web content fetcher."
+---
+
 # browser-fetcher
 
 Generic web content fetcher.

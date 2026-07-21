@@ -1,3 +1,8 @@
+---
+name: clippy-researcher
+description: "Fetch Clippy lint information."
+---
+
 # clippy-researcher
 
 Fetch Clippy lint information.

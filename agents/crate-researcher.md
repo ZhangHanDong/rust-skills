@@ -1,3 +1,8 @@
+---
+name: crate-researcher
+description: "Fetch crate metadata from lib.rs / crates.io."
+---
+
 # crate-researcher
 
 Fetch crate metadata from lib.rs / crates.io.
