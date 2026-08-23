@@ -1,6 +1,6 @@
 ---
 description: Generate Rust daily/weekly/monthly news report
-argument-hint: [day|week|month] [--category ecosystem|official|foundation] [--save [path]]
+argument-hint: "[day|week|month] [--category ecosystem|official|foundation] [--save [path]]"
 ---
 
 # Rust Daily Report

@@ -1,3 +1,8 @@
+---
+name: docs-cache
+description: "Documentation cache helper for agents."
+---
+
 # docs-cache
 
 Documentation cache helper for agents.

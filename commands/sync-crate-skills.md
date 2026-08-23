@@ -1,6 +1,6 @@
 ---
 description: Sync dynamic skills for Cargo.toml dependencies or local source
-argument-hint: [--force] [--from-source <path>] [crate_names...]
+argument-hint: "[--force] [--from-source <path>] [crate_names...]"
 ---
 
 # Sync Crate Skills
