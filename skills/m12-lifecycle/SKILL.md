@@ -31,75 +31,18 @@ Before implementing lifecycle:
 
 ---
 
-## Thinking Prompt
-
-Before designing lifecycle:
-
-1. **What's the resource cost?**
-   - Cheap → create per use
-   - Expensive → pool or cache
-   - Global → lazy singleton
-
-2. **What's the scope?**
-   - Function-local → stack allocation
-   - Request-scoped → passed or extracted
-   - Application-wide → static or Arc
-
-3. **What about errors?**
-   - Cleanup must happen → Drop
-   - Cleanup is optional → explicit close
-   - Cleanup can fail → Result from close
+Decision drivers: resource cost (cheap -> create per use; expensive -> pool; global -> lazy singleton), scope (function-local -> stack; request -> passed/extracted; app-wide -> static or Arc), and error behavior (cleanup must happen -> Drop; cleanup can fail -> explicit `close() -> Result`, since Drop cannot return errors).
 
 ---
 
-## Trace Up ↑
+## Lazy Init: OnceLock vs LazyLock
 
-To domain constraints (Layer 3):
+Both are thread-safe std primitives. The difference is where the init closure lives:
 
-```
-"How should I manage database connections?"
-    ↑ Ask: What's the connection cost?
-    ↑ Check: domain-* (latency requirements)
-    ↑ Check: Infrastructure (connection limits)
-```
-
-| Question | Trace To | Ask |
-|----------|----------|-----|
-| Connection pooling | domain-* | What's acceptable latency? |
-| Resource limits | domain-* | What are infra constraints? |
-| Transaction scope | domain-* | What must be atomic? |
+- `LazyLock<T>`: init closure fixed at the definition site (`static X: LazyLock<T> = LazyLock::new(|| ...)`); first access runs it.
+- `OnceLock<T>`: init happens at the call site via `get_or_init(|| ...)`, so it can capture runtime data (CLI args, config) unavailable at definition time.
 
 ---
-
-## Trace Down ↓
-
-To implementation (Layer 1):
-
-```
-"Need automatic cleanup"
-    ↓ m02-resource: Implement Drop
-    ↓ m01-ownership: Clear owner for cleanup
-
-"Need lazy initialization"
-    ↓ m03-mutability: OnceLock for thread-safe
-    ↓ m07-concurrency: LazyLock for sync
-
-"Need connection pool"
-    ↓ m07-concurrency: Thread-safe pool
-    ↓ m02-resource: Arc for sharing
-```
-
----
-
-## Quick Reference
-
-| Pattern | Type | Use Case |
-|---------|------|----------|
-| RAII | `Drop` trait | Auto cleanup on scope exit |
-| Lazy Init | `OnceLock`, `LazyLock` | Deferred initialization |
-| Pool | `r2d2`, `deadpool` | Connection reuse |
-| Guard | `MutexGuard` | Scoped lock release |
-| Scope | Custom struct | Transaction boundaries |
 
 ## Lifecycle Events
 

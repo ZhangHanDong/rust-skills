@@ -1,7 +1,7 @@
 ---
 name: rust-daily
 description: |
-  CRITICAL: Use for Rust news and daily/weekly/monthly reports. Triggers on:
+  Use when: Rust news and daily/weekly/monthly reports. Keywords:
   rust news, rust daily, rust weekly, TWIR, rust blog,
   Rust 日报, Rust 周报, Rust 新闻, Rust 动态
 argument-hint: "[today|week|month]"
@@ -11,186 +11,50 @@ agent: Explore
 
 # Rust Daily Report
 
-> **Version:** 2.1.0 | **Last Updated:** 2025-01-27
-
 Fetch Rust community updates, filtered by time range.
-
-## Data Sources
-
-| Category | Sources |
-|----------|---------|
-| Ecosystem | Reddit r/rust, This Week in Rust |
-| Official | blog.rust-lang.org, Inside Rust |
-| Foundation | rustfoundation.org (news, blog, events) |
 
 ## Parameters
 
 - `time_range`: day | week | month (default: week)
 - `category`: all | ecosystem | official | foundation
 
-## Execution Mode Detection
-
-**CRITICAL: Check agent file availability first to determine execution mode.**
-
-Try to read: `../../agents/rust-daily-reporter.md`
-
----
-
 ## Agent Mode (Plugin Install)
 
-**When `../../agents/rust-daily-reporter.md` exists:**
+If `../../agents/rust-daily-reporter.md` exists:
 
-### Workflow
+1. Read `../../agents/rust-daily-reporter.md`
+2. `Task(subagent_type: "general-purpose", prompt: <agent content>)`
+3. Wait for the result, format, and present to the user.
 
-```
-1. Read: ../../agents/rust-daily-reporter.md
-2. Task(subagent_type: "general-purpose", run_in_background: false, prompt: <agent content>)
-3. Wait for result
-4. Format and present to user
-```
-
----
+Otherwise use Inline Mode below.
 
 ## Inline Mode (Skills-only Install)
 
-**When agent file is NOT available, execute each source directly:**
+Per-source fetch order: actionbook selectors first
+(`mcp__actionbook__search_actions(...)`), then agent-browser CLI
+(`agent-browser open <url>`, `get text <selector>`, `close`), then WebFetch.
+Do NOT use Chrome MCP directly or WebSearch for fetching news pages.
 
-### 1. Reddit r/rust
+| Category | Source | URL | Primary Fetch | WebFetch Fallback Prompt |
+|----------|--------|-----|---------------|--------------------------|
+| Ecosystem | Reddit r/rust | `https://www.reddit.com/r/rust/hot.json` | WebFetch the JSON endpoint (the old `.Post` CSS selector is dead; reddit.com now renders shreddit web components). `https://old.reddit.com/r/rust/` also works with agent-browser. | "Extract top 10 posts: title, score, permalink" |
+| Ecosystem | This Week in Rust | `https://this-week-in-rust.org/` | actionbook selector -> agent-browser | "Extract latest issue number, date, and highlights" |
+| Official | Rust Blog | `https://blog.rust-lang.org/` | `agent-browser get text "article"` (limit 5) | "Extract latest 5 posts with dates and titles" |
+| Official | Inside Rust | `https://blog.rust-lang.org/inside-rust/` | `agent-browser get text "article"` (limit 3) | "Extract latest 3 posts with dates and titles" |
+| Foundation | News / Blog / Events | `https://rustfoundation.org/media/category/news/`, `.../media/category/blog/`, `.../events/` | `agent-browser get text "article"` (limit 3 each) | "Extract latest 3 items with dates and titles" |
 
-```bash
-# Using agent-browser CLI
-agent-browser open "https://www.reddit.com/r/rust/hot/"
-agent-browser get text ".Post" --limit 10
-agent-browser close
-```
+Rules:
 
-**Or with WebFetch fallback:**
-```
-WebFetch("https://www.reddit.com/r/rust/hot/", "Extract top 10 posts with scores and titles")
-```
+- Filter results by time range: day = last 24h, week = last 7 days,
+  month = last 30 days.
+- A source with no in-range items: mark "No updates".
+- On fetch failure: retry once with the next tool in the chain, then skip the
+  source and report the reason.
 
-**Parse output into:**
-| Score | Title | Link |
-|-------|-------|------|
-
-### 2. This Week in Rust
-
-```bash
-# Check actionbook first
-mcp__actionbook__search_actions("this week in rust")
-mcp__actionbook__get_action_by_id(<action_id>)
-
-# Then fetch
-agent-browser open "https://this-week-in-rust.org/"
-agent-browser get text "<selector_from_actionbook>"
-agent-browser close
-```
-
-**Parse output into:**
-- Issue #{number} ({date}): highlights
-
-### 3. Rust Blog (Official)
-
-```bash
-agent-browser open "https://blog.rust-lang.org/"
-agent-browser get text "article" --limit 5
-agent-browser close
-```
-
-**Or with WebFetch fallback:**
-```
-WebFetch("https://blog.rust-lang.org/", "Extract latest 5 blog posts with dates and titles")
-```
-
-**Parse output into:**
-| Date | Title | Summary |
-|------|-------|---------|
-
-### 4. Inside Rust
-
-```bash
-agent-browser open "https://blog.rust-lang.org/inside-rust/"
-agent-browser get text "article" --limit 3
-agent-browser close
-```
-
-**Or with WebFetch fallback:**
-```
-WebFetch("https://blog.rust-lang.org/inside-rust/", "Extract latest 3 posts with dates and titles")
-```
-
-### 5. Rust Foundation
-
-```bash
-# News
-agent-browser open "https://rustfoundation.org/media/category/news/"
-agent-browser get text "article" --limit 3
-agent-browser close
-
-# Blog
-agent-browser open "https://rustfoundation.org/media/category/blog/"
-agent-browser get text "article" --limit 3
-agent-browser close
-
-# Events
-agent-browser open "https://rustfoundation.org/events/"
-agent-browser get text "article" --limit 3
-agent-browser close
-```
-
-### Time Filtering
-
-After fetching all sources, filter by time range:
-
-| Range | Filter |
-|-------|--------|
-| day | Last 24 hours |
-| week | Last 7 days |
-| month | Last 30 days |
-
-### Combining Results
-
-After fetching all sources, combine into the output format below.
-
----
-
-## Tool Chain Priority
-
-Both modes use the same tool chain order:
-
-1. **actionbook MCP** - Check for cached/pre-fetched content first
-   ```
-   mcp__actionbook__search_actions("rust news {date}")
-   mcp__actionbook__search_actions("this week in rust")
-   mcp__actionbook__search_actions("rust blog")
-   ```
-
-2. **agent-browser CLI** - For dynamic web content
-   ```bash
-   agent-browser open "<url>"
-   agent-browser get text "<selector>"
-   agent-browser close
-   ```
-
-3. **WebFetch** - Fallback if agent-browser unavailable
-
-| Source | Primary Tool | Fallback |
-|--------|--------------|----------|
-| Reddit | agent-browser | WebFetch |
-| TWIR | actionbook → agent-browser | WebFetch |
-| Rust Blog | actionbook → WebFetch | - |
-| Foundation | actionbook → WebFetch | - |
-
-**DO NOT use:**
-- Chrome MCP directly
-- WebSearch for fetching news pages
-
----
-
-## Output Format
+## Output Skeleton
 
 ```markdown
-# Rust {Weekly|Daily|Monthly} Report
+# Rust {Daily|Weekly|Monthly} Report
 
 **Time Range:** {start} - {end}
 
@@ -199,7 +63,6 @@ Both modes use the same tool chain order:
 ### Reddit r/rust
 | Score | Title | Link |
 |-------|-------|------|
-| {score} | {title} | [link]({url}) |
 
 ### This Week in Rust
 - Issue #{number} ({date}): highlights
@@ -207,27 +70,8 @@ Both modes use the same tool chain order:
 ## Official
 | Date | Title | Summary |
 |------|-------|---------|
-| {date} | {title} | {summary} |
 
 ## Foundation
 | Date | Title | Summary |
 |------|-------|---------|
-| {date} | {title} | {summary} |
 ```
-
----
-
-## Validation
-
-- Each source should have at least 1 result, otherwise mark "No updates"
-- On fetch failure, retry with alternative tool
-- Report reason if all tools fail for a source
-
-## Error Handling
-
-| Error | Cause | Solution |
-|-------|-------|----------|
-| Agent file not found | Skills-only install | Use inline mode |
-| agent-browser unavailable | CLI not installed | Use WebFetch |
-| Site timeout | Network issues | Retry once, then skip source |
-| Empty results | Selector mismatch | Report and use fallback |

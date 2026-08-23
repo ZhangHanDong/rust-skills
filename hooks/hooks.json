@@ -2,11 +2,10 @@
   "hooks": {
     "UserPromptSubmit": [
       {
-        "matcher": "(?i)(rust|cargo|rustc|crate|Cargo\\.toml|\\.rs\\b|ownership|borrow|lifetime|async|await|trait|generic|unsafe|ffi|error|result|option|tokio|serde|axum|E0\\d{3,4}|value moved|cannot borrow|does not live long enough|mismatched types|not satisfied|Send|Sync|concurrency|所有权|借用|生命周期|异步|并发|错误处理|类型|编译|版本|意图分析|问题分析|语义分析|问题|怎么用|怎么|如何|为什么|什么是|帮我写|帮我|实现|解释|区别|最佳实践|best practice|implement|explain|difference|how to|why|what is|创建.*项目|创建.*skill|create.*skill|动态.*skill|fintech|trading|decimal|currency|金融|交易|货币|支付|kubernetes|k8s|docker|grpc|microservice|云原生|微服务|容器|web server|HTTP|REST|axum|actix|warp|API|中间件|路由|CLI|command line|clap|terminal|命令行|终端|embedded|no_std|MCU|ARM|RISC-V|firmware|嵌入式|单片机|固件|IoT|sensor|MQTT|物联网|传感器|machine learning|ML|tensor|model|inference|机器学习|模型|DDD|domain model|领域模型|performance|benchmark|性能优化|基准测试|RAII|Drop|资源|lifecycle|anti-pattern|反模式|常见错误|mental model|心智模型|学习|compare|vs|versus|对比|比较)",
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/.claude/hooks/rust-skill-eval-hook.sh"
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/.claude/hooks/rust-skill-eval-hook.js"
           }
         ]
       }

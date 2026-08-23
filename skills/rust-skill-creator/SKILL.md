@@ -1,6 +1,6 @@
 ---
 name: rust-skill-creator
-description: "Use when creating skills for Rust crates or std library documentation. Keywords: create rust skill, create crate skill, create std skill, 创建 rust skill, 创建 crate skill, 创建 std skill, 动态 rust skill, 动态 crate skill, skill for tokio, skill for serde, skill for axum, generate rust skill, rust 技能, crate 技能, 从文档创建skill, from docs create skill"
+description: "Use when: creating generated skills for Rust crates, std modules, or Rust documentation URLs. Keywords: create rust skill, create crate skill, create std skill, dynamic rust skill, skill for tokio, skill for serde, skill for axum, generate rust skill, from docs create skill."
 argument-hint: "<crate_name|std::module>"
 context: fork
 agent: general-purpose
@@ -8,9 +8,7 @@ agent: general-purpose
 
 # Rust Skill Creator
 
-> **Version:** 2.1.0 | **Last Updated:** 2025-01-27
->
-> Create dynamic skills for Rust crates and std library documentation.
+Create dynamic skills for Rust crates and std library documentation.
 
 ## When to Use
 
@@ -21,7 +19,8 @@ This skill handles requests to create skills for:
 
 ## Execution Mode Detection
 
-**CRITICAL: Check if related commands/skills are available.**
+Check whether related commands and skills are available before choosing the
+execution path.
 
 This skill relies on:
 - `/create-llms-for-skills` command
@@ -78,6 +77,25 @@ After llms.txt is generated, use:
 
 **When the commands above are NOT available, create skills manually:**
 
+Generated skills must follow the skill generation contract:
+
+- English only in generated repo-owned skill text
+- concise `Use when:` and `Keywords:` description
+- scope, documentation boundary, domain guardrails, and key patterns in
+  `SKILL.md`
+- long API details in `references/`
+- no prompt-like role setup, decorative banner, ASCII art, or exact display
+  instruction
+- judgment guidance as boundaries and guardrails, not scripted thinking
+  prompts
+- strict quality gate before accepting output
+- no hand patching generated skills to improve benchmark metrics; update the
+  generator inputs and regenerate from a clean directory instead
+- describe failure modes in the ecosystem's standard terminology (for example
+  pointer validity, alignment, lifetimes, deadlock, MSRV, semver) instead of
+  inventing synonyms, so readers can map guidance back to compiler and docs
+  language
+
 ### Step 1: Identify Target and Construct URL
 
 | Target | URL Template |
@@ -116,16 +134,28 @@ Create `~/.claude/skills/{crate_name}/SKILL.md` with this template:
 ```markdown
 ---
 name: {crate_name}
-description: "Documentation for {crate_name} crate. Keywords: {keywords}"
+description: "Use when: working with {crate_name} APIs or troubleshooting {crate_name}-specific Rust integration. Keywords: {keywords}."
 ---
 
 # {Crate Name}
 
 > **Version:** {version} | **Source:** docs.rs
 
-## Overview
+## Scope
 
 {Brief description from documentation}
+
+## Documentation
+
+Load these references only when the task needs their detail:
+
+- `./references/overview.md` - Main overview
+- `./references/{module}.md` - Module documentation
+
+## Documentation Boundary
+
+If a needed reference file is missing or empty, say the local generated
+documentation is incomplete and recommend regenerating the skill.
 
 ## Key Types
 
@@ -145,15 +175,11 @@ description: "Documentation for {crate_name} crate. Keywords: {keywords}"
 {Example code from documentation}
 ```
 
-## Documentation
+## Domain Guardrails
 
-- `./references/overview.md` - Main overview
-- `./references/{module}.md` - Module documentation
-
-## Links
-
-- [docs.rs](https://docs.rs/{crate})
-- [crates.io](https://crates.io/crates/{crate})
+- {key design decision or trade-off specific to this crate}
+- {known failure mode and how to avoid it}
+- {boundary that prevents over-applying this skill}
 ```
 
 ### Step 5: Generate Reference Files
@@ -173,19 +199,19 @@ agent-browser close
 # Check skill structure
 ls -la ~/.claude/skills/{crate_name}/
 cat ~/.claude/skills/{crate_name}/SKILL.md
+
+# Run the generation quality gate when the rust-skills repository is available
+node tests/aom/run-skill-generation-gate.mjs \
+  --skills ~/.claude/skills/{crate_name} \
+  --strict-generated \
+  --json
 ```
 
+For benchmark work, delete the generated skill directory before regeneration.
+Do not edit the generated `SKILL.md` after the fact and then claim generator
+quality improved.
+
 ---
-
-## URL Construction Helper
-
-| Target | URL Template |
-|--------|--------------|
-| Crate overview | `https://docs.rs/{crate}/latest/{crate}/` |
-| Crate module | `https://docs.rs/{crate}/latest/{crate}/{module}/` |
-| Std trait | `https://doc.rust-lang.org/std/{module}/trait.{Name}.html` |
-| Std struct | `https://doc.rust-lang.org/std/{module}/struct.{Name}.html` |
-| Std module | `https://doc.rust-lang.org/std/{module}/index.html` |
 
 ## Common Std Library Paths
 
@@ -203,51 +229,8 @@ cat ~/.claude/skills/{crate_name}/SKILL.md
 
 ---
 
-## Example Interactions
-
-### Example 1: Create Crate Skill (Agent Mode)
-
-```
-User: "Create a dynamic skill for tokio"
-
-Claude:
-1. Identify: Third-party crate "tokio"
-2. Execute: /create-llms-for-skills https://docs.rs/tokio/latest/tokio/
-3. Wait for llms.txt generation
-4. Execute: /create-skills-via-llms tokio ~/tmp/{timestamp}-tokio-llms.txt
-```
-
-### Example 2: Create Crate Skill (Inline Mode)
-
-```
-User: "Create a dynamic skill for tokio"
-
-Claude:
-1. Identify: Third-party crate "tokio"
-2. Fetch: agent-browser open "https://docs.rs/tokio/latest/tokio/"
-3. Extract documentation
-4. Create: ~/.claude/skills/tokio/SKILL.md
-5. Create: ~/.claude/skills/tokio/references/
-6. Save reference files for key modules (sync, task, runtime, etc.)
-```
-
-### Example 3: Create Std Library Skill
-
-```
-User: "Create a skill for Send and Sync traits"
-
-Claude:
-1. Identify: Std library traits
-2. (Agent Mode) Execute: /create-llms-for-skills https://doc.rust-lang.org/std/marker/trait.Send.html https://doc.rust-lang.org/std/marker/trait.Sync.html
-   (Inline Mode) Fetch each URL, create skill manually
-3. Complete skill creation
-```
-
----
-
 ## DO NOT
 
-- Use `best-skill-creator` for Rust-related skill creation
 - Guess documentation URLs without verification
 - Skip documentation fetching step
 

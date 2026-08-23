@@ -133,6 +133,7 @@ let _g2 = m.lock().unwrap();  // DEADLOCK on std::Mutex
 ### Error Pattern
 ```rust
 use std::sync::Mutex;
+use std::time::Duration;
 use tokio::time::sleep;
 
 async fn bad_async() {
@@ -172,48 +173,6 @@ async fn good_async() {
 
 ---
 
-## Data Race Prevention
-
-### Pattern: Missing Synchronization
-```rust
-// This WON'T compile - Rust prevents data races
-use std::sync::Arc;
-
-let data = Arc::new(0);
-let d1 = Arc::clone(&data);
-let d2 = Arc::clone(&data);
-
-std::thread::spawn(move || {
-    // *d1 += 1;  // ERROR: cannot mutate through Arc
-});
-
-std::thread::spawn(move || {
-    // *d2 += 1;  // ERROR: cannot mutate through Arc
-});
-```
-
-### Fix: Add Synchronization
-```rust
-use std::sync::{Arc, Mutex};
-use std::sync::atomic::{AtomicI32, Ordering};
-
-// Option 1: Mutex
-let data = Arc::new(Mutex::new(0));
-let d1 = Arc::clone(&data);
-std::thread::spawn(move || {
-    *d1.lock().unwrap() += 1;
-});
-
-// Option 2: Atomic (for simple types)
-let data = Arc::new(AtomicI32::new(0));
-let d1 = Arc::clone(&data);
-std::thread::spawn(move || {
-    d1.fetch_add(1, Ordering::SeqCst);
-});
-```
-
----
-
 ## Channel Errors
 
 ### Disconnected Channel
@@ -230,6 +189,8 @@ match rx.recv() {
 
 ### Fix: Handle Disconnection
 ```rust
+use std::sync::mpsc::TryRecvError;
+
 // Use try_recv for non-blocking
 loop {
     match rx.try_recv() {
@@ -287,45 +248,5 @@ async fn compute() {
     let result = tokio::task::spawn_blocking(|| {
         heavy_computation()  // OK to block here
     }).await.unwrap();
-}
-```
-
----
-
-## Thread Panic Handling
-
-### Unhandled Panic
-```rust
-let handle = std::thread::spawn(|| {
-    panic!("oops");
-});
-
-// Main thread continues, might miss the error
-handle.join().unwrap();  // panics here
-```
-
-### Proper Error Handling
-```rust
-let handle = std::thread::spawn(|| {
-    panic!("oops");
-});
-
-match handle.join() {
-    Ok(result) => println!("Success: {:?}", result),
-    Err(e) => println!("Thread panicked: {:?}", e),
-}
-
-// For async: use catch_unwind
-use std::panic;
-
-async fn safe_task() {
-    let result = panic::catch_unwind(|| {
-        risky_operation()
-    });
-
-    match result {
-        Ok(v) => use_value(v),
-        Err(_) => log_error("task panicked"),
-    }
 }
 ```

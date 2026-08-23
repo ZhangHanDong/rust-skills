@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "skillOverlays": {
+    "unsafe-checker": {
+      "anchors": [
+        "`from_raw_parts` caller obligations: pointer validity, length, alignment, initialization, lifetime, and aliasing — document each in a SAFETY comment.",
+        "FFI slice wrappers pair a raw pointer with an element count and must state who guarantees the buffer stays valid and unaliased."
+      ]
+    },
+    "m07-concurrency": {
+      "anchors": [
+        "Drop lock guards before `.await`; holding a std MutexGuard across suspension points risks deadlock and starves other tasks.",
+        "Bounded queues, semaphores, and admission control give async services backpressure instead of unbounded memory growth."
+      ]
+    },
+    "m12-lifecycle": {
+      "anchors": [
+        "Graceful shutdown couples cancellation signals, backpressure draining, and ordered teardown of resources."
+      ]
+    },
+    "m11-ecosystem": {
+      "anchors": [
+        "API evolution reviews cover MSRV policy, semver impact, release notes, fallback paths, and regression tests."
+      ]
+    },
+    "m05-type-driven": {
+      "anchors": [
+        "E0282 means inference lacks constraints; add an explicit type where it best communicates intent — a binding annotation or `collect::<Vec<_>>()`."
+      ]
+    },
+    "m04-zero-cost": {
+      "anchors": [
+        "E0282 through generic APIs is an inference-boundary issue: annotate the binding or use turbofish on the call that decides the type.",
+        "`collect()` needs the output collection type from context; supply it at whichever boundary reads most clearly."
+      ]
+    },
+    "m01-ownership": {
+      "anchors": [
+        "E0382 fixes should preserve ownership intent: borrow where read-only access suffices, move when transferring responsibility, clone only as a last resort.",
+        "E0716 with `format!` means the temporary needs an owner: bind it to a local, or store an owned `String` when the data becomes state.",
+        "Index helpers over `&[String]` can count with borrowed `&str` keys and return a `&str` borrowed from the original slice."
+      ]
+    },
+    "m06-error-handling": {
+      "anchors": [
+        "For public library error APIs, contrast internal `anyhow` context with public `thiserror` typed errors."
+      ]
+    },
+    "domain-embedded": {
+      "anchors": [
+        "no_std code cannot heap-allocate: use fixed-capacity buffers (raw arrays, static buffers, ring buffers, or the `heapless` crate) and define overflow policy explicitly.",
+        "no_std logging combines `core::fmt::Write` with a fixed-capacity buffer and a stated drop/overwrite behavior when full."
+      ]
+    },
+    "domain-cli": {
+      "anchors": [
+        "Destructive cleanup commands canonicalize the workspace root and every target, refuse out-of-root paths with a non-zero exit before any mutation, and offer a preview (dry-run) mode plus explicit confirmation.",
+        "Config diagnostics that may carry secrets redact values, attribute each setting to its source, and exit non-zero without leaking the secret.",
+        "Stdout carries machine-readable output; stderr carries human diagnostics and error context."
+      ]
+    }
+  }
+}

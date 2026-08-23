@@ -1,0 +1,30 @@
+{
+  "note": "Shared parity fixtures for the TWO frontmatter parsers: Rust parse_skill_frontmatter (crates/rust-skills-cli/src/main.rs) and JS parseFrontmatter (tests/aom/run-skill-generation-gate.mjs). Both are minimal line-based parsers that must agree on these shapes. If either parser changes behavior, its parity test fails until this file (and the other parser) is updated deliberately.",
+  "cases": [
+    {
+      "id": "simple-quoted",
+      "content": "---\nname: m01-ownership\ndescription: \"Use when: ownership. Keywords: E0382, borrow\"\n---\n# Body\n",
+      "expect": { "name": "m01-ownership", "description": "Use when: ownership. Keywords: E0382, borrow" }
+    },
+    {
+      "id": "single-quoted",
+      "content": "---\nname: tokio\ndescription: 'Async runtime'\n---\nbody\n",
+      "expect": { "name": "tokio", "description": "Async runtime" }
+    },
+    {
+      "id": "unquoted-with-colon-value",
+      "content": "---\nname: rust-router\nargument-hint: \"[--force] | <crate>\"\n---\nbody\n",
+      "expect": { "name": "rust-router", "argument-hint": "[--force] | <crate>" }
+    },
+    {
+      "id": "cjk-value",
+      "content": "---\nname: m03\ndescription: \"可变性 borrow conflict\"\n---\nbody\n",
+      "expect": { "name": "m03", "description": "可变性 borrow conflict" }
+    },
+    {
+      "id": "no-frontmatter",
+      "content": "# Just a body\nno fences here\n",
+      "expect": {}
+    }
+  ]
+}

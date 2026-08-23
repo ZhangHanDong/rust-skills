@@ -116,7 +116,9 @@ Strike 3: Still insufficient
   → Report gaps to user explicitly
 ```
 
-See `_meta/error-protocol.md` for full escalation rules.
+Full escalation rules live in `_meta/error-protocol.md` at the repo root
+(available in full repo installs only; in skills-only installs this file is
+the canonical reference).
 
 ## Negotiation Routing Examples
 
@@ -147,6 +149,9 @@ Synthesis: Combine error explanation with domain-appropriate fix
 ```
 
 ## Related Documents
+
+Repo-root paths; these ship with full repo installs only. In skills-only
+installs, this file is the single source of truth for negotiation.
 
 - `_meta/negotiation-protocol.md` - Full protocol specification
 - `_meta/negotiation-templates.md` - Response templates

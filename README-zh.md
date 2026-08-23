@@ -4,7 +4,7 @@
 
 > 基于元认知框架的 AI Rust 开发助手
 
-[![Version](https://img.shields.io/badge/version-2.0.9-green.svg)](https://github.com/actionbook/rust-skills/releases)
+[![Version](https://img.shields.io/badge/version-2.2.1-green.svg)](https://github.com/actionbook/rust-skills/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Plugin-blue)](https://github.com/anthropics/claude-code)
 
@@ -46,10 +46,85 @@ AI (使用 Rust Skills):
 
 ## 安装
 
-Rust Skills 支持两种安装模式：
+Rust Skills 支持三种安装模式：
 
+- **本地 Runtime 模式**（Codex 和 Claude Code）：只暴露一个顶层 `rust-skills`，通过 hook 和 Rust-native `rust-skills` CLI 做真实路由。
 - **Plugin 模式**（Claude Code）：完整功能，包含 hooks、agents 和自动元认知触发
 - **Skills-only 模式**：适用于任何支持 skills 的编码助手（Claude Code、Vercel AI 等）
+
+---
+
+### 本地 Runtime 安装（Codex + Claude Code）
+
+如果你希望本地 hook 自动触发，并且能用命令行真实验证路由，优先使用这个方式。安装器使用 Node 完成文件安装，并构建/复制 Rust-native CLI、runtime 数据、单一顶层 skill、hook，并在 `~/.local/bin/rust-skills` 放一个指向已安装 runtime CLI 的轻量 shim。
+
+源码安装前提：
+
+- Node.js 用于运行 `install.js` 和 hook。
+- 如果没有现成的预编译 binary，需要 Rust/Cargo 来构建 native `rust-skills` CLI。
+
+完整安装会把 UserPromptSubmit hook 直接接到原生二进制——`<targetRoot>/bin/rust-skills hook claude|codex`（每条 prompt 约 10ms）。触发判断在二进制内部完成：非 Rust prompt 不输出任何内容，只有路由决策为 `should_inject: true` 时才注入 Rust 上下文。不存在独立的 hook matcher；Node hook 脚本仅作为 repo checkout / plugin 布局的回退保留。
+
+这样即使 prompt 里出现 `cargo`、`ownership`、`lifetime`、`Rocket`、`Tower`、`unsafe` 这类歧义词，非 Rust 工作也不会被打扰。
+
+```bash
+git clone https://github.com/actionbook/rust-skills.git
+cd rust-skills
+node install.js --codex --claude
+
+rust-skills route --json "Rust E0382 value moved in axum state"
+```
+
+如果安装后找不到 `rust-skills` 命令，请确认 `~/.local/bin` 在 PATH 中（`export PATH="$HOME/.local/bin:$PATH"`），或直接用绝对路径调用 shim（`~/.local/bin/rust-skills`）。
+
+安装内容：
+
+- `~/.codex/skills/rust-skills/SKILL.md` 和/或 `~/.claude/skills/rust-skills/SKILL.md`
+- 深层 skill 数据：`~/.codex/rust-skills/` 和/或 `~/.claude/rust-skills/`
+- Hook 脚本：`~/.codex/hooks/` 和/或 `~/.claude/hooks/`
+- Rust-native Runtime CLI：`~/.codex/bin/` 和/或 `~/.claude/bin/`
+- 可选 PATH shim：`~/.local/bin/rust-skills`，会动态选择已安装 runtime。可以设置 `RUST_SKILLS_PROFILE=codex` 或 `RUST_SKILLS_PROFILE=claude` 强制选择。
+
+安装器不会覆盖全局 `AGENTS.md`、Claude `agents/` 或 Claude `commands/`。它也不会默认移动旧的顶层 deep skills；只有显式传入 `--prune-legacy-top-level-skills` 才会移动到备份目录。
+
+Codex 安装会启用当前格式的 feature flag：
+
+```toml
+[features]
+hooks = true
+```
+
+安装时会移除已废弃的 `[features].codex_hooks`。
+
+本地验证：
+
+```bash
+npm test
+rust-skills verify --json
+rust-skills route --json "今天天气怎么样"
+rust-skills route --json "Rust Web API Rc cannot be sent between threads"
+```
+
+常用安装参数：
+
+```bash
+node install.js --all                         # 同时安装 Codex 和 Claude Code
+node install.js --codex                       # 只安装 Codex
+node install.js --claude                      # 只安装 Claude Code
+node install.js --codex --dry-run             # 只打印计划，不写入文件
+node install.js --codex --codex-dir ~/.codex2 # 覆盖 Codex home
+node install.js --claude --claude-dir ~/.cc2  # 覆盖 Claude Code home
+node install.js --codex --home /tmp/home      # 覆盖 ~/.local/bin 使用的 home
+node install.js --codex --no-hooks            # 不合并 hook 设置
+node install.js --codex --no-user-bin         # 不安装 ~/.local/bin shim
+node install.js --codex --prune-legacy-top-level-skills
+node install.js --codex --legacy-top-level-skills
+RUST_SKILLS_DEBUG=1 rust-skills route --json "Rust E0382"
+```
+
+`--no-hooks` 仍会复制 runtime CLI 和 hook 文件，只是不合并 Codex/Claude
+hook 设置。默认本地 runtime 只暴露一个顶层 `rust-skills`；只有兼容旧布局时
+才使用 `--legacy-top-level-skills`。
 
 ---
 
@@ -138,14 +213,16 @@ claude --plugin-dir /path/to/rust-skills
 
 ### 功能对比
 
-| 功能 | Plugin（Marketplace） | Plugin（本地） | Skills-only（NPX/CoWork/手动） |
-|------|---------------------|---------------|-------------------------------|
-| 全部 31 个 Skills | ✅ | ✅ | ✅ |
-| 自动触发元认知 | ✅ | ✅ | ❌（手动调用） |
-| Hook 路由 | ✅ | ✅ | ❌ |
-| 后台 Agents | ✅ | ✅ | ✅（内联回退） |
-| 便捷更新 | ✅ | ❌ | ✅（NPX/CoWork） |
-| 兼容其他编码助手 | ❌ | ❌ | ✅ |
+| 功能 | 本地 Runtime | Plugin（Marketplace） | Plugin（本地） | Skills-only（NPX/CoWork/手动） |
+|------|--------------|---------------------|---------------|-------------------------------|
+| 全部 Skills | ✅ | ✅ | ✅ | ✅ |
+| 单一顶层 skill | ✅ | ✅ | ✅ | ❌ |
+| 本地 `rust-skills` CLI | ✅ | ❌ | ✅ | ❌ |
+| 自动触发元认知 | ✅ | ✅ | ✅ | ❌（手动调用） |
+| Hook 路由 | ✅ | ✅ | ✅ | ❌ |
+| 后台 Agents | ✅ | ✅ | ✅ | ✅（内联回退） |
+| 源码 runtime 安装需要 Rust/Cargo | 没有预编译 binary 时需要 | ❌ | 本地构建 native CLI 时需要 | ❌ |
+| 兼容 Codex | ✅ | ❌ | ❌ | ✅ |
 
 ### 权限配置
 
@@ -221,6 +298,7 @@ Layer 1: 语言机制 (HOW - 怎么做)
 ### 核心 Skills
 - `rust-router` - Rust 问题主路由器 (首先调用)
 - `rust-learner` - 获取最新 Rust/crate 版本信息
+- `rust-env-setup` - Rust 工具链、Cargo 与 rust-skills runtime 安装配置
 - `coding-guidelines` - 编码规范查询
 
 ### Layer 1: 语言机制 (m01-m07)
@@ -261,14 +339,51 @@ Layer 1: 语言机制 (HOW - 怎么做)
 
 ## 命令
 
+### 查询与信息
+
 | 命令 | 说明 |
 |------|------|
 | `/rust-features [version]` | 获取 Rust 版本特性 |
 | `/crate-info <crate>` | 获取 crate 信息 |
 | `/docs <crate> [item]` | 获取 API 文档 |
+| `/guideline [--clippy] <rule>` | 查询编码规范 |
+| `/skill-index <category>` | 按分类搜索 skills |
+| `/rust-daily [day\|week\|month]` | Rust 生态新闻 |
+| `/ai-daily [day\|week\|month]` | Reddit AI 社区日报 |
+
+### 审计与代码审查
+
+| 命令 | 说明 |
+|------|------|
+| `/unsafe-check <file>` | 分析文件的 unsafe 问题 |
+| `/unsafe-review <file>` | 交互式 unsafe 代码审查 |
+| `/rust-review <file>` | 轻量级 Clippy 风格审查 |
+| `/audit [security\|safety\|concurrency\|full]` | 综合代码审计 |
+
+### 动态 Skills
+
+| 命令 | 说明 |
+|------|------|
 | `/sync-crate-skills` | 从 Cargo.toml 同步 skills |
 | `/update-crate-skill <crate>` | 更新指定 crate skill |
 | `/clean-crate-skills` | 清理本地 crate skills |
+| `/create-skills-via-llms <crate> <path>` | 从 llms.txt 创建 skill |
+| `/create-llms-for-skills <urls>` | 从 URL 生成 llms.txt |
+| `/create-llms-from-source [path]` | 从本地源码生成 llms.txt |
+| `/fix-skill-docs [--check-only]` | 修复 skill 文档 |
+
+### 缓存管理
+
+| 命令 | 说明 |
+|------|------|
+| `/cache-status [--verbose]` | 查看文档缓存状态 |
+| `/cache-clean [--all\|--expired]` | 清理缓存条目 |
+
+### 其他
+
+| 命令 | 说明 |
+|------|------|
+| `/achievement [list\|stats]` | 查看编程成就与进度 |
 
 ## 动态 Skills
 
@@ -298,7 +413,8 @@ cd my-rust-project
      ▼
 ┌─────────────────────────────────────────┐
 │           Hook 触发层                    │
-│  400+ 关键词触发元认知流程               │
+│  每个 prompt 运行一次 CLI 路由器         │
+│  should_inject 为 true 才注入，否则静默  │
 └─────────────────────────────────────────┘
      │
      ▼

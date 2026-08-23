@@ -1,0 +1,14 @@
+{
+  "note": "Grandfathered soft warnings for the skill-generation gate. A NEW warning beyond these per-(path,kind) counts fails the gate (regression ratchet). Reduce these over time; never hand-raise them.",
+  "generatedFrom": "skills",
+  "counts": {
+    "m01-ownership/SKILL.md::body_verbose": 1,
+    "m04-zero-cost/SKILL.md::body_verbose": 1,
+    "m05-type-driven/SKILL.md::body_verbose": 1,
+    "m06-error-handling/SKILL.md::body_verbose": 1,
+    "m07-concurrency/SKILL.md::body_verbose": 1,
+    "m13-domain-error/SKILL.md::body_verbose": 1,
+    "rust-router/SKILL.md::body_verbose": 1,
+    "rust-skill-creator/SKILL.md::body_verbose": 1
+  }
+}

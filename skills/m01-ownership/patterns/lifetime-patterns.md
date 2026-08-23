@@ -4,11 +4,13 @@
 
 ### When Required
 ```rust
-// ERROR: missing lifetime specifier
+// ERROR E0106: missing lifetime specifier
 fn longest(x: &str, y: &str) -> &str {
     if x.len() > y.len() { x } else { y }
 }
+```
 
+```rust
 // FIX: explicit lifetime
 fn longest<'a>(x: &'a str, y: &'a str) -> &'a str {
     if x.len() > y.len() { x } else { y }
@@ -23,13 +25,13 @@ fn longest<'a>(x: &'a str, y: &'a str) -> &'a str {
 ```rust
 // These are equivalent (elision applies):
 fn first_word(s: &str) -> &str { ... }
-fn first_word<'a>(s: &'a str) -> &'a str { ... }
+// fn first_word<'a>(s: &'a str) -> &'a str { ... }
 
 // Method with self (elision applies):
 impl MyStruct {
     fn get_ref(&self) -> &str { ... }
     // Equivalent to:
-    fn get_ref<'a>(&'a self) -> &'a str { ... }
+    // fn get_ref<'a>(&'a self) -> &'a str { ... }
 }
 ```
 
@@ -89,11 +91,11 @@ std::thread::spawn(move || {
 ```rust
 // BAD: requires 'static unnecessarily
 fn process(s: &'static str) { ... }
+```
 
-// GOOD: use generic lifetime
-fn process<'a>(s: &'a str) { ... }
-// or
-fn process(s: &str) { ... }  // lifetime elision
+```rust
+// GOOD: elided lifetime — desugars to fn process<'a>(s: &'a str)
+fn process(s: &str) { ... }
 ```
 
 ---
@@ -115,10 +117,12 @@ where
 
 ### Common Use: Closure Bounds
 ```rust
-// Closure that borrows any lifetime
-fn filter_refs<F>(items: &[&str], pred: F) -> Vec<&str>
+// Name the item lifetime 'a to tie the output to the slice items
+// (with two elided input lifetimes the output would be ambiguous: E0106).
+// The predicate uses HRTB: it must accept a borrow of ANY lifetime.
+fn filter_refs<'a, F>(items: &[&'a str], pred: F) -> Vec<&'a str>
 where
-    F: for<'a> Fn(&'a str) -> bool,
+    F: for<'b> Fn(&'b str) -> bool,
 {
     items.iter().copied().filter(|s| pred(s)).collect()
 }
@@ -146,7 +150,8 @@ struct Wrapper<'a, T: 'a> {
     value: &'a T,
 }
 
-// Common pattern with trait objects
+// Common pattern with trait bounds
+trait MyTrait {}
 fn use_trait<'a, T: MyTrait + 'a>(t: &'a T) { ... }
 ```
 
@@ -156,10 +161,12 @@ fn use_trait<'a, T: MyTrait + 'a>(t: &'a T) { ... }
 
 ### Mistake 1: Returning Reference to Local
 ```rust
-// WRONG
+// WRONG — ERROR E0106 (missing lifetime specifier): there is no input
+// the output lifetime could come from; the data must be owned.
+// (With an explicit lifetime it fails E0515 instead.)
 fn dangle() -> &String {
     let s = String::from("hello");
-    &s  // s dropped, reference invalid
+    &s
 }
 
 // RIGHT
@@ -172,7 +179,7 @@ fn no_dangle() -> String {
 ```rust
 // WRONG: might return reference to y which has shorter lifetime
 fn wrong<'a, 'b>(x: &'a str, y: &'b str) -> &'a str {
-    y  // ERROR: 'b might not live as long as 'a
+    y  // ERROR: lifetime may not live long enough ('b is not known to outlive 'a)
 }
 
 // RIGHT: use same lifetime or add bound
@@ -187,7 +194,7 @@ fn right<'a>(x: &'a str, y: &'a str) -> &'a str {
 let r;
 {
     let s = String::from("hello");
-    r = Excerpt { part: &s };  // ERROR
+    r = Excerpt { part: &s };  // ERROR E0597: `s` does not live long enough
 }
 println!("{}", r.part);  // s already dropped
 
@@ -212,9 +219,34 @@ fn example<'short, 'long: 'short>(long_ref: &'long str) {
 
 ### Invariance
 ```rust
-// &'a mut T is invariant in 'a
-fn example<'a, 'b>(x: &'a mut &'b str, y: &'b str) {
-    *x = y;  // ERROR if 'a and 'b are different
+// &mut T is invariant in T: a slot typed &'a str cannot accept a
+// shorter-lived &'b str through a &mut reference
+fn overwrite<'a, 'b>(x: &mut &'a str, y: &'b str) {
+    *x = y;  // ERROR: assignment requires that `'b` must outlive `'a`
+}
+
+// FIX: declare the outlives relationship
+fn overwrite_ok<'a, 'b: 'a>(x: &mut &'a str, y: &'b str) {
+    *x = y;  // OK: 'b outlives 'a
+}
+```
+
+### Why Invariance Matters
+```rust
+// Invariance stops a short-lived borrow from leaking into a
+// long-lived slot through &mut:
+fn set<'a>(slot: &mut &'a str, value: &'a str) {
+    *slot = value;
+}
+
+fn demo() {
+    let mut p: &'static str = "static";
+    {
+        let s = String::from("short");
+        set(&mut p, &s);  // ERROR E0597: `s` does not live long enough
+        // &mut &'static str is invariant, so 'a is forced to 'static
+    }
+    println!("{}", p);
 }
 ```
 

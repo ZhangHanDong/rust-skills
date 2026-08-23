@@ -1,114 +1,47 @@
 ---
 name: rust-deps-visualizer
-description: "Visualize Rust project dependencies as ASCII art. Triggers on: /deps-viz, dependency graph, show dependencies, visualize deps, 依赖图, 依赖可视化, 显示依赖"
+description: "Use when: inspecting Rust dependency trees. Keywords: /deps-viz, dependency graph, show dependencies, visualize deps, duplicate dependencies, why is this dependency here, cargo tree, 依赖图, 依赖可视化, 显示依赖"
 argument-hint: "[--depth N] [--features]"
 allowed-tools: ["Bash", "Read", "Glob"]
 ---
 
 # Rust Dependencies Visualizer
 
-Generate ASCII art visualizations of your Rust project's dependency tree.
+`cargo tree` already prints the tree — run it and show its output. Do not
+hand-draw dependency diagrams, hand-format box art, or invent per-crate sizes.
 
-## Usage
+## Recipe Card (all verified)
 
-```
-/rust-deps-visualizer [--depth N] [--features]
-```
+| Question | Command |
+|----------|---------|
+| Dependency tree, shallow | `cargo tree --depth 2` |
+| Direct deps only | `cargo tree --depth 1` |
+| Why is crate X in my build? | `cargo tree -i X` (inverted: paths from X up to your crate) |
+| Duplicate versions | `cargo tree -d` |
+| Enabled features per crate | `cargo tree --format "{p} {f}"` |
+| Feature-edge detail | `cargo tree -e features` |
+| Exclude dev-dependencies | `cargo tree -e no-dev` |
+| Machine-readable graph | `cargo metadata --format-version=1` |
 
-**Options:**
-- `--depth N`: Limit tree depth (default: 3)
-- `--features`: Show feature flags
+Pitfall: `--features X` ENABLES feature X (it changes resolution); it does
+not display features. To display features use `--format "{p} {f}"` or
+`-e features`.
 
-## Output Format
+## Interpreting Output
 
-### Simple Tree (Default)
+- `(*)` marks a subtree already printed above — deduplicated, not missing.
+- Two versions of the same crate in `cargo tree -d` output mean doubled
+  compile time and, for semver-incompatible majors, confusing E0277 errors
+  where a trait appears not to implement itself. Fix by aligning the version
+  in Cargo.toml or `cargo update <crate> --precise <version>`.
+- `(proc-macro)` deps build for the host and do not ship in your binary.
 
-```
-my-project v0.1.0
-├── tokio v1.49.0
-│   ├── pin-project-lite v0.2.x
-│   └── bytes v1.x
-├── serde v1.0.x
-│   └── serde_derive v1.0.x
-└── anyhow v1.x
-```
-
-### Feature-Aware Tree
-
-```
-my-project v0.1.0
-├── tokio v1.49.0 [rt, rt-multi-thread, macros, fs, io-util]
-│   ├── pin-project-lite v0.2.x
-│   └── bytes v1.x
-├── serde v1.0.x [derive]
-│   └── serde_derive v1.0.x (proc-macro)
-└── anyhow v1.x [std]
-```
-
-## Implementation
-
-**Step 1:** Parse Cargo.toml for direct dependencies
-
-```bash
-cargo metadata --format-version=1 --no-deps 2>/dev/null
-```
-
-**Step 2:** Get full dependency tree
-
-```bash
-cargo tree --depth=${DEPTH:-3} ${FEATURES:+--features} 2>/dev/null
-```
-
-**Step 3:** Format as ASCII art tree
-
-Use these box-drawing characters:
-- `├──` for middle items
-- `└──` for last items
-- `│   ` for continuation lines
-
-## Visual Enhancements
-
-### Dependency Categories
-
-```
-my-project v0.1.0
-│
-├─[Runtime]─────────────────────
-│ ├── tokio v1.49.0
-│ └── async-trait v0.1.x
-│
-├─[Serialization]───────────────
-│ ├── serde v1.0.x
-│ └── serde_json v1.x
-│
-└─[Development]─────────────────
-  ├── criterion v0.5.x
-  └── proptest v1.x
-```
-
-### Size Visualization (Optional)
-
-```
-my-project v0.1.0
-├── tokio v1.49.0        ████████████ 2.1 MB
-├── serde v1.0.x         ███████ 1.2 MB
-├── regex v1.x           █████ 890 KB
-└── anyhow v1.x          ██ 120 KB
-                         ─────────────────
-                         Total: 4.3 MB
-```
-
-## Workflow
-
-1. Check for Cargo.toml in current directory
-2. Run `cargo tree` with specified options
-3. Parse output and generate ASCII visualization
-4. Optionally categorize by purpose (runtime, dev, build)
+Binary-size questions need `cargo bloat` (separate install:
+`cargo install cargo-bloat`); `cargo tree` knows nothing about sizes.
 
 ## Related Skills
 
 | When | See |
 |------|-----|
-| Crate selection advice | m11-ecosystem |
-| Workspace management | m11-ecosystem |
-| Feature flag decisions | m11-ecosystem |
+| Crate selection, feature flags, workspaces | m11-ecosystem |
+| Latest crate versions | rust-learner |

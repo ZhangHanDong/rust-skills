@@ -1,0 +1,28 @@
+[
+  {
+    "id": "answer-rust-send-sync",
+    "category": "answer-quality",
+    "prompt": "Rust axum Web API reports Rc cannot be sent between threads in shared state. Explain the root cause and the production-safe fix in 8 concise bullet points.",
+    "expected": {
+      "minResponseChars": 400,
+      "mustMention": ["Rc", "Arc", "Send", "Sync", "axum"],
+      "mustNotMention": ["Rc is thread-safe"]
+    },
+    "tags": ["answer", "domain-web", "concurrency"]
+  },
+  {
+    "id": "artifact-rust-error-note",
+    "category": "artifact-generation",
+    "prompt": "Create a file named artifact.md in the current directory. It must explain when a Rust library should use thiserror instead of anyhow and include the exact phrase: library APIs need typed errors.",
+    "expected": {
+      "files": ["artifact.md"],
+      "mustMentionInFiles": [
+        {
+          "path": "artifact.md",
+          "text": "library APIs need typed errors"
+        }
+      ]
+    },
+    "tags": ["artifact", "error-handling"]
+  }
+]

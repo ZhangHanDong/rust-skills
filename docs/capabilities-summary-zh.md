@@ -6,9 +6,9 @@
 
 | 指标 | 数量 |
 |------|------|
-| Skills 总数 | 31 |
-| 后台 Agents | 8 |
-| 斜杠命令 | 18 |
+| Skills 总数 | 39 |
+| 后台 Agents | 11 |
+| 斜杠命令 | 22 |
 | Unsafe 规则 | 47 |
 | 编码规范 | 80+ |
 | 触发关键词 | 400+ |
@@ -90,7 +90,7 @@
 
 ---
 
-## Skills 清单 (共 31 个)
+## Skills 清单 (共 39 个)
 
 ### Layer 1: 语言机制 (7 个)
 
@@ -128,34 +128,56 @@
 | **domain-iot** | 物联网 | MQTT, 传感器, 边缘计算, 低资源 |
 | **domain-ml** | 机器学习 | 张量, 推理, 模型优化 |
 
-### 核心与工具 Skills (10 个)
+### 核心 Skills (4 个)
 
 | Skill | 用途 |
 |-------|------|
 | **rust-router** | 路由所有 Rust 问题，实现元认知 |
 | **rust-learner** | 通过 agents 获取最新 Rust/crate 版本 |
-| **coding-guidelines** | 80+ Rust 编码规则 (命名, 风格, 模式) |
-| **unsafe-checker** | 47 条 unsafe 规则, SAFETY 注释, FFI 审查 |
-| **rust-daily** | 聚合 Reddit, TWIR, 博客的 Rust 新闻 |
+| **coding-guidelines** | 80+ Rust 编码规则（命名、风格、模式） |
+| **unsafe-checker** | 47 条 unsafe 规则，SAFETY 注释，FFI 审查 |
+
+### 工具 Skills (13 个)
+
+| Skill | 用途 |
+|-------|------|
+| **rust-env-setup** | Rust 工具链、Cargo 与 rust-skills runtime 安装配置 |
+| **rust-daily** | 聚合 Reddit、TWIR、博客的 Rust 新闻 |
 | **rust-skill-creator** | 从文档生成新 skills |
 | **core-actionbook** | 预计算的网站选择器 |
 | **core-agent-browser** | 浏览器自动化基础设施 |
 | **core-dynamic-skills** | 从 Cargo.toml 动态生成 skills |
 | **core-fix-skill-docs** | Skill 文档维护 |
+| **rust-code-navigator** | LSP 代码导航（定义跳转、引用查找） |
+| **rust-call-graph** | 函数调用层次可视化 |
+| **rust-symbol-analyzer** | 项目结构符号分析 |
+| **rust-trait-explorer** | Trait 实现探索 |
+| **rust-refactor-helper** | 安全重构与影响分析 |
+| **rust-deps-visualizer** | 依赖图 ASCII 可视化 |
+
+### 实验性 Skills (1 个)
+
+| Skill | 用途 |
+|-------|------|
+| **meta-cognition-parallel** | 三层并行元认知分析（/meta-cognition-parallel） |
 
 ---
 
-## Agents (8 个后台研究员)
+## Agents (11 个后台研究员)
 
-| Agent | 数据源 | 输出 |
+| Agent | 数据源 | 用途 |
 |-------|--------|------|
-| **rust-changelog** | releases.rs | Rust 版本特性, 破坏性变更 |
-| **crate-researcher** | lib.rs, crates.io | Crate 元数据, 版本, features |
+| **rust-changelog** | releases.rs | Rust 版本特性，破坏性变更 |
+| **crate-researcher** | lib.rs, crates.io | Crate 元数据，版本，features |
 | **docs-researcher** | docs.rs | 第三方 crate API 文档 |
 | **std-docs-researcher** | doc.rust-lang.org | 标准库文档 |
-| **clippy-researcher** | rust-clippy | Lint 解释, 分类 |
-| **rust-daily-reporter** | Reddit, TWIR, Blog | 生态新闻 (日/周/月) |
+| **clippy-researcher** | rust-clippy | Lint 解释，分类 |
+| **rust-daily-reporter** | Reddit, TWIR, Blog | 生态新闻（日/周/月） |
 | **browser-fetcher** | WebFetch | 通用网页内容回退 |
+| **layer1-analyzer** | 内部 | 语言机制层（L1）并行分析 |
+| **layer2-analyzer** | 内部 | 设计选择层（L2）并行分析 |
+| **layer3-analyzer** | 内部 | 领域约束层（L3）并行分析 |
+| **docs-cache** | 本地缓存 | 文档缓存读写管理 |
 
 ### 工具链优先级
 
@@ -167,7 +189,7 @@
 
 ---
 
-## 命令 (18 个斜杠命令)
+## 命令 (22 个斜杠命令)
 
 ### 查询命令
 
@@ -184,7 +206,8 @@
 |------|------|
 | `/rust-features [version]` | Rust 更新日志/特性 |
 | `/crate-info crate` | Crate 元数据 |
-| `/rust-daily [day\|week\|month]` | 生态新闻 |
+| `/rust-daily [day\|week\|month]` | Rust 生态新闻 |
+| `/ai-daily [day\|week\|month]` | AI 社区日报（Reddit 多社区） |
 
 ### 审计命令
 
@@ -211,7 +234,14 @@
 | `/clean-crate-skills [--all]` | 删除动态 skills |
 | `/create-skills-via-llms crate path` | 从 llms.txt 创建 skill |
 | `/create-llms-for-skills urls` | 从 URL 生成 llms.txt |
+| `/create-llms-from-source [path]` | 从本地源码生成 llms.txt |
 | `/fix-skill-docs [--check-only]` | 修复 skill 文档 |
+
+### 其他命令
+
+| 命令 | 用途 |
+|------|------|
+| `/achievement [list\|stats]` | 查看编程成就与进度 |
 
 ---
 

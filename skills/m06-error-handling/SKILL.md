@@ -1,6 +1,6 @@
 ---
 name: m06-error-handling
-description: "CRITICAL: Use for error handling. Triggers: Result, Option, Error, ?, unwrap, expect, panic, anyhow, thiserror, when to panic vs return Result, custom error, error propagation, 错误处理, Result 用法, 什么时候用 panic"
+description: "Use when: error handling. Keywords: Result, Option, Error, ?, unwrap, expect, panic, anyhow, thiserror, when to panic vs return Result, custom error, error propagation, 错误处理, Result 用法, 什么时候用 panic"
 user-invocable: false
 ---
 
@@ -19,6 +19,16 @@ Before choosing error handling strategy:
 
 ---
 
+## Error Boundary Guidance
+
+- E0308 around `Result<T, AppError>` usually means the error boundary is
+  unclear. Convert with `From` or `map_err`, and preserve the source chain when
+  the lower-level error matters.
+- Add context at call sites without erasing recoverability (see Library vs
+  Application table below for crate choice).
+
+---
+
 ## Error → Design Question
 
 | Pattern | Don't Just Say | Ask Instead |
@@ -27,6 +37,54 @@ Before choosing error handling strategy:
 | Type mismatch on ? | "Use anyhow" | Are error types designed correctly? |
 | Lost error context | "Add .context()" | What does the caller need to know? |
 | Too many error variants | "Use Box<dyn Error>" | Is error granularity right? |
+
+## Anti-Patterns
+
+| Anti-Pattern | Why Bad | Better |
+|--------------|---------|--------|
+| `.unwrap()` everywhere | Panics in production | `.expect("reason")` or `?` |
+| Ignore errors silently | Bugs hidden | Handle or propagate |
+| `panic!` for expected errors | Bad UX, no recovery | Result |
+| Box<dyn Error> everywhere | Lost type info | thiserror |
+
+---
+
+## Common Errors
+
+| Error | Cause | Fix |
+|-------|-------|-----|
+| `unwrap()` panic | Unhandled None/Err | Use `?` or match |
+| Type mismatch | Different error types | Use `anyhow` or `From` |
+| Lost context | `?` without context | Add `.context()` |
+| `cannot use ?` | Missing Result return | Return `Result<(), E>` |
+
+---
+
+## Library vs Application
+
+| Context | Error Crate | Why |
+|---------|-------------|-----|
+| Library | `thiserror` | Typed errors for consumers |
+| Application | `anyhow` | Ergonomic error handling |
+| Mixed | Both | thiserror at boundaries, anyhow internally |
+
+## Decision Flowchart
+
+```
+Is failure expected?
+├─ Yes → Is absence the only "failure"?
+│        ├─ Yes → Option<T>
+│        └─ No → Result<T, E>
+│                 ├─ Library → thiserror
+│                 └─ Application → anyhow
+└─ No → Is it a bug?
+        ├─ Yes → panic!, assert!
+        └─ No → Consider if really unrecoverable
+
+Use ? → Need context?
+├─ Yes → .context("message")
+└─ No → Plain ?
+```
 
 ---
 
@@ -106,53 +164,12 @@ From design to implementation:
 | `expect()` | Invariant holds | `env.get("HOME").expect("HOME set")` |
 | `panic!` | Unrecoverable | `panic!("critical failure")` |
 
-## Library vs Application
+## Deep Dives (load on demand)
 
-| Context | Error Crate | Why |
-|---------|-------------|-----|
-| Library | `thiserror` | Typed errors for consumers |
-| Application | `anyhow` | Ergonomic error handling |
-| Mixed | Both | thiserror at boundaries, anyhow internally |
-
-## Decision Flowchart
-
-```
-Is failure expected?
-├─ Yes → Is absence the only "failure"?
-│        ├─ Yes → Option<T>
-│        └─ No → Result<T, E>
-│                 ├─ Library → thiserror
-│                 └─ Application → anyhow
-└─ No → Is it a bug?
-        ├─ Yes → panic!, assert!
-        └─ No → Consider if really unrecoverable
-
-Use ? → Need context?
-├─ Yes → .context("message")
-└─ No → Plain ?
-```
-
----
-
-## Common Errors
-
-| Error | Cause | Fix |
-|-------|-------|-----|
-| `unwrap()` panic | Unhandled None/Err | Use `?` or match |
-| Type mismatch | Different error types | Use `anyhow` or `From` |
-| Lost context | `?` without context | Add `.context()` |
-| `cannot use ?` | Missing Result return | Return `Result<(), E>` |
-
----
-
-## Anti-Patterns
-
-| Anti-Pattern | Why Bad | Better |
-|--------------|---------|--------|
-| `.unwrap()` everywhere | Panics in production | `.expect("reason")` or `?` |
-| Ignore errors silently | Bugs hidden | Handle or propagate |
-| `panic!` for expected errors | Bad UX, no recovery | Result |
-| Box<dyn Error> everywhere | Lost type info | thiserror |
+| File | Read when |
+|------|-----------|
+| `patterns/error-patterns.md` | Lazy `.with_context()` at boundaries, transparent wrappers, early-return vs combinator choice |
+| `examples/library-vs-app.md` | Designing a library error enum (thiserror) vs app-level handling; axum IntoResponse error mapping |
 
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: m05-type-driven
-description: "CRITICAL: Use for type-driven design. Triggers: type state, PhantomData, newtype, marker trait, builder pattern, make invalid states unrepresentable, compile-time validation, sealed trait, ZST, 类型状态, 新类型模式, 类型驱动设计"
+description: "Use when: type-driven design. Keywords: type state, PhantomData, newtype, marker trait, builder pattern, make invalid states unrepresentable, compile-time validation, sealed trait, ZST, 类型状态, 新类型模式, 类型驱动设计"
 user-invocable: false
 ---
 
@@ -95,11 +95,13 @@ From design to implementation:
 
 ## Quick Reference
 
+**Orphan rule**: You can only implement a trait if you own the trait OR the type. To implement an external trait for an external type, wrap it in a newtype — the wrapper type is yours. Add `Deref`, `AsRef`, and `From`/`Into` to keep usage ergonomic.
+
 | Pattern | Purpose | Example |
 |---------|---------|---------|
-| Newtype | Type safety | `struct UserId(u64);` |
+| Newtype | Type safety / orphan workaround | `struct MyVec<T>(Vec<T>);` |
 | Type State | State machine | `Connection<Connected>` |
-| PhantomData | Variance/lifetime | `PhantomData<&'a T>` |
+| PhantomData | Zero-sized marker (typestate, variance, lifetime) | `PhantomData<State>` |
 | Marker Trait | Capability flag | `trait Validated {}` |
 | Builder | Gradual construction | `Builder::new().name("x").build()` |
 | Sealed Trait | Prevent external impl | `mod private { pub trait Sealed {} }` |

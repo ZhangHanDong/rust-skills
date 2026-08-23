@@ -14,7 +14,7 @@ user-invocable: false
 | No `get_` prefix | `fn name()` not `fn get_name()` |
 | Iterator convention | `iter()` / `iter_mut()` / `into_iter()` |
 | Conversion naming | `as_` (cheap &), `to_` (expensive), `into_` (ownership) |
-| Static var prefix | `G_CONFIG` for `static`, no prefix for `const` |
+| Static var prefix | Upstream source uses `G_` prefix for `static`; std and the API guidelines use plain `SCREAMING_SNAKE_CASE` for both `static` and `const` (do not flag the plain form) |
 
 ## Data Types
 
@@ -32,13 +32,13 @@ user-invocable: false
 | Prefer bytes | `s.bytes()` over `s.chars()` when ASCII |
 | Use `Cow<str>` | When might modify borrowed data |
 | Use `format!` | Over string concatenation with `+` |
-| Avoid nested iteration | `contains()` on string is O(n*m) |
+| Many substring searches | `str::contains` is O(n+m) (Two-Way); for many patterns in one pass use `aho-corasick` |
 
 ## Error Handling
 
 | Rule | Guideline |
 |------|-----------|
-| Use `?` propagation | Not `try!()` macro |
+| Use `?` propagation | Bubble errors up; `try!()` is a hard error since edition 2018 |
 | `expect()` over `unwrap()` | When value guaranteed |
 | Assertions for invariants | `assert!` at function entry |
 
@@ -78,10 +78,13 @@ user-invocable: false
 |------------|--------|-------|
 | `lazy_static!` | `std::sync::OnceLock` | 1.70 |
 | `once_cell::Lazy` | `std::sync::LazyLock` | 1.80 |
-| `std::sync::mpsc` | `crossbeam::channel` | - |
-| `std::sync::Mutex` | `parking_lot::Mutex` | - |
 | `failure`/`error-chain` | `thiserror`/`anyhow` | - |
-| `try!()` | `?` operator | 2018 |
+
+Do NOT blanket-recommend `crossbeam::channel` over `std::sync::mpsc` (std was
+rewritten on crossbeam's algorithm in 1.67; crossbeam is for `select!` or
+multi-consumer) or `parking_lot::Mutex` over `std::sync::Mutex` (std is
+futex-based and competitive since ~1.62; add parking_lot only under measured
+contention).
 
 ## Quick Reference
 

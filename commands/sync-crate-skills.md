@@ -15,6 +15,36 @@ Arguments: $ARGUMENTS
 
 ---
 
+## Generation Contract
+
+All generated skills must follow the skill generation contract:
+
+- concise English `SKILL.md`,
+- `Use when:` and `Keywords:` frontmatter description,
+- relevant calibration anchors instead of broad prompt templates,
+- stable Rust failure terms when they matter, especially `pointer`, `length`,
+  `alignment`, `lifetime`, `deadlock`, `scope`, `MSRV`, `semver`,
+  `embedded Rust`, `heapless`, and `allocation`,
+- detailed API material in `references/`,
+- no generated README or changelog files,
+- strict skill generation quality gate before accepting regenerated output.
+- no decorative banners, ASCII art, exact display instructions, or prompt-like
+  role setup in generated skills,
+- judgment guidance as boundaries/calibration anchors, not scripted thinking
+  prompts,
+- regeneration benchmark roots apply
+  `commands/skill-generation-contract.json` overlays when present, so repeated
+  runs use source-controlled guidance instead of hand-patched leaf skills.
+
+Run the quality gate on newly generated skills:
+
+```bash
+node tests/aom/run-skill-generation-gate.mjs \
+  --skills ~/.claude/skills/{crate_name} \
+  --strict-generated \
+  --json
+```
+
 ## Instructions
 
 ### 0. Check for --from-source Flag
@@ -109,6 +139,10 @@ If not found in actionbook:
 /create-skills-via-llms {crate_name} {llms_path} {version}
 ```
 
+After creation, run the quality gate for the generated skill. If the gate fails,
+regenerate or repair the generation source, not the benchmark tests and not the
+generated output by hand.
+
 ### 5. Report Results
 
 Output summary:
@@ -162,6 +196,15 @@ Skills location: ~/.claude/skills/
 # Force regenerate skills from local source
 /sync-crate-skills --force --from-source /path/to/project
 ```
+
+For benchmark comparison, always use force regeneration on both sides:
+
+1. Clean the generated output root for the main checkout.
+2. Run main checkout generation with `--force`.
+3. Clean the generated output root for the current checkout.
+4. Run current checkout generation with `--force`.
+5. Compare those regenerated roots with
+   `node tests/aom/run-clean-regeneration-compare.mjs`.
 
 ---
 

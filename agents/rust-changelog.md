@@ -1,3 +1,8 @@
+---
+name: rust-changelog
+tools: WebFetch, Bash
+---
+
 # rust-changelog
 
 Fetch Rust version changelog from releases.rs.

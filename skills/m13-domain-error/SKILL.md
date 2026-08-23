@@ -8,14 +8,13 @@ user-invocable: false
 
 > **Layer 2: Design Choices**
 
+**Boundary:** m06-error-handling owns the mechanics (Result/Option/panic,
+thiserror/anyhow usage). This skill owns the policy layer: error taxonomy,
+what to retry, what users see, and when to stop trying.
+
 ## Core Question
 
 **Who needs to handle this error, and how should they recover?**
-
-Before designing error types:
-- Is this user-facing or internal?
-- Is recovery possible?
-- What context is needed for debugging?
 
 ---
 
@@ -31,77 +30,24 @@ Before designing error types:
 
 ---
 
-## Thinking Prompt
-
-Before designing error types:
-
-1. **Who sees this error?**
-   - End user → friendly message, actionable
-   - Developer → detailed, debuggable
-   - Ops → structured, alertable
-
-2. **Can we recover?**
-   - Transient → retry with backoff
-   - Degradable → fallback value
-   - Permanent → fail fast, alert
-
-3. **What context is needed?**
-   - Call chain → anyhow::Context
-   - Request ID → structured logging
-   - Input data → error payload
-
----
-
-## Trace Up ↑
-
-To domain constraints (Layer 3):
-
-```
-"How should I handle payment failures?"
-    ↑ Ask: What are the business rules for retries?
-    ↑ Check: domain-fintech (transaction requirements)
-    ↑ Check: SLA (availability requirements)
-```
-
-| Question | Trace To | Ask |
-|----------|----------|-----|
-| Retry policy | domain-* | What's acceptable latency for retry? |
-| User experience | domain-* | What message should users see? |
-| Compliance | domain-* | What must be logged for audit? |
-
----
-
-## Trace Down ↓
-
-To implementation (Layer 1):
-
-```
-"Need typed errors"
-    ↓ m06-error-handling: thiserror for library
-    ↓ m04-zero-cost: Error enum design
-
-"Need error context"
-    ↓ m06-error-handling: anyhow::Context
-    ↓ Logging: tracing with fields
-
-"Need retry logic"
-    ↓ m07-concurrency: async retry patterns
-    ↓ Crates: tokio-retry, backoff
-```
-
----
-
-## Quick Reference
+## Recovery Patterns
 
 | Recovery Pattern | When | Implementation |
 |------------------|------|----------------|
-| Retry | Transient failures | exponential backoff |
+| Retry | Transient failures | exponential backoff via `backon` (or `tokio-retry2`) |
 | Fallback | Degraded mode | cached/default value |
-| Circuit Breaker | Cascading failures | failsafe-rs |
+| Circuit Breaker | Cascading failures | `failsafe` crate |
 | Timeout | Slow operations | `tokio::time::timeout` |
-| Bulkhead | Isolation | separate thread pools |
+| Bulkhead | Isolation | separate pools / `tokio::sync::Semaphore` |
+
+Crate currency: `tokio-retry` (2021) and `backoff` are unmaintained — use
+`backon` (sync + async, builder-based backoff) or `tokio-retry2` instead.
+
+---
 
 ## Error Hierarchy
+
+Encode the recovery policy in the type, then let retry code consult it:
 
 ```rust
 #[derive(thiserror::Error, Debug)]
@@ -112,9 +58,9 @@ pub enum AppError {
 
     // Transient (retryable)
     #[error("Service temporarily unavailable")]
-    ServiceUnavailable(#[source] reqwest::Error),
+    ServiceUnavailable(#[source] Box<dyn std::error::Error + Send + Sync>),
 
-    // Internal (log details, show generic)
+    // Internal (log details, show generic message)
     #[error("Internal error")]
     Internal(#[source] anyhow::Error),
 }
@@ -126,47 +72,58 @@ impl AppError {
 }
 ```
 
-## Retry Pattern
+The transient variant boxes its source so the domain error does not
+hard-wire a transport crate (reqwest, sqlx) into the domain API.
+
+## Retry Pattern (backon)
 
 ```rust
-use tokio_retry::{Retry, strategy::ExponentialBackoff};
+use backon::{ExponentialBuilder, Retryable};
+use std::time::Duration;
 
-async fn with_retry<F, T, E>(f: F) -> Result<T, E>
-where
-    F: Fn() -> impl Future<Output = Result<T, E>>,
-    E: std::fmt::Debug,
-{
-    let strategy = ExponentialBackoff::from_millis(100)
-        .max_delay(Duration::from_secs(10))
-        .take(5);
-
-    Retry::spawn(strategy, || f()).await
+async fn fetch_with_retry() -> Result<String, AppError> {
+    fetch_data
+        .retry(
+            ExponentialBuilder::default()
+                .with_min_delay(Duration::from_millis(100))
+                .with_max_delay(Duration::from_secs(10))
+                .with_max_times(5),
+        )
+        .when(|e| e.is_retryable())  // never retry permanent errors
+        .await
 }
 ```
 
+Hand-rolling the generic signature? `F: Fn() -> impl Future<...>` is not
+valid Rust (E0562). Use two type parameters:
+`F: Fn() -> Fut, Fut: Future<Output = Result<T, E>>`.
+
 ---
 
-## Common Mistakes
+## Design Mistakes
+
+(Mechanics-level anti-patterns — unwrap everywhere, stringly-typed errors,
+`Box<dyn Error>` in APIs — live in m06-error-handling.)
 
 | Mistake | Why Wrong | Better |
 |---------|-----------|--------|
-| Same error for all | No actionability | Categorize by audience |
-| Retry everything | Wasted resources | Only transient errors |
-| Infinite retry | DoS self | Max attempts + backoff |
-| Expose internal errors | Security risk | User-friendly messages |
-| No context | Hard to debug | .context() everywhere |
+| Same error for all audiences | No actionability | Categorize by audience |
+| Retry everything | Wasted resources, hides bugs | Retry only transient errors |
+| Infinite retry | DoS yourself | Max attempts + backoff (+ jitter) |
+| Expose internal errors to users | Security risk | Generic message, log details |
+| No context on propagation | Hard to debug | `.with_context(|| ...)` at boundaries |
 
 ---
 
-## Anti-Patterns
+## Trace Up ↑
 
-| Anti-Pattern | Why Bad | Better |
-|--------------|---------|--------|
-| String errors | No structure | thiserror types |
-| panic! for recoverable | Bad UX | Result with context |
-| Ignore errors | Silent failures | Log or propagate |
-| Box<dyn Error> everywhere | Lost type info | thiserror |
-| Error in happy path | Performance | Early validation |
+To domain constraints (Layer 3):
+
+| Question | Trace To | Ask |
+|----------|----------|-----|
+| Retry policy | domain-* | What's acceptable latency for retry? |
+| User experience | domain-* | What message should users see? |
+| Compliance | domain-* | What must be logged for audit? |
 
 ---
 
@@ -174,7 +131,7 @@ where
 
 | When | See |
 |------|-----|
-| Error handling basics | m06-error-handling |
-| Retry implementation | m07-concurrency |
+| Result/Option/panic, thiserror/anyhow mechanics | m06-error-handling |
+| Send/Sync, locks, async runtime mechanics | m07-concurrency |
 | Domain modeling | m09-domain |
 | User-facing APIs | domain-* |

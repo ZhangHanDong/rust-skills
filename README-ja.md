@@ -4,7 +4,7 @@
 
 > メタ認知フレームワークを備えた AI Rust 開発アシスタント
 
-[![Version](https://img.shields.io/badge/version-2.0.9-green.svg)](https://github.com/actionbook/rust-skills/releases)
+[![Version](https://img.shields.io/badge/version-2.2.1-green.svg)](https://github.com/actionbook/rust-skills/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Plugin-blue)](https://github.com/anthropics/claude-code)
 
@@ -46,10 +46,86 @@ AI (Rust Skills 使用):
 
 ## インストール
 
-Rust Skills は2つのインストールモードをサポートしています：
+Rust Skills は3つのインストールモードをサポートしています：
 
+- **ローカル Runtime モード**（Codex と Claude Code）：単一のトップレベル `rust-skills`、hook ベースのルーティング、Rust-native `rust-skills` CLI を提供
 - **Plugin モード**（Claude Code）：hooks、agents、自動メタ認知トリガーを含む完全機能
 - **Skills-only モード**：skills をサポートする任意のコーディングエージェントで動作（Claude Code、Vercel AI など）
+
+---
+
+### ローカル Runtime インストール（Codex + Claude Code）
+
+ローカル hook と実行可能なルーティングコマンドを使いたい場合に推奨します。インストーラは Node でファイル配置を行い、Rust-native CLI、runtime データ、単一トップレベル skill、hook を構築/コピーします。`~/.local/bin/rust-skills` には、インストール済み runtime CLI へ転送する軽量 shim を配置します。
+
+ソースからインストールする場合の前提：
+
+- `install.js` と hook 実行用の Node.js。
+- 事前ビルド済み binary がない場合、native `rust-skills` CLI を構築するための Rust/Cargo。
+
+フルインストールでは UserPromptSubmit hook がネイティブ binary を直接呼び出します——`<targetRoot>/bin/rust-skills hook claude|codex`（プロンプトごとに約 10ms）。ゲーティングは binary 内部で行われます：非 Rust プロンプトには何も出力せず、ルーティング判定が `should_inject: true` の場合にだけ Rust コンテキストを注入します。独立した hook matcher は存在しません。Node hook スクリプトは repo checkout / plugin レイアウト向けのフォールバックとしてのみ残されています。
+
+これにより、`cargo`、`ownership`、`lifetime`、`Rocket`、`Tower`、`unsafe` などの曖昧な語を含む非 Rust 作業を静かに扱えます。
+
+```bash
+git clone https://github.com/actionbook/rust-skills.git
+cd rust-skills
+node install.js --codex --claude
+
+rust-skills route --json "Rust E0382 value moved in axum state"
+```
+
+インストール後に `rust-skills` コマンドが見つからない場合は、`~/.local/bin` が PATH に含まれていることを確認するか（`export PATH="$HOME/.local/bin:$PATH"`）、shim を絶対パスで呼び出してください（`~/.local/bin/rust-skills`）。
+
+インストールされる内容：
+
+- `~/.codex/skills/rust-skills/SKILL.md` および/または `~/.claude/skills/rust-skills/SKILL.md`
+- 深い skill データ：`~/.codex/rust-skills/` および/または `~/.claude/rust-skills/`
+- Hook スクリプト：`~/.codex/hooks/` および/または `~/.claude/hooks/`
+- Rust-native Runtime CLI：`~/.codex/bin/` および/または `~/.claude/bin/`
+- 任意の PATH shim：`~/.local/bin/rust-skills`。インストール済み runtime を動的に選択します。`RUST_SKILLS_PROFILE=codex` または `RUST_SKILLS_PROFILE=claude` で固定できます。
+
+インストーラはグローバル `AGENTS.md`、Claude `agents/`、Claude `commands/` を上書きしません。古いトップレベル deep skills をバックアップへ移動するのは、`--prune-legacy-top-level-skills` を明示した場合のみです。
+
+Codex インストールでは現在の feature flag 形式を使用します：
+
+```toml
+[features]
+hooks = true
+```
+
+インストール時に非推奨の `[features].codex_hooks` が存在すれば削除します。
+
+ローカル検証：
+
+```bash
+npm test
+rust-skills verify --json
+rust-skills route --json "今日の天気は？"
+rust-skills route --json "Rust Web API Rc cannot be sent between threads"
+```
+
+よく使うインストールオプション：
+
+```bash
+node install.js --all                         # Codex と Claude Code の両方
+node install.js --codex                       # Codex のみ
+node install.js --claude                      # Claude Code のみ
+node install.js --codex --dry-run             # 書き込まずに計画を表示
+node install.js --codex --codex-dir ~/.codex2 # Codex home を上書き
+node install.js --claude --claude-dir ~/.cc2  # Claude Code home を上書き
+node install.js --codex --home /tmp/home      # ~/.local/bin 用 home を上書き
+node install.js --codex --no-hooks            # hook 設定をマージしない
+node install.js --codex --no-user-bin         # ~/.local/bin shim を省略
+node install.js --codex --prune-legacy-top-level-skills
+node install.js --codex --legacy-top-level-skills
+RUST_SKILLS_DEBUG=1 rust-skills route --json "Rust E0382"
+```
+
+`--no-hooks` は runtime CLI と hook ファイルをコピーしますが、Codex/Claude
+hook 設定のマージだけを省略します。デフォルトのローカル runtime は単一の
+トップレベル `rust-skills` を使います。古いトップレベル deep-skill レイアウト
+との互換が必要な場合だけ `--legacy-top-level-skills` を使ってください。
 
 ---
 
@@ -138,14 +214,16 @@ claude --plugin-dir /path/to/rust-skills
 
 ### 機能比較
 
-| 機能 | Plugin（Marketplace） | Plugin（ローカル） | Skills-only（NPX/CoWork/手動） |
-|------|---------------------|-------------------|-------------------------------|
-| 全 31 Skills | ✅ | ✅ | ✅ |
-| 自動メタ認知トリガー | ✅ | ✅ | ❌（手動呼び出し） |
-| Hook ルーティング | ✅ | ✅ | ❌ |
-| バックグラウンドエージェント | ✅ | ✅ | ✅（インラインフォールバック） |
-| 簡単な更新 | ✅ | ❌ | ✅（NPX/CoWork） |
-| 他のエージェントとの互換性 | ❌ | ❌ | ✅ |
+| 機能 | ローカル Runtime | Plugin（Marketplace） | Plugin（ローカル） | Skills-only（NPX/CoWork/手動） |
+|------|------------------|---------------------|-------------------|-------------------------------|
+| 全 Skills | ✅ | ✅ | ✅ | ✅ |
+| 単一トップレベル skill | ✅ | ✅ | ✅ | ❌ |
+| ローカル `rust-skills` CLI | ✅ | ❌ | ✅ | ❌ |
+| 自動メタ認知トリガー | ✅ | ✅ | ✅ | ❌（手動呼び出し） |
+| Hook ルーティング | ✅ | ✅ | ✅ | ❌ |
+| バックグラウンドエージェント | ✅ | ✅ | ✅ | ✅（インラインフォールバック） |
+| ソース runtime インストールに Rust/Cargo が必要 | 事前ビルド済み binary がない場合は必要 | ❌ | native CLI をローカル構築する場合は必要 | ❌ |
+| Codex 対応 | ✅ | ❌ | ❌ | ✅ |
 
 ### 権限設定
 
@@ -221,6 +299,7 @@ Layer 1: 言語機構 (HOW - どのように)
 ### コア Skills
 - `rust-router` - すべての Rust 質問のマスタールーター（最初に呼び出し）
 - `rust-learner` - 最新の Rust/crate バージョン情報を取得
+- `rust-env-setup` - Rust ツールチェーン、Cargo、rust-skills runtime のセットアップ
 - `coding-guidelines` - コーディング規約の検索
 
 ### Layer 1: 言語機構 (m01-m07)
@@ -261,14 +340,51 @@ Layer 1: 言語機構 (HOW - どのように)
 
 ## コマンド
 
+### クエリと情報
+
 | コマンド | 説明 |
 |----------|------|
 | `/rust-features [version]` | Rust バージョン機能を取得 |
 | `/crate-info <crate>` | crate 情報を取得 |
 | `/docs <crate> [item]` | API ドキュメントを取得 |
+| `/guideline [--clippy] <rule>` | コーディング規約を検索 |
+| `/skill-index <category>` | カテゴリ別 skills を検索 |
+| `/rust-daily [day\|week\|month]` | Rust エコシステムニュース |
+| `/ai-daily [day\|week\|month]` | Reddit AI コミュニティ日報 |
+
+### 監査とレビュー
+
+| コマンド | 説明 |
+|----------|------|
+| `/unsafe-check <file>` | ファイルの unsafe 問題を分析 |
+| `/unsafe-review <file>` | インタラクティブ unsafe コードレビュー |
+| `/rust-review <file>` | 軽量 Clippy スタイルレビュー |
+| `/audit [security\|safety\|concurrency\|full]` | 包括的コード監査 |
+
+### 動的 Skills
+
+| コマンド | 説明 |
+|----------|------|
 | `/sync-crate-skills` | Cargo.toml から skills を同期 |
 | `/update-crate-skill <crate>` | 指定 crate skill を更新 |
 | `/clean-crate-skills` | ローカル crate skills をクリーン |
+| `/create-skills-via-llms <crate> <path>` | llms.txt から skill を作成 |
+| `/create-llms-for-skills <urls>` | URL から llms.txt を生成 |
+| `/create-llms-from-source [path]` | ローカルソースから llms.txt を生成 |
+| `/fix-skill-docs [--check-only]` | skill ドキュメントを修正 |
+
+### キャッシュ
+
+| コマンド | 説明 |
+|----------|------|
+| `/cache-status [--verbose]` | ドキュメントキャッシュ状態を表示 |
+| `/cache-clean [--all\|--expired]` | キャッシュエントリをクリーン |
+
+### その他
+
+| コマンド | 説明 |
+|----------|------|
+| `/achievement [list\|stats]` | コーディング実績と進捗を確認 |
 
 ## 動的 Skills
 
@@ -298,7 +414,8 @@ cd my-rust-project
      ▼
 ┌─────────────────────────────────────────┐
 │           Hook レイヤー                  │
-│  400+ キーワードでメタ認知をトリガー      │
+│  プロンプトごとに CLI ルーターを 1 回実行 │
+│  should_inject が true の場合のみ注入    │
 └─────────────────────────────────────────┘
      │
      ▼

@@ -9,86 +9,41 @@ user-invocable: false
 
 > **Layer 3: Domain Constraints**
 
-## Domain Constraints → Design Implications
+## Operational Invariants
 
-| Domain Rule | Design Constraint | Rust Implication |
-|-------------|-------------------|------------------|
-| User ergonomics | Clear help, errors | clap derive macros |
-| Config precedence | CLI > env > file | Layered config loading |
-| Exit codes | Non-zero on error | Proper Result handling |
-| Stdout/stderr | Data vs errors | eprintln! for errors |
-| Interruptible | Handle Ctrl+C | Signal handling |
+| Invariant | Why | Rust Surface |
+|-----------|-----|--------------|
+| Errors and progress to stderr, data to stdout | Pipeable output, scriptability | `eprintln!` for diagnostics, `println!` for data |
+| CLI args > env vars > config file > defaults | User expectation, override capability | Layered config with `clap` + `figment`/`config` |
+| Non-zero exit on error | Script integration, automation | `main() -> Result<(), Error>` or explicit `std::process::exit` |
+| Destructive actions show intent before mutation | Safer automation | Dry-run mode, confirmation, canonicalized root checks |
+| Secret values stay out of printable diagnostics | Safe bug reports and CI logs | Redacted view types, no raw `Debug` for secrets |
+| Interruptible long operations | Ctrl+C must not corrupt state | Signal handling (`ctrlc`, `tokio::signal`) |
 
----
+## Safety Guardrails
 
-## Critical Constraints
-
-### User Communication
-
-```
-RULE: Errors to stderr, data to stdout
-WHY: Pipeable output, scriptability
-RUST: eprintln! for errors, println! for data
-```
-
-### Configuration Priority
-
-```
-RULE: CLI args > env vars > config file > defaults
-WHY: User expectation, override capability
-RUST: Layered config with clap + figment/config
-```
-
-### Exit Codes
-
-```
-RULE: Return non-zero on any error
-WHY: Script integration, automation
-RUST: main() -> Result<(), Error> or explicit exit()
-```
-
----
-
-## Trace Down ↓
-
-From constraints to design (Layer 2):
-
-```
-"Need argument parsing"
-    ↓ m05-type-driven: Derive structs for args
-    ↓ clap: #[derive(Parser)]
-
-"Need config layering"
-    ↓ m09-domain: Config as domain object
-    ↓ figment/config: Layer sources
-
-"Need progress display"
-    ↓ m12-lifecycle: Progress bar as RAII
-    ↓ indicatif: ProgressBar
-```
-
----
+- Destructive operations (recursive delete, workspace cleanup) should
+  canonicalize the workspace root and every target path first, refuse any
+  path that resolves outside the root with a non-zero exit before touching
+  the filesystem, and offer a preview mode that prints planned actions
+  without mutating anything.
+- Diagnostics that print configuration must redact secret values. Report
+  where each value came from (flag, environment variable, config file)
+  without echoing tokens or passwords, and keep that redaction in error
+  paths and panics too.
+- Reserve stdout for the tool's actual output so it stays pipeable; send
+  progress, warnings, and error context to stderr.
 
 ## Key Crates
 
 | Purpose | Crate |
 |---------|-------|
 | Argument parsing | clap |
+| Config layering | figment, config |
 | Interactive prompts | dialoguer |
 | Progress bars | indicatif |
 | Colored output | colored |
-| Terminal UI | ratatui |
-| Terminal control | crossterm |
-| Console utilities | console |
-
-## Design Patterns
-
-| Pattern | Purpose | Implementation |
-|---------|---------|----------------|
-| Args struct | Type-safe args | `#[derive(Parser)]` |
-| Subcommands | Command hierarchy | `#[derive(Subcommand)]` |
-| Config layers | Override precedence | CLI > env > file |
-| Progress | User feedback | `ProgressBar::new(len)` |
+| Terminal UI | ratatui + crossterm |
 
 ## Code Pattern: CLI Structure
 
@@ -96,7 +51,7 @@ From constraints to design (Layer 2):
 use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
-#[command(name = "myapp", about = "My CLI tool")]
+#[command(name = "myapp", version, about = "My CLI tool")]
 struct Cli {
     /// Enable verbose output
     #[arg(short, long)]
@@ -110,52 +65,26 @@ struct Cli {
 enum Commands {
     /// Initialize a new project
     Init { name: String },
-    /// Run the application
-    Run {
-        #[arg(short, long)]
-        port: Option<u16>,
-    },
-}
-
-fn main() -> anyhow::Result<()> {
-    let cli = Cli::parse();
-    match cli.command {
-        Commands::Init { name } => init_project(&name)?,
-        Commands::Run { port } => run_server(port.unwrap_or(8080))?,
-    }
-    Ok(())
 }
 ```
 
----
+`main() -> anyhow::Result<()>` gives the non-zero exit code on `Err` for free.
 
 ## Common Mistakes
 
 | Mistake | Domain Violation | Fix |
 |---------|-----------------|-----|
-| Errors to stdout | Breaks piping | eprintln! |
-| No help text | Poor UX | #[arg(help = "...")] |
-| Panic on error | Bad exit code | Result + proper handling |
-| No progress for long ops | User uncertainty | indicatif |
-
----
-
-## Trace to Layer 1
-
-| Constraint | Layer 2 Pattern | Layer 1 Implementation |
-|------------|-----------------|------------------------|
-| Type-safe args | Derive macros | clap Parser |
-| Error handling | Result propagation | anyhow + exit codes |
-| User feedback | Progress RAII | indicatif ProgressBar |
-| Config precedence | Builder pattern | Layered sources |
-
----
+| Errors to stdout | Breaks piping | `eprintln!` |
+| Panic on expected failure | Exit code 101, stack trace to user | `Result` propagation to main |
+| No progress for long ops | User uncertainty, killed processes | `indicatif::ProgressBar` |
+| Deleting before validating paths | Escapes workspace root | Canonicalize, then check prefix |
+| Printing config with secrets | Tokens in CI logs | Redacted display types |
 
 ## Related Skills
 
 | When | See |
 |------|-----|
-| Error handling | m06-error-handling |
+| Error handling, exit codes | m06-error-handling |
 | Type-driven args | m05-type-driven |
-| Progress lifecycle | m12-lifecycle |
+| Progress bar as RAII | m12-lifecycle |
 | Async CLI | m07-concurrency |

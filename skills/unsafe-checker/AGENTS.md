@@ -79,22 +79,22 @@
 |----|-------|-------|
 | io-01 | P | Ensure I/O Safety When Using Raw Handles |
 
-## Clippy Lint Mapping
+## Lint Mapping
 
-| Clippy Lint | Rule | Category |
-|-------------|------|----------|
-| `undocumented_unsafe_blocks` | safety-09 | SAFETY comments |
-| `missing_safety_doc` | safety-10 | Safety docs |
-| `panic_in_result_fn` | safety-01, ffi-04 | Panic safety |
-| `non_send_fields_in_send_ty` | safety-05 | Send/Sync |
-| `uninit_assumed_init` | safety-03 | Initialization |
-| `uninit_vec` | mem-06 | Initialization |
-| `mut_from_ref` | safety-08 | Aliasing |
-| `cast_ptr_alignment` | ptr-04 | Alignment |
-| `cast_ref_to_mut` | ptr-05 | Aliasing |
-| `ptr_as_ptr` | ptr-06 | Pointer casting |
-| `unaligned_references` | ffi-11 | Packed structs |
-| `debug_assert_with_mut_call` | safety-11 | Assertions |
+| Lint | Rule | Category |
+|------|------|----------|
+| `undocumented_unsafe_blocks` (clippy) | safety-09 | SAFETY comments |
+| `missing_safety_doc` (clippy) | safety-10 | Safety docs |
+| `panic_in_result_fn` (clippy) | safety-01, ffi-04 | Panic safety |
+| `non_send_fields_in_send_ty` (clippy) | safety-05 | Send/Sync |
+| `uninit_assumed_init` (clippy) | safety-03 | Initialization |
+| `uninit_vec` (clippy) | mem-06 | Initialization |
+| `mut_from_ref` (clippy) | safety-08 | Aliasing |
+| `cast_ptr_alignment` (clippy) | ptr-04 | Alignment |
+| `invalid_reference_casting` (rustc, deny; replaced clippy `cast_ref_to_mut` in 1.73) | ptr-05 | Aliasing |
+| `ptr_as_ptr` (clippy) | ptr-06 | Pointer casting |
+| References to `repr(packed)` fields are a hard error (E0793, was `unaligned_references`) | ffi-11 | Packed structs |
+| `debug_assert_with_mut_call` (clippy) | safety-11 | Assertions |
 
 ## Quick Decision Tree
 

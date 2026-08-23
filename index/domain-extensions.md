@@ -23,15 +23,15 @@ Special domain codes for industry-specific applications.
 
 ---
 
-## Machine Learning (M001-M099)
+## Machine Learning (ML001-ML099)
 
 | Code Range | Technical Domain | Key Applications |
 |------------|------------------|------------------|
-| M001-M019 | Tensor Operations | ndarray, GPU acceleration |
-| M020-M039 | Model Inference | ONNX, TensorFlow |
-| M040-M059 | Data Processing | Feature engineering, ETL |
-| M060-M079 | Distributed Training | Parallel computing |
-| M080-M099 | MLOps | Model serving, monitoring |
+| ML001-ML019 | Tensor Operations | ndarray, GPU acceleration |
+| ML020-ML039 | Model Inference | ONNX, TensorFlow |
+| ML040-ML059 | Data Processing | Feature engineering, ETL |
+| ML060-ML079 | Distributed Training | Parallel computing |
+| ML080-ML099 | MLOps | Model serving, monitoring |
 
 ### Key Crates
 - ndarray, tract, candle
@@ -88,7 +88,7 @@ Special domain codes for industry-specific applications.
 | Domain | Primary Categories | Secondary Categories |
 |--------|-------------------|---------------------|
 | FinTech | F001-F099 | 040-043 (Error), 120-139 (Concurrency) |
-| ML | M001-M099 | 020-029 (Types), 250-279 (Async) |
+| ML | ML001-ML099 | 020-029 (Types), 250-279 (Async) |
 | Cloud Native | CN001-CN099 | 200-299 (Web), 250-279 (Async) |
 | IoT | IoT001-IoT099 | 700-759 (Embedded), 880-889 (Unsafe) |
 

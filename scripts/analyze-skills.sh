@@ -21,11 +21,13 @@ echo ""
 meta_count=$(find "$ROOT_DIR/skills" -maxdepth 1 -type d -name "m[0-9]*" | wc -l | tr -d ' ')
 echo "Meta-Question Skills: $meta_count"
 
-core_count=$(find "$ROOT_DIR/skills/core" -maxdepth 1 -type d 2>/dev/null | wc -l | tr -d ' ')
-echo "Core Skills: $((core_count - 1))"
+core_count=$(find "$ROOT_DIR/skills" -maxdepth 1 -type d \( -name "core-*" -o -name "coding-guidelines" -o -name "rust-router" -o -name "rust-learner" -o -name "unsafe-checker" \) | wc -l | tr -d ' ')
+echo "Core Skills: $core_count"
 
-domain_count=$(find "$ROOT_DIR/skills/domains" -maxdepth 1 -type d 2>/dev/null | wc -l | tr -d ' ')
-echo "Domain Skills: $((domain_count - 1))"
+domain_count=$(find "$ROOT_DIR/skills" -maxdepth 1 -type d -name "domain-*" | wc -l | tr -d ' ')
+echo "Domain Skills: $domain_count"
+
+skill_count=$(find "$ROOT_DIR/skills" -mindepth 2 -maxdepth 2 -name "SKILL.md" | wc -l | tr -d ' ')
 
 echo ""
 
@@ -115,7 +117,8 @@ done
 # Count common keywords
 echo "Top trigger categories:"
 echo "  - Error codes (E0xxx): $(echo "$keywords" | grep -oE 'E[0-9]{4}' | sort -u | wc -l | tr -d ' ') unique"
-echo "  - Chinese triggers: $(echo "$keywords" | grep -oE '[\x{4e00}-\x{9fff}]+' | sort -u | wc -l | tr -d ' ') phrases"
+chinese_count=$(printf "%s" "$keywords" | perl -CS -ne 'while (/(\p{Han}+)/g) { $seen{$1}=1 } END { print scalar keys %seen }' 2>/dev/null || printf "0")
+echo "  - Chinese triggers: $chinese_count phrases"
 echo "  - Crate names: Multiple (tokio, serde, axum, etc.)"
 
 echo ""
@@ -170,7 +173,7 @@ echo "======================================"
 echo "Summary"
 echo "======================================"
 echo ""
-echo "Total Skills: $((meta_count + core_count - 1 + domain_count - 1 + 2))"
+echo "Total Skills: $skill_count"
 echo "Total Agents: $agent_count"
 echo "Total Content: $md_count files, $total_lines lines"
 echo ""

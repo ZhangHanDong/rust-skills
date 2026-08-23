@@ -1,6 +1,7 @@
 ---
 name: core-agent-browser
-description: "Internal support skill for agent-browser CLI workflows used by rust-learner, docs-researcher, and crate-researcher. Use only when browser automation is explicitly required."
+internal: true
+description: "Internal support skill for agent-browser CLI workflows used by rust-learner, docs-researcher, and crate-researcher. Use when browser automation is explicitly required. Keywords: agent-browser, Rust docs, browser automation."
 user-invocable: false
 disable-model-invocation: true
 ---
@@ -11,106 +12,85 @@ disable-model-invocation: true
 
 For fetching Rust/crate information, use this priority order:
 1. **rust-learner skill** - Orchestrates actionbook + browser-fetcher
-2. **actionbook MCP** - Pre-computed selectors for known sites
+2. **actionbook MCP** - Pre-computed selectors for known sites (see below)
 3. **agent-browser CLI** - Direct browser automation (last resort)
 
-Use agent-browser directly only when:
-- actionbook has no pre-computed selectors for the target site
-- You need interactive browser testing/automation
-- You need screenshots or form filling
-
-## Quick start
-
-```bash
-agent-browser open <url>        # Navigate to page
-agent-browser snapshot -i       # Get interactive elements with refs
-agent-browser click @e1         # Click element by ref
-agent-browser fill @e2 "text"   # Fill input by ref
-agent-browser close             # Close browser
-```
+Use agent-browser directly only when actionbook has no pre-computed
+selectors for the target site, or you need interactive testing, screenshots,
+or form filling. Fall back to WebFetch only if agent-browser is unavailable.
 
 ## Core workflow
 
-1. Navigate: `agent-browser open <url>`
-2. Snapshot: `agent-browser snapshot -i` (returns elements with refs like `@e1`, `@e2`)
-3. Interact using refs from the snapshot
-4. Re-snapshot after navigation or significant DOM changes
-
-## Commands
-
-### Navigation
 ```bash
-agent-browser open <url>      # Navigate to URL
-agent-browser back            # Go back
-agent-browser forward         # Go forward
-agent-browser reload          # Reload page
-agent-browser close           # Close browser
+agent-browser open <url>        # Navigate to page
+agent-browser snapshot -i       # Interactive elements with refs (@e1, @e2, ...)
+agent-browser click @e1         # Click element by ref
+agent-browser fill @e2 "text"   # Clear and type into input by ref
+agent-browser close             # Close browser when done
 ```
 
-### Snapshot (page analysis)
+Rules that are easy to get wrong:
+- Refs (`@e1`) come from the LAST snapshot. **Re-snapshot after navigation
+  or any significant DOM change** - stale refs silently target wrong elements.
+- `snapshot -i` (interactive only) is almost always what you want; the full
+  accessibility tree is large. `-c` compacts output, `-d 3` limits depth.
+- `fill` clears the field first; `type` appends without clearing.
+
+## Get information and wait
+
 ```bash
-agent-browser snapshot        # Full accessibility tree
-agent-browser snapshot -i     # Interactive elements only (recommended)
-agent-browser snapshot -c     # Compact output
-agent-browser snapshot -d 3   # Limit depth to 3
+agent-browser get text @e1            # Element text (e.g. .docblock content)
+agent-browser get text ".docblock"    # CSS selector also accepted
+agent-browser get title               # Page title
+agent-browser get url                 # Current URL
+agent-browser wait @e1                # Wait for element
+agent-browser wait --text "Success"   # Wait for text
+agent-browser wait --load networkidle # Wait for network idle
 ```
 
-### Interactions (use @refs from snapshot)
+## Semantic locators (alternative to refs)
+
 ```bash
-agent-browser click @e1           # Click
-agent-browser dblclick @e1        # Double-click
-agent-browser fill @e2 "text"     # Clear and type
-agent-browser type @e2 "text"     # Type without clearing
-agent-browser press Enter         # Press key
-agent-browser press Control+a     # Key combination
-agent-browser hover @e1           # Hover
-agent-browser check @e1           # Check checkbox
-agent-browser uncheck @e1         # Uncheck checkbox
-agent-browser select @e1 "value"  # Select dropdown
-agent-browser scroll down 500     # Scroll page
-agent-browser scrollintoview @e1  # Scroll element into view
+agent-browser find role button click --name "Search"
+agent-browser find text "Documentation" click
+agent-browser find label "Search" fill "tokio"
 ```
 
-### Get information
-```bash
-agent-browser get text @e1        # Get element text
-agent-browser get value @e1       # Get input value
-agent-browser get title           # Get page title
-agent-browser get url             # Get current URL
-```
+Other commands (back/forward/reload, hover, select, scroll, screenshot,
+check/uncheck) follow the same shape; see `agent-browser --help`.
 
-### Screenshots
-```bash
-agent-browser screenshot          # Screenshot to stdout
-agent-browser screenshot path.png # Save to file
-agent-browser screenshot --full   # Full page
-```
+## Actionbook MCP selectors
 
-### Wait
-```bash
-agent-browser wait @e1                     # Wait for element
-agent-browser wait 2000                    # Wait milliseconds
-agent-browser wait --text "Success"        # Wait for text
-agent-browser wait --load networkidle      # Wait for network idle
-```
+Actionbook serves pre-computed action manuals so agents get structured page
+information instead of parsing HTML. Check it before driving agent-browser
+manually.
 
-### Semantic locators (alternative to refs)
-```bash
-agent-browser find role button click --name "Submit"
-agent-browser find text "Sign In" click
-agent-browser find label "Email" fill "user@test.com"
-```
+1. `search_actions` - search by keyword; returns URL-based action IDs,
+   content previews, relevance scores.
+   - `query` (required): keyword, e.g. "docs.rs search", "crates.io crate page"
+   - `type`: `vector` | `fulltext` | `hybrid` (default)
+   - `limit`: max results (default 5)
+   - `sourceIds`: comma-separated source filter
+   - `minScore`: minimum relevance score (0-1)
+2. `get_action_by_id` - full action manual for an ID.
+   - `id` (required): URL-based action ID, e.g. `docs.rs/tokio`
+   - Returns: page details, element selectors (CSS/XPath), element types,
+     allowed methods (click, type, extract), document metadata.
+3. Execute the returned selectors with agent-browser.
 
-## Example: Form submission
+Example response shape:
 
-```bash
-agent-browser open https://example.com/form
-agent-browser snapshot -i
-# Output shows: textbox "Email" [ref=e1], textbox "Password" [ref=e2], button "Submit" [ref=e3]
-
-agent-browser fill @e1 "user@example.com"
-agent-browser fill @e2 "password123"
-agent-browser click @e3
-agent-browser wait --load networkidle
-agent-browser snapshot -i  # Check result
+```json
+{
+  "title": "docs.rs crate search",
+  "url": "docs.rs/releases/search",
+  "elements": [
+    {
+      "name": "search_input",
+      "selector": "input[name='query']",
+      "type": "textbox",
+      "methods": ["type", "fill"]
+    }
+  ]
+}
 ```

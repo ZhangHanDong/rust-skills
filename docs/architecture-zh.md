@@ -1,619 +1,161 @@
 # Rust-Skills 架构设计
 
-> Skills 系统架构与最佳实践
+> 当前架构:路由逻辑全部在原生二进制 `rust-skills` 中,路由数据全部在 `index/routes.json` 中。
+> Hook 与 JS 包装层不含任何路由逻辑。
 
-## 整体架构
-
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                          用户问题                                    │
-└─────────────────────────────────┬───────────────────────────────────┘
-                                  │
-                                  ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                        Hook 触发层                                   │
-│  hooks/hooks.json + .claude/hooks/rust-skill-eval-hook.sh           │
-│  - 400+ 关键词匹配 (中/英/错误码)                                    │
-│  - 强制元认知流程                                                    │
-│  - 强制输出格式                                                      │
-└─────────────────────────────────┬───────────────────────────────────┘
-                                  │
-                                  ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                        路由层 (rust-router)                          │
-│  - 识别入口层 (L1/L2/L3)                                            │
-│  - 检测领域关键词                                                    │
-│  - 决策: 双技能加载                                                  │
-└───────────┬─────────────────────────────────┬───────────────────────┘
-            │                                 │
-            ▼                                 ▼
-┌───────────────────────┐       ┌───────────────────────────────────┐
-│    静态 Skills 层      │       │         动态 Skills 层             │
-│                        │       │                                    │
-│  skills/               │       │  ~/.claude/skills/ (全局)          │
-│  ├── m01-m07 (L1)     │       │  ├── tokio/                        │
-│  ├── m09-m15 (L2)     │       │  ├── serde/                        │
-│  ├── domain-* (L3)    │       │  └── std/                          │
-│  ├── rust-router      │       │                                    │
-│  ├── coding-guidelines│       │  .claude/skills/ (项目级)          │
-│  └── unsafe-checker   │       │  └── project-specific-crate/       │
-└───────────┬───────────┘       └───────────────┬───────────────────┘
-            │                                   │
-            └─────────────┬─────────────────────┘
-                          │
-                          ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                        Agents 层                                     │
-│  agents/                                                             │
-│  ├── rust-changelog      (Rust 版本信息)                            │
-│  ├── crate-researcher    (Crate 元数据)                             │
-│  ├── docs-researcher     (API 文档)                                 │
-│  └── rust-daily-reporter (生态新闻)                                 │
-└─────────────────────────────────┬───────────────────────────────────┘
-                                  │
-                                  ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                        输出层                                        │
-│  - 推理链 (Reasoning Chain)                                         │
-│  - 领域约束分析                                                      │
-│  - 推荐方案                                                          │
-└─────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 目录结构
+## 整体数据流
 
 ```
-rust-skills/
-│
-├── .claude-plugin/
-│   └── plugin.json              # 插件清单 (name, skills, hooks)
-│
-├── .claude/
-│   ├── hooks/
-│   │   └── rust-skill-eval-hook.sh  # 元认知强制脚本
-│   └── settings.json            # 本地设置
-│
-├── hooks/
-│   └── hooks.json               # Hook 触发配置 (400+ 关键词)
-│
-├── skills/                      # 静态 Skills
-│   │
-│   ├── rust-router/             # 入口路由
-│   │   └── SKILL.md
-│   │
-│   ├── m01-ownership/           # Layer 1: 语言机制
-│   ├── m02-resource/
-│   ├── m03-mutability/
-│   ├── m04-zero-cost/
-│   ├── m05-type-driven/
-│   ├── m06-error-handling/
-│   ├── m07-concurrency/
-│   │
-│   ├── m09-domain/              # Layer 2: 设计选择
-│   ├── m10-performance/
-│   ├── m11-ecosystem/
-│   ├── m12-lifecycle/
-│   ├── m13-domain-error/
-│   ├── m14-mental-model/
-│   ├── m15-anti-pattern/
-│   │
-│   ├── domain-fintech/          # Layer 3: 领域约束
-│   ├── domain-web/
-│   ├── domain-cli/
-│   ├── domain-embedded/
-│   ├── domain-cloud-native/
-│   ├── domain-iot/
-│   ├── domain-ml/
-│   │
-│   ├── coding-guidelines/       # 编码规范
-│   ├── unsafe-checker/          # Unsafe 审查
-│   ├── rust-learner/            # 信息获取路由
-│   ├── rust-daily/              # 新闻聚合
-│   │
-│   ├── core-dynamic-skills/     # 动态 Skill 框架
-│   ├── core-actionbook/         # 网站选择器
-│   ├── core-agent-browser/      # 浏览器自动化
-│   └── core-fix-skill-docs/     # 文档维护
-│
-├── agents/                      # 后台研究 Agents
-│   ├── rust-changelog.md
-│   ├── crate-researcher.md
-│   ├── docs-researcher.md
-│   ├── std-docs-researcher.md
-│   ├── clippy-researcher.md
-│   ├── rust-daily-reporter.md
-│   └── browser-fetcher.md
-│
-├── commands/                    # 斜杠命令
-│   ├── rust-features.md
-│   ├── crate-info.md
-│   ├── sync-crate-skills.md
-│   └── ...
-│
-├── _meta/                       # 元认知框架
-│   ├── reasoning-framework.md
-│   ├── layer-definitions.md
-│   ├── error-protocol.md
-│   ├── externalization.md
-│   └── hooks-patterns.md
-│
-├── cache/                       # 缓存
-│   ├── config.yaml
-│   ├── crates/
-│   ├── rust-versions/
-│   └── docs/
-│
-├── docs/                        # 文档
-│   ├── capabilities-summary.md
-│   ├── capabilities-summary-zh.md
-│   ├── functional-overview-zh.md
-│   ├── architecture-zh.md
-│   ├── what-is-a-skill.md
-│   ├── problem-solved.md
-│   └── skills-design-lessons.md
-│
-└── templates/                   # 模板
-    ├── trace.md
-    ├── findings.md
-    └── decision.md
+用户提交 prompt
+      │
+      ▼
+UserPromptSubmit hook (Claude Code / Codex)
+      │  hook 事件 JSON 通过 stdin 传入
+      ▼
+┌─────────────────────────────────────────────────────────────┐
+│  原生二进制  rust-skills hook <claude|codex>                │
+│  (crates/rust-skills-cli/src/main.rs, 每次 ~10ms)           │
+│                                                             │
+│  1. extract_hook_prompt: 从 hook 事件 JSON 中提取 prompt    │
+│  2. 定位 runtime root, 加载 index/routes.json               │
+│  3. rust_signals 全局门控 (关键词 + 正则 + 否决正则)        │
+│  4. 38 条 route 匹配 → 映射到 35 个已注册 skill             │
+│  5. 注入上限 5 个 skill (层级配额截断)                      │
+└─────────────────────────────────────────────────────────────┘
+      │
+      ├─ 非 Rust prompt → 不注入 (claude: 空输出; codex: {})
+      │
+      ▼ Rust prompt
+注入上下文:
+  - claude: 纯文本 (AUTO ROUTE 块 + ROUTING CONTRACT 块)
+  - codex:  JSON envelope (hookSpecificOutput.additionalContext)
+      │
+      ▼
+Agent 按注入的列表加载 rust-router 及匹配的 SKILL.md
 ```
 
----
+## 组件
 
-## Skill 文件结构
+| 组件 | 路径 | 职责 |
+|------|------|------|
+| 原生路由引擎 | `crates/rust-skills-cli/` | 唯一的路由实现:门控、匹配、截断、上下文格式化 |
+| 路由注册表 | `index/routes.json` | 唯一的路由数据:rust_signals + routes + skills |
+| Skills | `skills/*/SKILL.md` | 35 个已注册技能 (认知框架内容) |
+| Node 包装 hook | `.claude/hooks/rust-skill-eval-hook.js`<br>`.codex/hooks/rust-skill-router-hook.js` | 仅用于 repo checkout / plugin 布局的薄透传层 |
+| 包装核心 | `lib/hook-core.js` | 定位二进制并以 stdin 透传方式 spawn `rust-skills hook <platform>` |
+| 安装器 | `install.js` | 复制运行时数据、安装二进制、写入 hook 设置 |
+| 测试门 | `tests/verify-all.mjs` | 全量验证 (~15s),必须以 `verify all: PASS` 结束 |
 
-### SKILL.md 标准格式
+完整安装 (`node install.js`) 写入的 hook 设置**直接调用二进制**:
+`<targetRoot>/bin/rust-skills hook claude|codex`,不经过任何 JS。
+Node 包装 hook 只为尚未完整安装的布局保留,它们没有路由逻辑,
+找不到二进制时只打印一条 stderr 提示、不注入、exit 0——hook 永远不会触发 cargo 构建。
 
-```yaml
----
-name: skill-name
-description: "CRITICAL: Use for [purpose]. Triggers on: keyword1, keyword2, ..."
-globs: ["**/*.rs"]  # 可选
----
+## 路由注册表 (index/routes.json)
 
-# Skill 标题
+### rust_signals — 全局门控
 
-> Layer X: 类别
+判断 prompt 是否是 Rust 相关,分两级证据:
 
-## Core Question
-[元问题 - 引导思考而非直接给答案]
+- **强证据** (`regexes`,35 条):`\bE0\d{3,4}\b`、`cargo build|test|...`、`crates.io` 等,命中即通过。
+- **弱证据** (`keywords`,39 个):`rust`、`rustc`、`tokio`、`Cargo.toml`、`borrow checker` 等。
+  弱证据可被 **否决正则** (`not_regexes`,7 条) 推翻,用于排除
+  "rust stains"(铁锈)、"rust the game"、"Tokio Marine"(东京海上)、"铁锈/生锈/除锈"、
+  "Clippy the assistant"(微软曲别针助手) 这类假阳性。
+  否决只剥除被否决的片段 (veto-span stripping),片段之外的 Rust 证据仍可路由;
+  强证据始终压过否决。
 
-## Error → Design Question
-[错误到设计问题的映射表]
+### routes — 38 条路由
 
-## Trace Up ↑
-[向上追溯的指引]
+每条 route 含 `keywords` / `regexes` / `priority` / `requires_rust_signal`。
+36 条要求 rust_signal 通过才参与匹配(例外:`learner-clippy`、`rust-daily`)。
+命中任一关键词或正则即匹配,匹配结果按 router 优先、再按 priority 降序排序。
 
-## Trace Down ↓
-[向下实现的指引]
+### skills — 35 个技能,按层组织
 
-## Quick Reference
-[快速参考表/决策树]
+| 层 | 数量 | 技能 |
+|----|------|------|
+| router | 1 | rust-router |
+| layer1 (语言机制) | 8 | m01-ownership ... m07-concurrency, unsafe-checker |
+| layer2 (设计选择) | 7 | m09-domain ... m15-anti-pattern |
+| layer3 (领域约束) | 7 | domain-fintech, domain-web, domain-cli, domain-embedded, domain-cloud-native, domain-iot, domain-ml |
+| utility | 12 | rust-learner, coding-guidelines, rust-daily, rust-code-navigator 等 |
+| experimental | 0 | (预留层) |
 
-## Common Errors / Anti-Patterns
-[常见错误和反模式]
+### 注入截断:上限 5 个,带层级配额
 
-## Related Skills
-[相关技能链接]
-```
+关键词堆叠的 prompt 可能命中很多 route。注入列表硬上限为 5 个 skill
+(`MAX_INJECTED_SKILLS`),截断时不是纯按 priority,而是:
+**router + 最佳 layer3 + 最佳 layer2 各保底一个名额**,剩余名额按 priority 填充。
+这是系统的核心论点——领域约束 (L3) 与设计选择 (L2) 必须和语言机制 (L1) 共同加载。
+完整匹配仍然全部保留在 JSON 输出的 `matches` 中,只有注入列表被截断 (`truncated: true`)。
 
-### description 格式 (关键)
-
-```yaml
-# 正确格式 - 会被自动触发
-description: "CRITICAL: Use for [purpose]. Triggers on: keyword1, keyword2, ..."
-
-# 错误格式 - 不会触发
-description: "A skill for handling ownership"
-```
-
----
-
-## 组件关系
-
-### 1. Hook → Router → Skills
-
-```
-hooks/hooks.json
-    │
-    │ 匹配关键词
-    ▼
-.claude/hooks/rust-skill-eval-hook.sh
-    │
-    │ 注入元认知指令
-    ▼
-skills/rust-router/SKILL.md
-    │
-    │ 路由决策
-    ▼
-skills/m0x-* + skills/domain-*
-```
-
-### 2. 静态 Skills vs 动态 Skills
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                    Claude Code                           │
-├─────────────────────────────────────────────────────────┤
-│                                                          │
-│  插件 Skills (rust-skills/)      用户 Skills             │
-│  ┌────────────────────┐         ┌────────────────────┐  │
-│  │ skills/            │         │ ~/.claude/skills/  │  │
-│  │ - 元认知框架       │         │ - tokio            │  │
-│  │ - 领域约束         │         │ - serde            │  │
-│  │ - 编码规范         │         │ - std              │  │
-│  └────────────────────┘         └────────────────────┘  │
-│                                                          │
-│                                  ┌────────────────────┐  │
-│                                  │ .claude/skills/    │  │
-│                                  │ (项目级)           │  │
-│                                  │ - sqlx             │  │
-│                                  │ - sea-orm          │  │
-│                                  └────────────────────┘  │
-│                                                          │
-└─────────────────────────────────────────────────────────┘
-```
-
-### 3. Agents 与 Skills 协作
-
-```
-Skills (知识框架)          Agents (信息获取)
-       │                         │
-       │                         │
-       ▼                         ▼
-┌─────────────┐           ┌─────────────┐
-│ rust-learner│ ────────► │ crate-      │
-│ (路由)      │           │ researcher  │
-└─────────────┘           └─────────────┘
-       │                         │
-       │                         │
-       ▼                         ▼
-┌─────────────┐           ┌─────────────┐
-│ 决策框架    │           │ 实时数据    │
-│ 如何思考    │           │ 最新信息    │
-└─────────────┘           └─────────────┘
-       │                         │
-       └───────────┬─────────────┘
-                   │
-                   ▼
-            ┌─────────────┐
-            │ 准确且符合  │
-            │ 最佳实践的  │
-            │ 回答        │
-            └─────────────┘
-```
-
----
-
-## 数据流
-
-### 完整请求流程
-
-```
-1. 用户输入
-   "Web API 报错 Rc cannot be sent"
-        │
-        ▼
-2. Hook 触发 (hooks/hooks.json)
-   匹配: "Web API", "Rc", "Send"
-        │
-        ▼
-3. Hook 脚本 (rust-skill-eval-hook.sh)
-   注入: 元认知指令 + 输出格式要求
-        │
-        ▼
-4. Router (rust-router)
-   识别: L1 = m07-concurrency
-         L3 = domain-web
-   决策: 双技能加载
-        │
-        ▼
-5. Skill 加载
-   Skill(m07-concurrency) → Send/Sync 机制
-   Skill(domain-web) → Web 领域约束
-        │
-        ▼
-6. 追溯推理
-   L1: Rc 不是 Send
-    ↑
-   L3: Web handlers 在任意线程运行
-    ↓
-   L2: 使用 Arc + State extractor
-        │
-        ▼
-7. 输出
-   - 推理链
-   - 领域约束分析
-   - 推荐方案 (符合 Web 最佳实践)
-```
-
----
-
-## 最佳实践
-
-### 1. Skill 设计
-
-| 原则 | 说明 |
-|------|------|
-| **是认知协议，不是知识库** | 提供思考框架，不是堆砌知识 |
-| **有元问题 (Core Question)** | 引导思考，不是直接给答案 |
-| **有追溯指引 (Trace Up/Down)** | 连接到其他层级 |
-| **有决策框架** | 决策树/表格，帮助选择 |
-| **有反模式** | 明确什么不要做 |
-
-### 2. Description 格式
-
-```yaml
-# 好 - 会被自动触发
-description: "CRITICAL: Use for concurrency. Triggers on: Send, Sync, async, thread, E0277"
-
-# 好 - 中英文关键词
-description: "CRITICAL: Use for ownership. Triggers on: E0382, borrow, 所有权, 借用"
-
-# 差 - 不会触发
-description: "Helps with Rust ownership"
-
-# 差 - 关键词太少
-description: "CRITICAL: Use for errors"
-```
-
-### 3. 目录结构
-
-```
-# 好 - 扁平结构
-skills/
-├── domain-web/
-├── domain-fintech/
-└── m01-ownership/
-
-# 差 - 嵌套结构 (不会被识别)
-skills/
-├── domains/
-│   ├── web/
-│   └── fintech/
-└── layers/
-    └── m01/
-```
-
-### 4. Hook 配置
+### 路由输出 JSON (schema_version: 2)
 
 ```json
-// 好 - 领域关键词检测 + 强制双技能加载
 {
-  "matcher": "(?i)(Web API|HTTP|axum).*?(Send|Sync|thread)",
-  "action": "Load domain-web AND m07-concurrency"
+  "schema_version": 2,
+  "decision": "inject | no-op",
+  "should_inject": true,
+  "rust_signal": true,
+  "skills": ["rust-router", "m01-ownership", "domain-fintech"],
+  "layers": { "router": [...], "layer1": [...], "layer2": [...], "layer3": [...], "utility": [...], "experimental": [...] },
+  "matches": [ { "route": "...", "skill": "...", "priority": 930, "matched": { "kind": "regex", "value": "..." } } ],
+  "paths": { "m01-ownership": "skills/m01-ownership/SKILL.md" },
+  "context_cost": 3,
+  "truncated": false,
+  "runtime_root": "/path/to/runtime"
 }
-
-// 差 - 只匹配错误码
-{
-  "matcher": "E0277",
-  "action": "Load m07-concurrency"
-}
 ```
 
-### 5. 输出格式
+## 匹配引擎细节
 
-```markdown
-# 好 - 完整推理链
-### 推理链
-+-- Layer 1: Send/Sync 错误
-|       ^
-+-- Layer 3: Web 领域约束
-|       v
-+-- Layer 2: 设计决策
+- **正则按 JS RegExp 语义编译**:注册表正则原本写给 JS `RegExp`(`\b`/`\w` 为 ASCII 语义),
+  Rust regex crate 默认 Unicode 语义会让 `\b` 在 CJK 邻接处失效。
+  引擎在编译前重写 `\b → (?-u:\b)`、`\w → [0-9A-Za-z_]`、`\d → [0-9]`,
+  所以 "E0382错误"、"main.rs报错" 这类中英混排照常命中。正则统一忽略大小写。
+- **关键词匹配是手写的 ASCII 边界子串搜索**:两侧要求非 ASCII 单词字符
+  (CJK 字符算边界),避免 "Rocket" 命中 `Rc`、"trusted" 命中 `rust`。
+  12 个标准库token保持大小写敏感:`Rc, Arc, Box, RefCell, Cell, Mutex, RwLock, Send, Sync, Drop, Result, Option`。
+- **prompt 输入**:`route`/`detect` 可从 argv 取,或用 `-` 从 stdin 读;`hook` 始终读 stdin 的事件 JSON。
 
-### 领域约束分析
-[引用 domain-web 中的规则]
-
-### 推荐方案
-[代码]
-
-# 差 - 只有答案
-用 Arc 替代 Rc。
-```
-
-### 6. 动态 Skills 存储
-
-| 场景 | 存储位置 |
-|------|----------|
-| 常用 crate (tokio, serde, std) | `~/.claude/skills/` |
-| 项目特定依赖 | `项目/.claude/skills/` |
-| 临时学习 | 项目级，用完删除 |
-
-### 7. Skill 继承模式
-
-对于复杂的 crate，采用 **父子 Skill** 结构：
+## CLI 命令面
 
 ```
-~/.claude/skills/
-├── tokio/                     # 父 Skill (入口)
-│   ├── SKILL.md              # 广泛触发词，概览性内容
-│   └── references/
-│       └── rust-defaults.md  # 共享规则
-│
-├── tokio-task/               # 子 Skill (专门领域)
-│   ├── SKILL.md
-│   └── references/
-│       └── rust-defaults.md  → symlink to ../tokio/references/
-│
-├── tokio-sync/               # 子 Skill
-├── tokio-time/               # 子 Skill
-├── tokio-io/                 # 子 Skill
-└── tokio-net/                # 子 Skill
+rust-skills route [--json] <prompt | ->    # 主命令: 路由并输出匹配 skill
+rust-skills hook <claude|codex>            # hook 入口: stdin 读事件 JSON, 输出注入内容
+rust-skills index list [--json]            # 列出注册表中所有 skill
+rust-skills index query <skill-id>         # 查询单个 skill 路径与元数据
+rust-skills verify [--json]                # 注册表完整性检查
+rust-skills --version                      # 输出运行时版本
+rust-skills detect [--json] <prompt | ->   # 已废弃, route 的别名 (输出字段更少)
 ```
 
-**父 Skill** (`tokio/SKILL.md`):
+`verify` 会编译注册表里的**每一条**正则、检测重复 skill/route id、缺失的 SKILL.md 文件、
+不可达 skill(无任何 route 指向,报 warning),并对 rust-router 的 SKILL.md 做结构检查。
 
-```yaml
----
-name: tokio
-description: |
-  CRITICAL: Use for tokio async runtime questions. Triggers on:
-  tokio, spawn, select!, join!, mpsc, timeout, sleep, ...
----
-# 广泛的触发词，覆盖整个 crate
-# 概览性内容：核心概念、模块列表
-# 引导到子 Skills
-```
+## Runtime Root 发现顺序
 
-**子 Skill** (`tokio-task/SKILL.md`):
+二进制按以下顺序找到包含 `index/routes.json` 的数据根:
 
-```yaml
----
-name: tokio-task
-description: |
-  CRITICAL: Use for tokio task management. Triggers on:
-  tokio::spawn, JoinHandle, JoinSet, spawn_blocking, abort, ...
----
-# 专门领域的深入内容
-# 更具体的触发词
-# 引用共享规则
-```
+1. `RUST_SKILLS_ROOT` 环境变量 —— 设置了但目录无效会**报错退出**,不静默回退
+2. 可执行文件相对路径:`bin/../rust-skills`、`bin/..`、repo 布局 `target/<profile>/../..`
+3. 当前工作目录
+4. `~/.codex/rust-skills` → `~/.claude/rust-skills` → `~/.local/share/rust-skills`
 
-**共享规则** (`references/rust-defaults.md`):
-
-```markdown
-# Rust Code Generation Defaults
-
-## Cargo.toml Defaults
-edition = "2024"   # 所有子 Skill 共享
-
-## Common Dependencies
-| Crate | Version |
-|-------|---------|
-| tokio | 1.49    |
-
-## Code Style
-...
-```
-
-**继承优势**:
-
-| 问题 | 继承方案 |
-|------|----------|
-| 触发精度 | 父 Skill 广泛匹配，子 Skill 精确匹配 |
-| 内容深度 | 父 Skill 概览，子 Skill 深入 |
-| 规则复用 | 共享 `rust-defaults.md` |
-| 维护成本 | 更新共享规则自动生效 |
-| 上下文节省 | 只加载需要的子 Skill |
-
-**实现步骤**:
-
-```bash
-# 1. 创建父 Skill
-~/.claude/skills/tokio/SKILL.md
-~/.claude/skills/tokio/references/rust-defaults.md
-
-# 2. 创建子 Skills，symlink 共享规则
-cd ~/.claude/skills/tokio-task/references
-ln -s ../../tokio/references/rust-defaults.md .
-
-# 3. 子 Skill 引用共享规则
-# 在 SKILL.md 中：
-# **IMPORTANT: Before generating any Rust code,
-#  read `./references/rust-defaults.md` for shared rules.**
-```
-
-### 8. Agent 使用
+## 测试
 
 ```
-# 好 - 通过 rust-learner 路由
-/crate-info tokio
-
-# 好 - 有缓存策略
-检查缓存 → 过期则获取 → 更新缓存
-
-# 差 - 直接 WebSearch
-不要用 WebSearch 查 Rust/crate 信息
+node tests/verify-all.mjs    # 全量门, ~15s, 必须以 "verify all: PASS" 结束
 ```
 
----
+包含 cargo build/test、`rust-skills verify`、Rust/JS CLI 一致性、AOM 路由评测、
+hook 路由、安装 e2e、打包安全等。两个语料各司其职:
 
-## 扩展指南
+- `tests/routing-corpus.json`(74 条):与 routes.json 共同演化的**回归钉子**,期望逐条精确。
+- `tests/fixtures/heldout-corpus.json`(71 条):**盲写的留出集**,只设泛化下限阈值;
+  如果要改这个语料才能让路由通过,说明路由失去了泛化能力——应该修路由而不是改语料。
 
-### 添加新的 Layer 1 Skill
+## Hook 细节
 
-```markdown
----
-name: m08-new-skill
-description: "CRITICAL: Use for [topic]. Triggers on: keyword1, keyword2"
----
-
-# New Skill Title
-
-> Layer 1: Language Mechanics
-
-## Core Question
-**[引导性问题]?**
-
-## Trace Up ↑
-[什么时候向上追溯到 L2/L3]
-
-## Trace Down ↓
-[从设计决策如何实现]
-```
-
-### 添加新的 Domain Skill
-
-```markdown
----
-name: domain-new
-description: "CRITICAL: Use for [domain]. Triggers on: keyword1, keyword2"
----
-
-# Domain Name
-
-> Layer 3: Domain Constraints
-
-## Domain Constraints → Design Implications
-| 领域规则 | 设计约束 | Rust 实现 |
-
-## Trace Down ↓
-[从约束到设计到实现]
-```
-
-### 添加新的 Agent
-
-```markdown
-# agent-name.md
-
-## Purpose
-[获取什么信息]
-
-## Data Source
-[从哪里获取]
-
-## Output Format
-[返回什么格式]
-
-## Cache Strategy
-[缓存多久]
-```
-
----
-
-## 总结
-
-### 架构要点
-
-| 层级 | 组件 | 职责 |
-|------|------|------|
-| 触发层 | hooks/hooks.json | 关键词匹配，触发流程 |
-| 强制层 | rust-skill-eval-hook.sh | 注入元认知指令 |
-| 路由层 | rust-router | 识别层级，双技能加载 |
-| 知识层 | skills/* | 认知框架，决策指引 |
-| 扩展层 | ~/.claude/skills/ | 动态生成的 crate skills |
-| 数据层 | agents/* | 实时获取最新信息 |
-| 缓存层 | cache/ | 减少重复请求 |
-
-### 设计原则
-
-1. **Skills 是认知协议，不是知识库**
-2. **强制追溯，不能停在 Layer 1**
-3. **领域检测，双技能加载**
-4. **输出格式强制推理链**
-5. **扁平目录结构**
-6. **动态 Skills 按需生成**
-7. **Agents 获取实时信息**
+hook 触发链、平台输出格式、降级行为见 [hook-mechanism-zh.md](hook-mechanism-zh.md)。

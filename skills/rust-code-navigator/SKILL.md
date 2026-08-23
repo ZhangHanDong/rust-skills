@@ -1,159 +1,96 @@
 ---
 name: rust-code-navigator
-description: "Navigate Rust code using LSP. Triggers on: /navigate, go to definition, find references, where is defined, 跳转定义, 查找引用, 定义在哪, 谁用了这个"
+description: "Use when: navigating Rust code. Keywords: /navigate, go to definition, find references, where is defined, who uses this, find implementations, call sites, project structure, 跳转定义, 查找引用, 定义在哪, 谁用了这个"
 argument-hint: "<symbol> [in file.rs:line]"
-allowed-tools: ["LSP", "Read", "Glob"]
+allowed-tools: ["Grep", "Read", "Glob", "Bash"]
 ---
 
 # Rust Code Navigator
 
-Navigate large Rust codebases efficiently using Language Server Protocol.
+Code intelligence for Rust codebases using text search (Grep/Glob/Read) and
+cargo. No LSP tool is available in this environment by default — the recipes
+below work everywhere. If the user's environment provides a
+rust-analyzer-backed MCP tool, prefer it for precise reference lookup;
+otherwise do not attempt to call any `LSP(...)` tool — it does not exist.
 
-## Usage
+## Intent to Recipe
 
-```
-/rust-code-navigator <symbol> [in file.rs:line]
-```
+| User asks | Recipe |
+|-----------|--------|
+| "Where is X defined?" | grep keyword + name (see Definitions) |
+| "Who uses X?" | `grep -rnw "X" src/ tests/` (whole-word) |
+| "What type is X?" | Read the definition and its impl blocks |
+| "Who calls X?" | `grep -rn "X(" src/` minus the `fn X(` definition line |
+| "What does X call?" | Read the fn body; each `name(...)` / `.method(...)` is a callee |
+| "What's in this project?" | symbol inventory + `cargo metadata` (below) |
+| "Who implements trait T?" | trait impl greps (below) |
 
-**Examples:**
-- `/rust-code-navigator parse_config` - Find definition of parse_config
-- `/rust-code-navigator MyStruct in src/lib.rs:42` - Navigate from specific location
+## Definitions
 
-## LSP Operations
+Rust definitions are introduced by a keyword, so search keyword + name:
 
-### 1. Go to Definition
-
-Find where a symbol is defined.
-
-```
-LSP(
-  operation: "goToDefinition",
-  filePath: "src/main.rs",
-  line: 25,
-  character: 10
-)
-```
-
-**Use when:**
-- User asks "where is X defined?"
-- User wants to understand a type/function
-- Ctrl+click equivalent
-
-### 2. Find References
-
-Find all usages of a symbol.
-
-```
-LSP(
-  operation: "findReferences",
-  filePath: "src/lib.rs",
-  line: 15,
-  character: 8
-)
+```bash
+grep -rn "fn parse_config" src/
+grep -rn "struct Config" src/      # also: enum, trait, type, mod, const, static
+grep -rn "macro_rules! my_macro" src/
 ```
 
-**Use when:**
-- User asks "who uses X?"
-- Before refactoring/renaming
-- Understanding impact of changes
+Caveats:
+- The hit may be a `pub use` re-export — follow it to the original module.
+- Macro-generated items have no source-text definition; find the macro
+  invocation instead (`cargo expand` shows generated code if installed).
 
-### 3. Hover Information
+## References
 
-Get type and documentation for a symbol.
-
-```
-LSP(
-  operation: "hover",
-  filePath: "src/main.rs",
-  line: 30,
-  character: 15
-)
+```bash
+grep -rnw "parse_config" src/ tests/ examples/ benches/
 ```
 
-**Use when:**
-- User asks "what type is X?"
-- User wants documentation
-- Quick type checking
+`-w` avoids substring hits (`parse_config_v2`). Doc comments and strings
+also match — review hits before treating them as code references.
 
-## Workflow
+## Callers and Callees
 
-```
-User: "Where is the Config struct defined?"
-    │
-    ▼
-[1] Search for "Config" in workspace
-    LSP(operation: "workspaceSymbol", ...)
-    │
-    ▼
-[2] If multiple results, ask user to clarify
-    │
-    ▼
-[3] Go to definition
-    LSP(operation: "goToDefinition", ...)
-    │
-    ▼
-[4] Show file path and context
-    Read surrounding code for context
+| Direction | Recipe |
+|-----------|--------|
+| Incoming ("who calls X") | `grep -rn "X(" src/` then drop the `fn X(` definition line |
+| Outgoing ("what does X call") | Read X's body |
+
+Repeat per discovered caller to build depth. Method calls need
+`grep -rn ".method_name(" src/`; the receiver type is not in the call-site
+text, so confirm by reading. Trait-object and generic dispatch call the
+trait method — find concrete callees via the trait-impl grep below.
+See rust-call-graph for deeper tracing guidance.
+
+## Project Structure / Symbol Inventory
+
+```bash
+grep -rEn "^ *pub (struct|enum|trait|fn|mod|type|const) " src/   # public API
+cargo metadata --format-version=1 --no-deps   # workspace members and targets
 ```
 
-## Output Format
+Add `pub(crate)`/`pub(super)` variants to the pattern if the crate uses
+restricted visibility. Module layout: `Glob("**/*.rs")` plus the `mod`
+statements in `lib.rs`/`main.rs`. See rust-symbol-analyzer for more
+inventory recipes.
 
-### Definition Found
+## Trait Implementations
 
-```
-## Config (struct)
-
-**Defined in:** `src/config.rs:15`
-
-​```rust
-#[derive(Debug, Clone)]
-pub struct Config {
-    pub name: String,
-    pub port: u16,
-    pub debug: bool,
-}
-​```
-
-**Documentation:** Configuration for the application server.
+```bash
+grep -rn "impl.*\bHandler\b.* for " src/   # who implements Handler (incl. impl<T> ... for)
+grep -rn "impl.* for User" src/            # what traits does User implement
 ```
 
-### References Found
-
-```
-## References to `Config` (5 found)
-
-| Location | Context |
-|----------|---------|
-| src/main.rs:10 | `let config = Config::load()?;` |
-| src/server.rs:25 | `fn new(config: Config) -> Self` |
-| src/server.rs:42 | `self.config.port` |
-| src/tests.rs:15 | `Config::default()` |
-| src/cli.rs:8 | `config: Option<Config>` |
-```
-
-## Common Patterns
-
-| User Says | LSP Operation |
-|-----------|---------------|
-| "Where is X defined?" | goToDefinition |
-| "Who uses X?" | findReferences |
-| "What type is X?" | hover |
-| "Find all structs" | workspaceSymbol |
-| "What's in this file?" | documentSymbol |
-
-## Error Handling
-
-| Error | Cause | Solution |
-|-------|-------|----------|
-| "No LSP server" | rust-analyzer not running | Suggest: `rustup component add rust-analyzer` |
-| "Symbol not found" | Typo or not in scope | Search with workspaceSymbol first |
-| "Multiple definitions" | Generics or macros | Show all and let user choose |
+Grep misses `#[derive(...)]` impls (check the type's derive attribute),
+blanket impls, and auto traits (Send/Sync are never declared in source).
+See rust-trait-explorer for the blanket-impl table and the Send/Sync
+compile-time assertion.
 
 ## Related Skills
 
 | When | See |
 |------|-----|
-| Call relationships | rust-call-graph |
-| Project structure | rust-symbol-analyzer |
-| Trait implementations | rust-trait-explorer |
-| Safe refactoring | rust-refactor-helper |
+| Deep call tracing | rust-call-graph |
+| Symbol/structure inventory | rust-symbol-analyzer |
+| Trait impl details | rust-trait-explorer |
+| Rename/extract/move safely | rust-refactor-helper |

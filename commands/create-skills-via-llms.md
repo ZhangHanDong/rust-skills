@@ -19,9 +19,50 @@ Arguments: $ARGUMENTS
 
 ---
 
+## Generation Contract
+
+Generated skills follow the skill generation contract:
+
+- English only for generated repo-owned skill text.
+- Concise frontmatter; no trigger inflation.
+- `SKILL.md` carries scope, workflow, boundaries, and domain guardrails.
+- No decorative banners, ASCII art, or exact display/output instructions.
+- Judgment guidance uses boundaries and domain guardrails, not scripted
+  chain-of-thought or step-by-step thinking prompts.
+- Detailed API tables, long examples, and version notes go in `references/`.
+- Templates go in `assets/`; deterministic helpers go in `scripts/`.
+- The generated skill must pass the skill generation quality gate:
+  `node tests/aom/run-skill-generation-gate.mjs --skills <generated-dir> --strict-generated --json`
+- Machine-readable contract overlays live in
+  `commands/skill-generation-contract.json` for benchmark regeneration roots.
+- Benchmark improvements must come from this contract and generated output,
+  not from hand-editing generated leaf skills after the run.
+
+Select domain guardrails that match the crate documentation and user need.
+Do not paste every anchor into every generated skill.
+
+| Anchor Family | Use when documentation mentions |
+|---------------|----------------------------------|
+| Ownership transfer | moved values, builders, consuming APIs, cloning, borrowed views |
+| Borrow conflicts | split borrows, mutable access, scoped reads, locks |
+| Trait bounds | `Send`, `Sync`, blanket impls, async spawn, thread safety |
+| Type inference | generic constructors, `collect`, `parse`, channels, turbofish |
+| Error boundaries | `Result`, custom errors, `thiserror`, application/library split |
+| API evolution | MSRV, semver, stabilization, deprecation, release notes |
+| Unsafe/FFI | stable terms `pointer`, `length`, `alignment`, `lifetime`; `len` identifiers map to the length invariant; initialization, aliasing, allocation bounds, caller contract |
+| Embedded/no_std | embedded Rust, heapless storage, allocation boundary, no allocation, fixed-capacity buffers |
+
+### Generated Artifact Boundary
+
+When improving benchmark performance, do not patch generated `skills/m*`,
+`skills/domain-*`, `skills/unsafe-checker`, or dynamic crate skills directly.
+Update this generation contract or the generation inputs, then delete the
+generated output directory and run generation again. A regenerated skill should
+make the desired calibration emerge naturally from its anchors.
+
 ## Skill Quality Standards
 
-Each skill must include the following structure:
+Each generated skill must include the following structure:
 
 ### SKILL.md Structure
 
@@ -29,9 +70,9 @@ Each skill must include the following structure:
 ---
 name: {crate_name}-{feature}
 description: |
-  CRITICAL: Use for {crate_name} {feature} questions. Triggers on:
-  {keyword1}, {keyword2}, {keyword3}, "{common question}",
-  {中文关键词1}, {中文关键词2}, {中文问题}
+  Use when: working with {crate_name} {feature} APIs or troubleshooting
+  {feature}-specific Rust integration. Keywords: {keyword1}, {keyword2},
+  {keyword3}, "{common question}".
 ---
 
 # {CrateName} {Feature} Skill
@@ -40,29 +81,34 @@ description: |
 >
 > Check for updates: https://crates.io/crates/{crate_name}
 
-You are an expert at the Rust `{crate_name}` crate. Help users by:
-- **Writing code**: Generate Rust code following the patterns below
-- **Answering questions**: Explain concepts, troubleshoot issues, reference documentation
+## Scope
+
+Use this skill for {crate_name} {feature} work when the task depends on
+crate-specific APIs, configuration, features, or failure modes.
 
 ## Documentation
 
-Refer to the local files for detailed documentation:
+Load these local files only when the task needs their detail:
 - `./references/{file1}.md` - {description}
 - `./references/{file2}.md` - {description}
 
-## IMPORTANT: Documentation Completeness Check
+## Documentation Boundary
 
-**Before answering questions, Claude MUST:**
+If the needed reference file is missing or empty, say that the local generated
+documentation is incomplete and recommend regenerating with
+`/sync-crate-skills {crate_name} --force`. Still answer from this skill and
+general Rust knowledge when safe.
 
-1. Read the relevant reference file(s) listed above
-2. If file read fails or file is empty:
-   - Inform user: "本地文档不完整，建议运行 `/sync-crate-skills {crate_name} --force` 更新文档"
-   - Still answer based on SKILL.md patterns + built-in knowledge
-3. If reference file exists, incorporate its content into the answer
+## Calibration Anchors
+
+- {anchor 1}
+- {anchor 2}
+- {anchor 3}
+- {boundary that prevents over-applying this skill}
 
 ## Key Patterns
 
-{Core code patterns, 3-5 most commonly used patterns}
+{Core code patterns, 2-4 most commonly used patterns}
 
 ## API Reference Table
 
@@ -80,13 +126,7 @@ Refer to the local files for detailed documentation:
 
 1. {Best practice 1}
 2. {Best practice 2}
-3. ...
-
-## When Answering Questions
-
-1. {Key point 1}
-2. {Key point 2}
-3. ...
+3. Prefer examples that compile with the documented crate version.
 ````
 
 ### References Directory
@@ -157,9 +197,10 @@ For each skill:
    ```
 
 2. **Write SKILL.md**:
-   - Follow the quality standards above
-   - Keep SKILL.md concise (<200 lines)
+   - Follow the generation contract above
+   - Keep SKILL.md concise; target 40-120 lines and stay below 500 lines
    - Put complex content in references/
+   - Include only relevant domain guardrails
 
 3. **Write reference files**:
    - Complete API reference
@@ -183,19 +224,21 @@ For each skill:
 
 ## Quality Checklist
 
-- [ ] Each SKILL.md has CSO-optimized description with "CRITICAL:" prefix
-- [ ] Each SKILL.md description includes Chinese trigger keywords
+- [ ] Each SKILL.md follows the generation contract
+- [ ] Each SKILL.md has a concise description with "Use when:" and "Keywords:"
 - [ ] Each SKILL.md has version info and update date
-- [ ] Each SKILL.md has "You are an expert..." role definition
-- [ ] Each SKILL.md has Documentation navigation list
-- [ ] Each SKILL.md has "Documentation Completeness Check" section
+- [ ] Each SKILL.md has Documentation navigation with load conditions
+- [ ] Each SKILL.md has Documentation Boundary section
+- [ ] Each SKILL.md has relevant domain guardrails
 - [ ] Each SKILL.md has Key Patterns code examples
 - [ ] Each SKILL.md has Deprecated Patterns table (if applicable)
 - [ ] Each SKILL.md has "When Writing Code" best practices
-- [ ] Each SKILL.md has "When Answering Questions" guidelines
 - [ ] Complex content has been split into references/ directory
 - [ ] Code examples use latest Rust idioms
 - [ ] No redundant documentation files (README.md, etc.)
+- [ ] Generated output passes the skill generation quality gate in strict mode
+- [ ] Output was produced from a clean generated directory, not manually patched
+      after generation
 - [ ] Skills created directly in `~/.claude/skills/` for auto-discovery
 
 ---

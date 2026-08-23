@@ -1,134 +1,41 @@
 ---
 name: rust-router
-description: |-
-  CRITICAL: Use for ALL Rust questions including errors, design, and coding.
-  HIGHEST PRIORITY for: 比较, 对比, compare, vs, versus, 区别, difference, 最佳实践, best practice,
-  tokio vs, async-std vs, 比较 tokio, 比较 async,
-  Triggers on: Rust, cargo, rustc, crate, Cargo.toml,
-  意图分析, 问题分析, 语义分析, analyze intent, question analysis,
-  compile error, borrow error, lifetime error, ownership error, type error, trait error,
-  value moved, cannot borrow, does not live long enough, mismatched types, not satisfied,
-  E0382, E0597, E0277, E0308, E0499, E0502, E0596,
-  async, await, Send, Sync, tokio, concurrency, error handling,
-  编译错误, compile error, 所有权, ownership, 借用, borrow, 生命周期, lifetime, 类型错误, type error,
-  异步, async, 并发, concurrency, 错误处理, error handling,
-  问题, problem, question, 怎么用, how to use, 如何, how to, 为什么, why,
-  什么是, what is, 帮我写, help me write, 实现, implement, 解释, explain
+description: "Use when: routing Rust questions before deeper skills. Keywords: Rust, cargo, rustc, Cargo.toml, compiler errors, ownership, borrow, lifetime, trait, async, Send, Sync, unsafe, FFI, Result, performance, no_std, embedded, CLI, web."
 globs: ["**/Cargo.toml", "**/*.rs"]
----
-
 ---
 
 # Rust Question Router
 
-> **Version:** 2.0.0 | **Last Updated:** 2025-01-22
->
-> **v2.0:** Context optimized - detailed examples moved to sub-files
+## Routing Calibration
 
-## Meta-Cognition Framework
+Route by semantic intent: match the prompt's underlying problem, not its
+exact wording, then load the listed skills.
 
-### Core Principle
+| Prompt Signal | Route Intent | Key Concepts |
+|---------------|--------------|--------------|
+| moved value, API still needs original data | `m01-ownership` | ownership transfer, borrow-based API, public API contract |
+| `&format!`, temporary value dropped while borrowed | `m01-ownership` | bind the temporary to a named `let` owner before borrowing |
+| MSRV, stabilized API, deprecation, crate upgrade behavior change | `m11-ecosystem` | MSRV, semver, release notes, fallback, regression tests |
+| raw C pointer plus length, safe wrapper, `from_raw_parts`, FFI contract | `unsafe-checker` | SAFETY comments, pointer validity, length and alignment invariants, lifetime, aliasing |
+| slow pipeline, heavy allocation, optimization plan | `m10-performance` | measure first, benchmark, allocation, criterion |
+| Rust toolchain, Cargo setup, rust-skills install or verify | `rust-env-setup` | rustup, Cargo setup, rust-analyzer, rust-skills runtime, verify |
+| async handler holds a mutex across I/O | `m07-concurrency` + `domain-web` when handler/web is present | drop the MutexGuard before `.await`, lock scope, deadlock risk |
+| CLI safety: exits 0 after failure, secret-bearing output, destructive path cleanup | `m06-error-handling` + `domain-cli` | non-zero exit on failure, redact env-sourced secrets, canonicalize and preview before destructive deletes |
+| trait object, plugin registry, `dyn`, generic methods, returns `Self` | `m04-zero-cost` | object safe, dyn dispatch, generic method, Self |
+| `no_std`, embedded firmware, cannot allocate, fixed buffers | `domain-embedded` | no_std, heapless and fixed-capacity buffers, avoiding heap allocation |
 
-**Don't answer directly. Trace through the cognitive layers first.**
+## Routing Model
 
-```
-Layer 3: Domain Constraints (WHY)
-├── Business rules, regulatory requirements
-├── domain-fintech, domain-web, domain-cli, etc.
-└── "Why is it designed this way?"
+Three layers. Identify where the question enters, load that skill, and keep
+its key concepts in mind when answering. When a domain keyword co-occurs with
+a mechanics question or error code, load BOTH the m-skill and the domain-*
+skill.
 
-Layer 2: Design Choices (WHAT)
-├── Architecture patterns, DDD concepts
-├── m09-m15 skills
-└── "What pattern should I use?"
+- Layer 1 (HOW, language mechanics): m01-m07, unsafe-checker
+- Layer 2 (WHAT, design choices): m09-m15
+- Layer 3 (WHY, domain constraints): domain-*
 
-Layer 1: Language Mechanics (HOW)
-├── Ownership, borrowing, lifetimes, traits
-├── m01-m07 skills
-└── "How do I implement this in Rust?"
-```
-
-### Routing by Entry Point
-
-| User Signal | Entry Layer | Direction | First Skill |
-|-------------|-------------|-----------|-------------|
-| E0xxx error | Layer 1 | Trace UP ↑ | m01-m07 |
-| Compile error | Layer 1 | Trace UP ↑ | Error table below |
-| "How to design..." | Layer 2 | Check L3, then DOWN ↓ | m09-domain |
-| "Building [domain] app" | Layer 3 | Trace DOWN ↓ | domain-* |
-| "Best practice..." | Layer 2 | Both directions | m09-m15 |
-| Performance issue | Layer 1 → 2 | UP then DOWN | m10-performance |
-
-### CRITICAL: Dual-Skill Loading
-
-**When domain keywords are present, you MUST load BOTH skills:**
-
-| Domain Keywords | L1 Skill | L3 Skill |
-|-----------------|----------|----------|
-| Web API, HTTP, axum, handler | m07-concurrency | **domain-web** |
-| 交易, 支付, trading, payment | m01-ownership | **domain-fintech** |
-| CLI, terminal, clap | m07-concurrency | **domain-cli** |
-| kubernetes, grpc, microservice | m07-concurrency | **domain-cloud-native** |
-| embedded, no_std, MCU | m02-resource | **domain-embedded** |
-
----
-
-## INSTRUCTIONS FOR CLAUDE
-
-### CRITICAL: Negotiation Protocol Trigger
-
-**BEFORE answering, check if negotiation is required:**
-
-| Query Contains | Action |
-|----------------|--------|
-| "比较", "对比", "compare", "vs", "versus" | **MUST use negotiation** |
-| "最佳实践", "best practice" | **MUST use negotiation** |
-| Domain + error (e.g., "交易系统 E0382") | **MUST use negotiation** |
-| Ambiguous scope (e.g., "tokio 性能") | **SHOULD use negotiation** |
-
-**When negotiation is required, include:**
-
-```markdown
-## Negotiation Analysis
-
-**Query Type:** [Comparative | Cross-domain | Synthesis | Ambiguous]
-**Negotiation:** Enabled
-
-### Source: [Agent/Skill Name]
-**Confidence:** HIGH | MEDIUM | LOW | UNCERTAIN
-**Gaps:** [What's missing]
-
-## Synthesized Answer
-[Answer]
-
-**Overall Confidence:** [Level]
-**Disclosed Gaps:** [Gaps user should know]
-```
-
-> **详细协议见:** `patterns/negotiation.md`
-
----
-
-### Default Project Settings
-
-When creating new Rust projects or Cargo.toml files, ALWAYS use:
-
-```toml
-[package]
-edition = "2024"  # ALWAYS use latest stable edition
-rust-version = "1.85"
-
-[lints.rust]
-unsafe_code = "warn"
-
-[lints.clippy]
-all = "warn"
-pedantic = "warn"
-```
-
----
-
-## Layer 1 Skills (Language Mechanics)
+### Layer 1 Skills (Language Mechanics)
 
 | Pattern | Route To |
 |---------|----------|
@@ -136,12 +43,14 @@ pedantic = "warn"
 | Box, Rc, Arc, RefCell, Cell | m02-resource |
 | mut, interior mutability, E0499, E0502, E0596 | m03-mutability |
 | generic, trait, inline, monomorphization | m04-zero-cost |
-| type state, phantom, newtype | m05-type-driven |
+| type state, phantom, newtype, orphan rule, coherence, impl trait for external type | m05-type-driven |
 | Result, Error, panic, ?, anyhow, thiserror | m06-error-handling |
 | Send, Sync, thread, async, channel | m07-concurrency |
+| backpressure, cancellation, CancellationToken, graceful shutdown, spawn_blocking, OnceLock, LazyLock, loom | m07-concurrency |
+| Pin, self-referential, pin-project, Unpin, structural pinning | m07-concurrency |
 | unsafe, FFI, extern, raw pointer, transmute | **unsafe-checker** |
 
-## Layer 2 Skills (Design Choices)
+### Layer 2 Skills (Design Choices)
 
 | Pattern | Route To |
 |---------|----------|
@@ -153,7 +62,7 @@ pedantic = "warn"
 | mental model, how to think | m14-mental-model |
 | anti-pattern, common mistake, pitfall | m15-anti-pattern |
 
-## Layer 3 Skills (Domain Constraints)
+### Layer 3 Skills (Domain Constraints)
 
 | Domain Keywords | Route To |
 |-----------------|----------|
@@ -164,8 +73,6 @@ pedantic = "warn"
 | web server, HTTP, REST, axum, actix | domain-web |
 | CLI, command line, clap, terminal | domain-cli |
 | no_std, microcontroller, firmware | domain-embedded |
-
----
 
 ## Error Code Routing
 
@@ -182,12 +89,11 @@ pedantic = "warn"
 | E0499 | m03-mutability | Multiple mutable borrows |
 | E0502 | m03-mutability | Borrow conflict |
 | E0277 | m04/m07 | Trait bound not satisfied |
-| E0308 | m04-zero-cost | Type mismatch |
+| E0282 | m04-zero-cost | Type inference needs an annotation |
+| E0308 | m04-zero-cost (+ m06-error-handling when Result/From/map_err context) | Type mismatch |
 | E0599 | m04-zero-cost | No method found |
 | E0038 | m04-zero-cost | Trait not object-safe |
 | E0433 | m11-ecosystem | Cannot find crate/module |
-
----
 
 ## Functional Routing Table
 
@@ -199,37 +105,30 @@ pedantic = "warn"
 | unsafe code, FFI | **unsafe-checker** | Read skill |
 | code review | **os-checker** | See `integrations/os-checker.md` |
 
----
-
-## Priority Order
-
-1. **Identify cognitive layer** (L1/L2/L3)
-2. **Load entry skill** (m0x/m1x/domain)
-3. **Trace through layers** (UP or DOWN)
-4. **Cross-reference skills** as indicated in "Trace" sections
-5. **Answer with reasoning chain**
-
 ### Keyword Conflict Resolution
 
 | Keyword | Resolution |
 |---------|------------|
 | `unsafe` | **unsafe-checker** (more specific than m11) |
 | `error` | **m06** for general, **m13** for domain-specific |
+| `MSRV` / `deprecated` / `semver` | **m11** for API evolution and compatibility |
 | `RAII` | **m12** for design, **m01** for implementation |
 | `crate` | **rust-learner** for version, **m11** for integration |
-| `tokio` | **tokio-*** for API, **m07** for concepts |
+| `tokio` | **m07** for concepts, **rust-learner**/docs-researcher for API and versions |
 
-**Priority Hierarchy:**
+## Priority Order
 
-```
-1. Error codes (E0xxx) → Direct lookup, highest priority
-2. Negotiation triggers (compare, vs, best practice) → Enable negotiation
-3. Domain keywords + error → Load BOTH domain + error skills
-4. Specific crate keywords → Route to crate-specific skill if exists
-5. General concept keywords → Route to meta-question skill
-```
+1. Error codes (E0xxx): direct lookup in the error table, highest priority.
+2. Comparative, best-practice, cross-domain, or ambiguous prompts: enable
+   negotiation as a confidence and gap disclosure layer, not a separate
+   answer template. See `patterns/negotiation.md`.
+3. Domain keyword + mechanics or error: load both skills (calibration table).
+4. Otherwise route by the layer tables above.
 
----
+## Project Defaults
+
+New Rust projects: `edition = "2024"`, `rust-version = "1.85"`, and lints
+`unsafe_code = "warn"` plus clippy `all`/`pedantic = "warn"` in Cargo.toml.
 
 ## Sub-Files Reference
 

@@ -5,6 +5,96 @@ All notable changes to rust-skills will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.1] - 2026-07-02
+
+Routing correctness, injection hygiene, and measurement — **not** an answer-quality
+change. On common Rust questions a strong model already answers well without the
+plugin, so injection lift measures ~0pp; the value here is that the right skill is
+routed cleanly and that knowledge delivery is now measurable.
+
+### Added
+- Routing-recall eval (`tests/routing-eval/`): 69 annotated bench prompts scored
+  against ground-truth expected skills; wired into `verify-all`.
+- Discriminating knowledge-delivery eval (`tests/discriminating-eval/`) with a
+  `--floor` gate: for a question needing specific Rust guidance, checks whether the
+  routed skill's injected window delivers a correct-answer fact (baseline 0/12,
+  plugin 11/12). Deterministic, agent-free; wired into `verify-all`.
+- Skill-generation gate regression ratchet (`--baseline` / `--write-baseline`):
+  grandfathers existing soft warnings and fails on any new one; baseline shrunk
+  66 → 8. Enforced via `test:skill-generation` and `verify-all`.
+- `verify` registration hygiene: fails on an unroutable skill directory, a
+  layer1/2 skill missing from the rust-router table, or a non-canonical
+  `index/routes.json`.
+
+### Fixed
+- Routing recall: closed 13 systematic misses — word-boundary keyword gaps
+  (`borrow`≠`borrowing`, `transmute`≠`transmutes`, `deprecate`≠`deprecates`) plus
+  missing tokens (`MaybeUninit`, `loom`, `state machine`, `malformed`, `exitCode`,
+  `rustdoc`, …). `domain-fintech` now routes CJK trading prompts (`撮合` / matching
+  engine), validated on the blind held-out corpus (skill_recall 0.853 → 0.867, FPR 0).
+- Guardrails-first ordering: reordered `m01`/`m04`/`m06`/`m07` so anti-patterns,
+  common-errors, and the key domain section sit inside the injection window
+  (content byte-identical — order only).
+
+### Changed
+- Skill description hygiene: removed the contract-banned `CRITICAL:` manipulation
+  prefix from 5 descriptions and standardized `Triggers:` → `Keywords:` across 11
+  skills. Descriptions do not drive routing (`routes.json` does), so routing
+  behavior is unchanged; this cleans the first line of the injection window.
+- Skill-generation gate `non_ascii` is now a generated-skill rule: static curated
+  skills may use CJK routing keywords and technical typography; genuinely suspicious
+  non-ASCII (emoji, smart quotes, accents) still flags. The anchor check is
+  route-aware — only Rust-knowledge (layer1/2/3) and generated skills require an anchor.
+
+## [2.2.0] - 2026-06-11
+
+### Added
+- Native `rust-skills hook <claude|codex>` subcommand: full installs (`node install.js`) now wire UserPromptSubmit hook settings directly to the installed binary, dropping per-prompt hook overhead from a ~110ms node chain to ~10ms. The node hook scripts remain only as a repo-checkout/plugin-layout fallback.
+- Injected-skill cap of 5 with layer quotas: the router plus the best layer3 and best layer2 matches get guaranteed slots, remaining slots fill by priority. Full match lists stay in the route JSON (`truncated: true` when the cap applies).
+- `rust_signals.not_regexes` veto patterns with veto-span stripping: vetoed phrases ("rust stains", "Tokio Marine", "Clippy the assistant") no longer trigger routing, while Rust evidence outside the vetoed phrase still routes.
+- `rust-skills --version` prints the runtime version.
+- Implicit-Rust routing signals: crate paths like `serde_json::`, pasted code such as `println!`/`String::from`, and lifetime syntax `<'a>` now route without the word "Rust".
+- Held-out routing corpus (`tests/fixtures/heldout-corpus.json`, 71 blind-authored queries) and generalization gate `tests/routing-heldout-test.mjs` with floor thresholds (accuracy 0.9, recall 0.9, precision 0.85, false-positive rate 0.15). Editing this corpus to make the router pass is forbidden; fix the router instead.
+- Agent-matrix dry-run gate in `tests/verify-all.mjs`; the pinned routing corpus (`tests/routing-corpus.json`) now holds 74 exact-expectation cases.
+- `rust-skills verify` now compile-checks every registry regex and reports duplicate skill ids and unreachable skills.
+- `install.js` prints a PATH hint for `~/.local/bin` after installing the shim.
+
+### Fixed
+- Reinstall idempotency: the hook dedupe check never matched the quoted native hook command, so every reinstall stacked another UserPromptSubmit entry; the check is now quote-agnostic and the install e2e asserts reinstall idempotency.
+- Removed unused `tokio` (full features) and `async-scoped` dependencies that had leaked into the CLI crate; installs no longer pull the async dependency tree and build offline again.
+- The installed `rust-skills.js` launcher pinned `RUST_SKILLS_ROOT` to its own `bin/` directory, which strict root validation rejects; it now pins the root only when `routes.json` actually sits beside it.
+- Non-compiling code examples in skill content were fixed as part of the compile-verification pass (see Changed).
+- CJK word-boundary bug: prompts like `E0382错误` and `main.rs报错` now route correctly (ASCII `\b` semantics matching JavaScript).
+- Removed bare `clippy`/`anyhow` signals that caused false-positive injection on non-Rust prompts.
+- Hook prompts are passed to the CLI via stdin, removing the ARG_MAX limit on long prompts.
+- Invalid `RUST_SKILLS_ROOT` overrides now fail loudly instead of silently falling back.
+- `install.js` preflights cargo before copying any files, so a missing toolchain no longer leaves a partial install with a bare stack trace.
+- Hooks never trigger cargo builds: timeout and cargo fallback are disabled in hook context.
+
+### Changed
+- Route JSON is now `schema_version: 2`: the `prompt_is_rust` field is removed (use `rust_signal`/`should_inject`), and `detect` is kept only as a deprecated alias of `route`.
+- Skill content overhaul: 47% line cut (11,655 → 6,067 lines), 158 code blocks compile-verified, non-compiling examples fixed, calibration anchors rewritten without rubric leakage, and the injected routing contract is now advisory — the agent's own Rust expertise takes precedence, with skill guardrails applied when matched.
+- Removed the "Calibration Anchors" previously embedded in skill files; they leaked benchmark rubric terms into skill content and inflated earlier agent-quality numbers. Held-out routing metrics, restated honestly: accuracy 0.944 / recall 1.000 / false-positive rate 0.114 (vs legacy regex 0.592 accuracy / 0.80 false-positive rate) was the blind PRE-adaptation estimate; the veto patterns were then derived from that run's failures, after which the gate pins accuracy 1.0 / recall 1.0 / false-positive rate 0.0 as a regression floor — no longer an unbiased generalization estimate.
+- `tests/verify-all.mjs` runs against the release binary (~12s, previously ~102s).
+
+### Removed
+- `hooks.json` UserPromptSubmit matcher (it was an invalid `(?i)` JavaScript regex, and Claude Code ignores UserPromptSubmit matchers anyway); gating now happens inside the native binary, which full installs invoke directly (`rust-skills hook <claude|codex>`, ~10ms per prompt) and which emits nothing for non-Rust prompts.
+- Test suites: `tests/hook-matcher-test.mjs` (matcher removed), `tests/routing-eval-test.mjs` (subsumed by the routing A/B suite), `tests/hook-matcher-test.py` (orphan).
+
+## [2.1.0] - 2026-05-18
+
+### Added
+- Rust-native local runtime CLI: `rust-skills detect`, `rust-skills route`, `rust-skills index`, and `rust-skills verify`.
+- Codex and Claude Code local installer with a single top-level `rust-skills` entry and deep skill data under runtime data roots.
+- Codex and Claude hook routing tests plus install e2e tests.
+- MIT `LICENSE` file for package/release compliance.
+
+### Changed
+- JavaScript runtime files now act as npm, hook, and test compatibility wrappers; route decisions are owned by the Rust CLI.
+- Codex install now writes `[features].hooks = true` and removes the deprecated `[features].codex_hooks` key.
+- Hook injection now fails closed for non-Rust prompts instead of relying only on broad matcher regexes.
+- README installation docs now describe the local runtime path and verification commands.
+
 ## [2.0.9] - 2025-01-22
 
 ### Changed
@@ -267,7 +357,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Planned
-- More code templates
-- Index generation tools
-- Additional dynamic skill support
+No unreleased changes.

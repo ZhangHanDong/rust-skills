@@ -8,99 +8,43 @@ user-invocable: false
 
 > **Layer 3: Domain Constraints**
 
-## Domain Constraints → Design Implications
-
-| Domain Rule | Design Constraint | Rust Implication |
-|-------------|-------------------|------------------|
-| Unreliable network | Offline-first | Local buffering |
-| Power constraints | Efficient code | Sleep modes, minimal alloc |
-| Resource limits | Small footprint | no_std where needed |
-| Security | Encrypted comms | TLS, signed firmware |
-| Reliability | Self-recovery | Watchdog, error handling |
-| OTA updates | Safe upgrades | Rollback capability |
-
----
-
-## Critical Constraints
-
-### Network Unreliability
-
-```
-RULE: Network can fail at any time
-WHY: Wireless, remote locations
-RUST: Local queue, retry with backoff
-```
-
-### Power Management
-
-```
-RULE: Minimize power consumption
-WHY: Battery life, energy costs
-RUST: Sleep modes, efficient algorithms
-```
-
-### Device Security
-
-```
-RULE: All communication encrypted
-WHY: Physical access possible
-RUST: TLS, signed messages
-```
-
----
-
-## Trace Down ↓
-
-From constraints to design (Layer 2):
-
-```
-"Need offline-first design"
-    ↓ m12-lifecycle: Local buffer with persistence
-    ↓ m13-domain-error: Retry with backoff
-
-"Need power efficiency"
-    ↓ domain-embedded: no_std patterns
-    ↓ m10-performance: Minimal allocations
-
-"Need reliable messaging"
-    ↓ m07-concurrency: Async with timeout
-    ↓ MQTT: QoS levels
-```
-
----
-
-## Environment Comparison
+## Environment Comparison (the key decision)
 
 | Environment | Stack | Crates |
 |-------------|-------|--------|
-| Linux gateway | tokio + std | rumqttc, reqwest |
-| MCU device | embassy + no_std | embedded-hal |
-| Hybrid | Split workloads | Both |
+| Linux gateway / edge box | tokio + std | rumqttc, reqwest, tracing |
+| MCU device | embassy + no_std | see domain-embedded |
+| Hybrid | Split workloads: MCU senses, gateway aggregates | Both |
 
-## Key Crates
+For everything no_std (heapless buffers, ISR safety, embassy, defmt), route
+to **domain-embedded** -- this skill covers the std/gateway side.
+
+## Domain Constraints -> Rust Implications
+
+| Domain Rule | Rust Implication |
+|-------------|------------------|
+| Network can fail at any time | Store-and-forward: persist locally, flush on reconnect; retry with backoff (m13-domain-error) |
+| Battery/power constraints | Sleep between transmissions; batch uploads; minimal allocation |
+| Physical access possible | TLS (rustls) on every link, signed firmware/OTA with rollback |
+| Devices must self-recover | Watchdog, supervised reconnect loop, no `unwrap` in the event loop |
+
+## Key Crates (gateway side)
 
 | Purpose | Crate |
 |---------|-------|
-| MQTT (std) | rumqttc, paho-mqtt |
-| Embedded | embedded-hal, embassy |
-| Async (std) | tokio |
-| Async (no_std) | embassy |
-| Logging (no_std) | defmt |
-| Logging (std) | tracing |
+| MQTT | rumqttc, paho-mqtt |
+| Async runtime | tokio |
+| TLS | rustls |
+| Logging | tracing |
 
-## Design Patterns
+## Code Pattern: MQTT Client with Reconnect (rumqttc 0.24)
 
-| Pattern | Purpose | Implementation |
-|---------|---------|----------------|
-| Pub/Sub | Device comms | MQTT topics |
-| Edge compute | Local processing | Filter before upload |
-| OTA updates | Firmware upgrade | Signed + rollback |
-| Power mgmt | Battery life | Sleep + wake events |
-| Store & forward | Network reliability | Local queue |
-
-## Code Pattern: MQTT Client
+The event loop is the reconnect point: `poll()` re-establishes the
+connection internally, so back off on `Err` and keep polling -- do not
+rebuild the client.
 
 ```rust
+use std::time::Duration;
 use rumqttc::{AsyncClient, MqttOptions, QoS};
 
 async fn run_mqtt() -> anyhow::Result<()> {
@@ -109,10 +53,8 @@ async fn run_mqtt() -> anyhow::Result<()> {
 
     let (client, mut eventloop) = AsyncClient::new(options, 10);
 
-    // Subscribe to commands
     client.subscribe("devices/device-1/commands", QoS::AtLeastOnce).await?;
 
-    // Publish telemetry
     tokio::spawn(async move {
         loop {
             let data = read_sensor().await;
@@ -121,7 +63,6 @@ async fn run_mqtt() -> anyhow::Result<()> {
         }
     });
 
-    // Process events
     loop {
         match eventloop.poll().await {
             Ok(event) => handle_event(event).await,
@@ -134,35 +75,20 @@ async fn run_mqtt() -> anyhow::Result<()> {
 }
 ```
 
----
-
 ## Common Mistakes
 
 | Mistake | Domain Violation | Fix |
 |---------|-----------------|-----|
-| No retry logic | Lost data | Exponential backoff |
-| Always-on radio | Battery drain | Sleep between sends |
-| Unencrypted MQTT | Security risk | TLS |
-| No local buffer | Network outage = data loss | Persist locally |
-
----
-
-## Trace to Layer 1
-
-| Constraint | Layer 2 Pattern | Layer 1 Implementation |
-|------------|-----------------|------------------------|
-| Offline-first | Store & forward | Local queue + flush |
-| Power efficiency | Sleep patterns | Timer-based wake |
-| Network reliability | Retry | tokio-retry, backoff |
-| Security | TLS | rustls, native-tls |
-
----
+| No local buffer | Network outage = data loss | Persist, flush on reconnect |
+| Fixed retry interval | Thundering herd on broker recovery | Exponential backoff + jitter |
+| Unencrypted MQTT (port 1883 in prod) | Credentials/telemetry sniffable | TLS via rustls (port 8883) |
+| `unwrap()` in event loop | One transient error kills the device | Log, back off, continue polling |
 
 ## Related Skills
 
 | When | See |
 |------|-----|
-| Embedded patterns | domain-embedded |
+| MCU/no_std/embassy side | domain-embedded |
 | Async patterns | m07-concurrency |
-| Error recovery | m13-domain-error |
-| Performance | m10-performance |
+| Retry/backoff/circuit breaker | m13-domain-error |
+| Performance, allocation | m10-performance |

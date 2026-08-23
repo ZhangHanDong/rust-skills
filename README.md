@@ -4,7 +4,7 @@
 
 > AI-powered Rust development assistant with meta-cognition framework
 
-[![Version](https://img.shields.io/badge/version-2.0.9-green.svg)](https://github.com/actionbook/rust-skills/releases)
+[![Version](https://img.shields.io/badge/version-2.2.1-green.svg)](https://github.com/actionbook/rust-skills/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Plugin-blue)](https://github.com/anthropics/claude-code)
 
@@ -46,10 +46,89 @@ AI (with Rust Skills):
 
 ## Installation
 
-Rust Skills supports two installation modes:
+Rust Skills supports three installation modes:
 
+- **Local Runtime Mode** (Codex and Claude Code): one top-level `rust-skills` entry, hook-based routing, and a Rust-native `rust-skills` CLI.
 - **Plugin Mode** (Claude Code): Full features including hooks, agents, and auto meta-cognition
 - **Skills-only Mode**: Works with any coding agent that supports skills (Claude Code, Vercel AI, etc.)
+
+---
+
+### Local Runtime Install (Codex + Claude Code)
+
+Use this when you want local hooks and a real routing command. The installer uses Node for filesystem setup and builds/copies the Rust-native CLI, runtime data, one top-level skill, hooks, and a small `~/.local/bin/rust-skills` shim that points at the installed runtime CLI.
+
+Prerequisites for source installs:
+
+- Node.js for `install.js` and hook execution.
+- Rust/Cargo for building the native `rust-skills` CLI when a prebuilt binary is not already present.
+
+Full installs wire the UserPromptSubmit hook directly to the native binary — `<targetRoot>/bin/rust-skills hook claude|codex` (~10ms per prompt). Gating happens inside the binary: it emits nothing for non-Rust prompts and injects context only when the route decision is `should_inject: true`. There is no separate hook-level matcher; the node hook scripts remain only as a fallback for repo-checkout/plugin layouts.
+
+This keeps non-Rust work quiet even if a prompt contains ambiguous words such as `cargo`, `ownership`, `lifetime`, `Rocket`, `Tower`, or `unsafe`.
+When a Rust prompt does match, hooks inject a compact `RUST SKILLS AUTO ROUTE`
+section with the matched skill IDs and file paths. Set `RUST_SKILLS_DEBUG=1`
+only when you need the full route JSON for diagnosis.
+
+```bash
+git clone https://github.com/actionbook/rust-skills.git
+cd rust-skills
+node install.js --codex --claude
+
+rust-skills route --json "Rust E0382 value moved in axum state"
+```
+
+If `rust-skills` is not found after install, ensure `~/.local/bin` is on your PATH (`export PATH="$HOME/.local/bin:$PATH"`) or call the shim by absolute path (`~/.local/bin/rust-skills`).
+
+What it installs:
+
+- `~/.codex/skills/rust-skills/SKILL.md` and/or `~/.claude/skills/rust-skills/SKILL.md`
+- Deep skill data under `~/.codex/rust-skills/` and/or `~/.claude/rust-skills/`
+- Hook scripts under `~/.codex/hooks/` and/or `~/.claude/hooks/`
+- Rust-native runtime CLI under `~/.codex/bin/` and/or `~/.claude/bin/`
+- Optional PATH shim: `~/.local/bin/rust-skills`, which selects an installed runtime dynamically. Set `RUST_SKILLS_PROFILE=codex` or `RUST_SKILLS_PROFILE=claude` to force one.
+
+The installer does not overwrite global `AGENTS.md`, Claude `agents/`, or Claude `commands/`. It also does not move old top-level deep skills into a backup folder unless you pass `--prune-legacy-top-level-skills`.
+
+Codex installs enable the current feature flag format:
+
+```toml
+[features]
+hooks = true
+```
+
+The deprecated `[features].codex_hooks` key is removed during install.
+
+Verify locally:
+
+```bash
+npm test
+rust-skills verify --json
+rust-skills route --json "今天天气怎么样"
+rust-skills route --json "Rust Web API Rc cannot be sent between threads"
+```
+
+Useful install flags:
+
+```bash
+node install.js --all                         # install Codex and Claude Code targets
+node install.js --codex                       # install only Codex
+node install.js --claude                      # install only Claude Code
+node install.js --codex --dry-run             # print planned actions without writing files
+node install.js --codex --codex-dir ~/.codex2 # override Codex home
+node install.js --claude --claude-dir ~/.cc2  # override Claude Code home
+node install.js --codex --home /tmp/home      # override home used for ~/.local/bin
+node install.js --codex --no-hooks            # do not merge hook settings
+node install.js --codex --no-user-bin         # skip the ~/.local/bin shim
+node install.js --codex --prune-legacy-top-level-skills
+node install.js --codex --legacy-top-level-skills
+RUST_SKILLS_DEBUG=1 rust-skills route --json "Rust E0382"
+```
+
+`--no-hooks` still copies the runtime CLI and hook files; it only skips merging
+Codex/Claude hook settings. `--legacy-top-level-skills` is for compatibility
+with older skills-only layouts. New local runtime installs should keep the
+single top-level `rust-skills` entry.
 
 ---
 
@@ -138,14 +217,16 @@ claude --plugin-dir /path/to/rust-skills
 
 ### Feature Comparison
 
-| Feature | Plugin (Marketplace) | Plugin (Local) | Skills-only (NPX/CoWork/Manual) |
-|---------|---------------------|----------------|--------------------------------|
-| All 31 Skills | ✅ | ✅ | ✅ |
-| Auto meta-cognition trigger | ✅ | ✅ | ❌ (manual invoke) |
-| Hook-based routing | ✅ | ✅ | ❌ |
-| Background agents | ✅ | ✅ | ✅ (inline fallback) |
-| Easy updates | ✅ | ❌ | ✅ (NPX/CoWork) |
-| Works with other agents | ❌ | ❌ | ✅ |
+| Feature | Local Runtime | Plugin (Marketplace) | Plugin (Local) | Skills-only (NPX/CoWork/Manual) |
+|---------|---------------|----------------------|----------------|--------------------------------|
+| All Skills | ✅ | ✅ | ✅ | ✅ |
+| Single top-level skill | ✅ | ✅ | ✅ | ❌ |
+| Local `rust-skills` CLI | ✅ | ❌ | ✅ | ❌ |
+| Auto meta-cognition trigger | ✅ | ✅ | ✅ | ❌ (manual invoke) |
+| Hook-based routing | ✅ | ✅ | ✅ | ❌ |
+| Background agents | ✅ | ✅ | ✅ | ✅ (inline fallback) |
+| Rust/Cargo needed for source runtime install | ✅ when no prebuilt binary exists | ❌ | ✅ when building the native CLI locally | ❌ |
+| Works with Codex | ✅ | ❌ | ❌ | ✅ |
 
 ### Permission Configuration
 
@@ -191,7 +272,8 @@ Rust Skills relies on these external tools for full functionality:
 
 ### Core Concept
 
-**Don't answer directly. Trace through cognitive layers first.**
+Rust answers should connect the relevant cognitive layers when they affect the
+result.
 
 ```
 Layer 3: Domain Constraints (WHY)
@@ -221,6 +303,7 @@ Layer 1: Language Mechanics (HOW)
 ### Core Skills
 - `rust-router` - Master router for all Rust questions (invoked first)
 - `rust-learner` - Fetch latest Rust/crate version info
+- `rust-env-setup` - Rust toolchain, Cargo, and rust-skills runtime setup
 - `coding-guidelines` - Coding conventions lookup
 
 ### Layer 1: Language Mechanics (m01-m07)
@@ -261,14 +344,51 @@ Layer 1: Language Mechanics (HOW)
 
 ## Commands
 
+### Query & Info
+
 | Command | Description |
 |---------|-------------|
 | `/rust-features [version]` | Get Rust version features |
 | `/crate-info <crate>` | Get crate information |
 | `/docs <crate> [item]` | Get API documentation |
+| `/guideline [--clippy] <rule>` | Query coding guidelines |
+| `/skill-index <category>` | Search skills by category |
+| `/rust-daily [day\|week\|month]` | Rust ecosystem news |
+| `/ai-daily [day\|week\|month]` | AI community news from Reddit |
+
+### Audit & Review
+
+| Command | Description |
+|---------|-------------|
+| `/unsafe-check <file>` | Analyze file for unsafe issues |
+| `/unsafe-review <file>` | Interactive unsafe code review |
+| `/rust-review <file>` | Lightweight Clippy-style review |
+| `/audit [security\|safety\|concurrency\|full]` | Comprehensive code audit |
+
+### Dynamic Skills
+
+| Command | Description |
+|---------|-------------|
 | `/sync-crate-skills` | Sync skills from Cargo.toml dependencies |
 | `/update-crate-skill <crate>` | Update specific crate skill |
 | `/clean-crate-skills` | Clean local crate skills |
+| `/create-skills-via-llms <crate> <path>` | Create skill from llms.txt |
+| `/create-llms-for-skills <urls>` | Generate llms.txt from URLs |
+| `/create-llms-from-source [path]` | Generate llms.txt from local source |
+| `/fix-skill-docs [--check-only]` | Fix skill documentation |
+
+### Cache
+
+| Command | Description |
+|---------|-------------|
+| `/cache-status [--verbose]` | Show docs cache status |
+| `/cache-clean [--all\|--expired]` | Clean cache entries |
+
+### Other
+
+| Command | Description |
+|---------|-------------|
+| `/achievement [list\|stats]` | View coding achievements and progress |
 
 ## Dynamic Skills
 
@@ -298,7 +418,8 @@ User Question
      ▼
 ┌─────────────────────────────────────────┐
 │           Hook Layer                     │
-│  400+ keywords trigger meta-cognition    │
+│  Runs CLI router once per prompt         │
+│  Silent unless should_inject is true     │
 └─────────────────────────────────────────┘
      │
      ▼

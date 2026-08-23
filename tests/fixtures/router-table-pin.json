@@ -1,0 +1,5 @@
+{
+  "note": "Pin of the rust-router SKILL.md table rows (lines starting with '|'). If you edited the tables intentionally, re-pin with: node tests/router-table-pin-test.mjs --write-pin — in the SAME commit so the change is visible in review.",
+  "rowCount": 80,
+  "sha256": "c4f5fe6860b7816e8f0056857f863873efc66a4436e08ca91e761898aeaaa08c"
+}

@@ -41,33 +41,34 @@ println!("{}", s2);      // OK
 
 ### Error Pattern
 ```rust
-fn get_str() -> &str {
+let r;
+{
     let s = String::from("hello");
-    &s  // ERROR: s dropped here, but reference returned
-}
+    r = &s;
+}                    // ERROR E0597: `s` does not live long enough
+println!("{}", r);   // borrow used after owner dropped
 ```
+
+(Returning `&s` to a local from a function is the related E0515; a bare
+`fn get_str() -> &str` with no inputs fails earlier with E0106.)
 
 ### Fix Options
 
-**Option 1: Return owned value**
+**Option 1: Keep the owner alive as long as the borrow**
 ```rust
-fn get_str() -> String {
-    String::from("hello")  // return owned value
-}
+let s = String::from("hello");
+let r = &s;
+println!("{}", r);  // OK: owner outlives the borrow
 ```
 
-**Option 2: Use 'static lifetime**
+**Option 2: Move ownership out instead of borrowing**
 ```rust
-fn get_str() -> &'static str {
-    "hello"  // string literal has 'static lifetime
+let r;
+{
+    let s = String::from("hello");
+    r = s;  // move, not borrow
 }
-```
-
-**Option 3: Accept reference parameter**
-```rust
-fn get_str<'a>(s: &'a str) -> &'a str {
-    s  // return reference with same lifetime as input
-}
+println!("{}", r);  // OK: r owns the data now
 ```
 
 ---
@@ -141,7 +142,7 @@ println!("{}", first);
 ### Error Pattern
 ```rust
 fn take_string(s: &String) {
-    let moved = *s;  // ERROR: cannot move out of borrowed content
+    let moved = *s;  // ERROR E0507: cannot move out of `*s` which is behind a shared reference
 }
 ```
 
@@ -174,10 +175,12 @@ fn take_from_option(opt: &mut Option<String>) -> Option<String> {
 
 ### Error Pattern
 ```rust
-fn create_string() -> &String {
+fn create_string<'a>() -> &'a String {
     let s = String::from("hello");
-    &s  // ERROR: cannot return reference to local variable
+    &s  // ERROR E0515: cannot return reference to local variable `s`
 }
+// Note: without the explicit lifetime, the same code fails earlier
+// with E0106 (missing lifetime specifier).
 ```
 
 ### Fix Options
@@ -202,26 +205,26 @@ fn get_static_str() -> &'static str {
 
 ### Error Pattern
 ```rust
-let r: &str = &String::from("hello");  // ERROR: temporary dropped
-println!("{}", r);
+let s = String::from("hello").as_str();  // ERROR E0716: temporary value
+println!("{}", s);                       // dropped while borrowed
 ```
+
+Note: `let r: &str = &String::from("hello");` compiles on current Rust —
+temporary lifetime extension covers a direct `&temp` in a `let` initializer,
+but NOT a method call (`temp.as_str()`) or a borrow created mid-expression.
 
 ### Fix Options
 
-**Option 1: Bind to variable first**
+**Option 1: Bind the owner first, then borrow**
 ```rust
-let s = String::from("hello");
-let r: &str = &s;
-println!("{}", r);
+let owner = String::from("hello");
+let s = owner.as_str();
+println!("{}", s);  // OK: owner lives to end of scope
 ```
 
-**Option 2: Use let binding with reference**
+**Option 2: Use the temporary within the same statement**
 ```rust
-let r: &str = {
-    let s = String::from("hello");
-    // s.as_str()  // ERROR: still temporary
-    Box::leak(s.into_boxed_str())  // extreme: leak for 'static
-};
+println!("{}", String::from("hello"));  // temporary lives long enough here
 ```
 
 ---
@@ -234,7 +237,7 @@ let strings = vec![String::from("a"), String::from("b")];
 for s in strings {
     println!("{}", s);
 }
-// ERROR: strings moved into loop
+// ERROR E0382: strings moved into loop (borrow of moved value)
 println!("{:?}", strings);
 ```
 
@@ -251,6 +254,7 @@ println!("{:?}", strings);  // OK
 
 **Option 2: Use iter()**
 ```rust
+let strings = vec![String::from("a"), String::from("b")];
 for s in strings.iter() {
     println!("{}", s);
 }
@@ -258,6 +262,7 @@ for s in strings.iter() {
 
 **Option 3: Clone if needed**
 ```rust
+let strings = vec![String::from("a"), String::from("b")];
 for s in strings.clone() {
     // consumes cloned vec
 }

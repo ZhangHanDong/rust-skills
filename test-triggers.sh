@@ -98,9 +98,9 @@ if [ -n "$SINGLE_TEST" ]; then
     test_hook "$SINGLE_TEST" "any-skill"
 else
     test_hook "E0382 错误怎么解决" "m01-ownership"
-    test_hook "Arc 和 Rc 什么区别" "m02-resource"
-    test_hook "async await 怎么用" "m07-concurrency"
-    test_hook "unsafe 代码怎么写安全" "unsafe-checker"
+    test_hook "Rust Arc 和 Rc 什么区别" "m02-resource"
+    test_hook "Rust async await 怎么用" "m07-concurrency"
+    test_hook "unsafe Rust block 怎么写安全" "unsafe-checker"
 fi
 
 echo "=== Summary ==="
@@ -112,7 +112,7 @@ if [ $FAIL -gt 0 ]; then
     echo -e "${YELLOW}Some hooks didn't trigger. Check:${NC}"
     echo "  1. Is this a new Claude session? (restart if needed)"
     echo "  2. Is .claude/settings.local.json configured?"
-    echo "  3. Is .claude/hooks/rust-skill-eval-hook.sh executable?"
+    echo "  3. Is .claude/hooks/rust-skill-eval-hook.js available?"
     exit 1
 else
     echo -e "${GREEN}All hooks triggered successfully!${NC}"

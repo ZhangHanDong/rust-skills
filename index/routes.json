@@ -1,0 +1,1134 @@
+{
+  "rust_signals": {
+    "keywords": [
+      "rust",
+      "rustup",
+      "rust-analyzer",
+      "rust-skills",
+      "rust-skill",
+      "rust skills",
+      "rustskill",
+      "rustskills",
+      "rustc",
+      "Cargo.toml",
+      "borrow checker",
+      "tokio",
+      "serde",
+      "axum",
+      "actix",
+      "thiserror",
+      "rustfmt",
+      "no_std",
+      "docs.rs",
+      "crates.io",
+      "println!",
+      "#[derive",
+      "fn main(",
+      "let mut ",
+      "String::from",
+      ".unwrap()",
+      "Vec<",
+      "::<",
+      "cargo clippy",
+      "clippy lint",
+      "clippy warning",
+      "clippy::",
+      "anyhow::",
+      "anyhow crate",
+      "par_iter",
+      "run clippy",
+      "fix clippy",
+      "clippy errors",
+      "clippy report"
+    ],
+    "regexes": [
+      "\\bE0\\d{3,4}\\b",
+      "\\bcargo\\s+(build|test|run|check|clippy|fmt|add|update|tree|doc|install|publish|metadata|new|init|bench|clean)\\b",
+      "\\b(install|setup|configure)\\s+Cargo\\b",
+      "(安装|配置).*cargo",
+      "\\bcrates?\\.(io|rs)\\b",
+      "\\bRust\\s+crate\\s+(info|version|feature|features|dependency|dependencies|docs?|documentation|selection)\\b",
+      "\\bcrate\\s+(feature|features|dependency|dependencies|selection)\\b",
+      "\\b(std::(rc|sync|cell)::)?(Rc|Arc|Box|RefCell|Cell|Mutex|RwLock)\\s*<",
+      "\\b(Rc|Arc|Box|RefCell|Cell|Mutex|RwLock)\\b.*\\b(cannot be sent|cannot be shared|not Send|not Sync|borrow|owned|clone|thread|spawn)\\b",
+      "\\b(cannot be sent|cannot be shared|not Send|not Sync|Send|Sync)\\b.*\\b(Rc|Arc|Mutex|RwLock|tokio|thread|spawn)\\b",
+      "\\b(Send|Sync)\\b.*\\b(trait|bound)\\b",
+      "\\bborrow checker\\b",
+      "\\b(value moved|moved value|cannot borrow|does not live long enough)\\b",
+      "\\b(ownership|borrow(?:ed|ing)?|lifetime)\\b.*\\b(borrow checker|rustc|compiler|owner|owned|borrow(?:ed|ing)?|lifetime)\\b",
+      "\\b(borrow checker|rustc|compiler|owner|owned|borrow(?:ed|ing)?|lifetime)\\b.*\\b(ownership|borrow(?:ed|ing)?|lifetime)\\b",
+      "\\bunsafe\\s+(rust|block|fn|function|trait|impl|code|ffi|extern|raw pointer|pointer)\\b",
+      "extern\\s+\"C\"|\\*\\s*(mut|const)\\s+[A-Za-z_]",
+      "\\bFFI\\b.*\\b(Rust|unsafe|extern|raw pointer|pointer)\\b",
+      "\\b(Rust|unsafe|extern|raw pointer|pointer)\\b.*\\bFFI\\b",
+      "借用检查器",
+      "所有权.*(借用|生命周期)",
+      "借用.*(所有权|生命周期|编译器|报错)",
+      "生命周期.*(借用|所有权|编译器|报错)",
+      "(Rust|rust|tokio|Send|Sync).*异步",
+      "异步.*(Rust|rust|tokio|Send|Sync)",
+      "(^|[\\s`'\"])[\\w./-]+\\.rs\\b",
+      "\\b(serde|tokio|axum|actix|sqlx|rayon|reqwest)_[a-z0-9_]+\\b",
+      "\\b(serde_json|serde_yaml|serde|tokio|axum|actix|sqlx|anyhow|thiserror)::",
+      "&'[a-z_]+\\b",
+      "<'[a-z_]+\\b",
+      "\\bclap\\b.{0,40}\\b(cli|command[- ]?line|arg(ument)?s?|parser|parsing|derive|subcommand|flag)\\b",
+      "\\b(cli|command[- ]?line|arg(ument)?s?|parser|parsing|derive|subcommand|flag)\\b.{0,40}\\bclap\\b",
+      "\\brayon\\b.{0,30}\\b(par_iter|parallel|iterator|thread ?pool)\\b",
+      "clippy.{0,20}(报|警告|建议|怎么|修)",
+      "(用|使用|错误|上下文|处理|报错).{0,12}anyhow|anyhow.{0,12}(错误|上下文|处理|报错)",
+      "(cargo|rustc|rustup)\\s*:?\\s*(command not found|not recognized|未找到|未安装|不是内部或外部命令)",
+      "command not found\\s*:?\\s*(cargo|rustc|rustup)",
+      "(没有|缺少|没装|未安装)\\s*(Rust|rust)\\s*(环境|工具链)?"
+    ],
+    "not_regexes": [
+      "rust[ -]?(stain|colou?r|spot|proof|remover|bucket|belt)",
+      "rust\\s+the\\s+game",
+      "tokio\\s+(marine|hotel|disney|olympic|drift|tower|station|tour)",
+      "铁锈|生锈|除锈",
+      "clippy[, ]{0,3}the\\s+(office\\s+)?(assistant|paperclip)",
+      "microsoft[^.]{0,24}clippy|clippy[^.]{0,24}microsoft",
+      "clippy\\s+(art|revival|cartoon|mascot)"
+    ]
+  },
+  "skills": [
+    {
+      "id": "rust-router",
+      "path": "skills/rust-router/SKILL.md",
+      "layer": "router",
+      "kind": "core",
+      "description": "Top-level Rust question router."
+    },
+    {
+      "id": "rust-learner",
+      "path": "skills/rust-learner/SKILL.md",
+      "layer": "utility",
+      "kind": "learner",
+      "description": "Real-time Rust version and crate information."
+    },
+    {
+      "id": "rust-env-setup",
+      "path": "skills/rust-env-setup/SKILL.md",
+      "layer": "utility",
+      "kind": "setup",
+      "description": "Rust toolchain, Cargo, and rust-skills runtime setup."
+    },
+    {
+      "id": "coding-guidelines",
+      "path": "skills/coding-guidelines/SKILL.md",
+      "layer": "utility",
+      "kind": "reference",
+      "description": "Rust style, clippy, and formatting guidance."
+    },
+    {
+      "id": "unsafe-checker",
+      "path": "skills/unsafe-checker/SKILL.md",
+      "layer": "layer1",
+      "kind": "safety",
+      "description": "Unsafe Rust and FFI review."
+    },
+    {
+      "id": "m01-ownership",
+      "path": "skills/m01-ownership/SKILL.md",
+      "layer": "layer1",
+      "kind": "meta",
+      "description": "Ownership, borrowing, and lifetime reasoning."
+    },
+    {
+      "id": "m02-resource",
+      "path": "skills/m02-resource/SKILL.md",
+      "layer": "layer1",
+      "kind": "meta",
+      "description": "Smart pointers and resource ownership."
+    },
+    {
+      "id": "m03-mutability",
+      "path": "skills/m03-mutability/SKILL.md",
+      "layer": "layer1",
+      "kind": "meta",
+      "description": "Mutability and borrow conflict reasoning."
+    },
+    {
+      "id": "m04-zero-cost",
+      "path": "skills/m04-zero-cost/SKILL.md",
+      "layer": "layer1",
+      "kind": "meta",
+      "description": "Traits, generics, and zero-cost abstraction."
+    },
+    {
+      "id": "m05-type-driven",
+      "path": "skills/m05-type-driven/SKILL.md",
+      "layer": "layer1",
+      "kind": "meta",
+      "description": "Type-driven design."
+    },
+    {
+      "id": "m06-error-handling",
+      "path": "skills/m06-error-handling/SKILL.md",
+      "layer": "layer1",
+      "kind": "meta",
+      "description": "Result, Option, and error strategy."
+    },
+    {
+      "id": "m07-concurrency",
+      "path": "skills/m07-concurrency/SKILL.md",
+      "layer": "layer1",
+      "kind": "meta",
+      "description": "Async, Send, Sync, and thread safety."
+    },
+    {
+      "id": "m09-domain",
+      "path": "skills/m09-domain/SKILL.md",
+      "layer": "layer2",
+      "kind": "meta",
+      "description": "Domain modeling and DDD."
+    },
+    {
+      "id": "m10-performance",
+      "path": "skills/m10-performance/SKILL.md",
+      "layer": "layer2",
+      "kind": "meta",
+      "description": "Performance and profiling."
+    },
+    {
+      "id": "m11-ecosystem",
+      "path": "skills/m11-ecosystem/SKILL.md",
+      "layer": "layer2",
+      "kind": "meta",
+      "description": "Crate selection and ecosystem integration."
+    },
+    {
+      "id": "m12-lifecycle",
+      "path": "skills/m12-lifecycle/SKILL.md",
+      "layer": "layer2",
+      "kind": "meta",
+      "description": "Resource lifecycle design."
+    },
+    {
+      "id": "m13-domain-error",
+      "path": "skills/m13-domain-error/SKILL.md",
+      "layer": "layer2",
+      "kind": "meta",
+      "description": "Domain error taxonomy and recovery."
+    },
+    {
+      "id": "m14-mental-model",
+      "path": "skills/m14-mental-model/SKILL.md",
+      "layer": "layer2",
+      "kind": "meta",
+      "description": "Rust learning mental models."
+    },
+    {
+      "id": "m15-anti-pattern",
+      "path": "skills/m15-anti-pattern/SKILL.md",
+      "layer": "layer2",
+      "kind": "meta",
+      "description": "Rust anti-pattern review."
+    },
+    {
+      "id": "domain-fintech",
+      "path": "skills/domain-fintech/SKILL.md",
+      "layer": "layer3",
+      "kind": "domain",
+      "description": "Financial system constraints."
+    },
+    {
+      "id": "domain-web",
+      "path": "skills/domain-web/SKILL.md",
+      "layer": "layer3",
+      "kind": "domain",
+      "description": "Web service constraints."
+    },
+    {
+      "id": "domain-cli",
+      "path": "skills/domain-cli/SKILL.md",
+      "layer": "layer3",
+      "kind": "domain",
+      "description": "CLI constraints."
+    },
+    {
+      "id": "domain-embedded",
+      "path": "skills/domain-embedded/SKILL.md",
+      "layer": "layer3",
+      "kind": "domain",
+      "description": "Embedded and no_std constraints."
+    },
+    {
+      "id": "domain-cloud-native",
+      "path": "skills/domain-cloud-native/SKILL.md",
+      "layer": "layer3",
+      "kind": "domain",
+      "description": "Cloud native constraints."
+    },
+    {
+      "id": "domain-iot",
+      "path": "skills/domain-iot/SKILL.md",
+      "layer": "layer3",
+      "kind": "domain",
+      "description": "IoT constraints."
+    },
+    {
+      "id": "domain-ml",
+      "path": "skills/domain-ml/SKILL.md",
+      "layer": "layer3",
+      "kind": "domain",
+      "description": "ML constraints."
+    },
+    {
+      "id": "rust-daily",
+      "path": "skills/rust-daily/SKILL.md",
+      "layer": "utility",
+      "kind": "learner",
+      "description": "Rust news reports."
+    },
+    {
+      "id": "rust-skill-creator",
+      "path": "skills/rust-skill-creator/SKILL.md",
+      "layer": "utility",
+      "kind": "generator",
+      "description": "Create Rust crate or std skills."
+    },
+    {
+      "id": "core-dynamic-skills",
+      "path": "skills/core-dynamic-skills/SKILL.md",
+      "layer": "utility",
+      "kind": "dynamic",
+      "description": "Dynamic crate skill management."
+    },
+    {
+      "id": "rust-code-navigator",
+      "path": "skills/rust-code-navigator/SKILL.md",
+      "layer": "utility",
+      "kind": "lsp",
+      "description": "Rust LSP navigation."
+    },
+    {
+      "id": "rust-call-graph",
+      "path": "skills/rust-call-graph/SKILL.md",
+      "layer": "utility",
+      "kind": "lsp",
+      "description": "Rust call graph."
+    },
+    {
+      "id": "rust-symbol-analyzer",
+      "path": "skills/rust-symbol-analyzer/SKILL.md",
+      "layer": "utility",
+      "kind": "lsp",
+      "description": "Rust symbol analysis."
+    },
+    {
+      "id": "rust-trait-explorer",
+      "path": "skills/rust-trait-explorer/SKILL.md",
+      "layer": "utility",
+      "kind": "lsp",
+      "description": "Rust trait implementation analysis."
+    },
+    {
+      "id": "rust-refactor-helper",
+      "path": "skills/rust-refactor-helper/SKILL.md",
+      "layer": "utility",
+      "kind": "lsp",
+      "description": "Rust refactoring support."
+    },
+    {
+      "id": "rust-deps-visualizer",
+      "path": "skills/rust-deps-visualizer/SKILL.md",
+      "layer": "utility",
+      "kind": "lsp",
+      "description": "Dependency visualization."
+    }
+  ],
+  "routes": [
+    {
+      "id": "rust-core",
+      "skill": "rust-router",
+      "layer": "router",
+      "category": "rust",
+      "priority": 1000,
+      "requires_rust_signal": true,
+      "keywords": [
+        "rust",
+        "cargo",
+        "rustc",
+        "Cargo.toml",
+        "crate"
+      ],
+      "regexes": [
+        "\\.rs\\b"
+      ]
+    },
+    {
+      "id": "rust-env-setup",
+      "skill": "rust-env-setup",
+      "layer": "utility",
+      "category": "setup",
+      "priority": 870,
+      "requires_rust_signal": true,
+      "keywords": [
+        "install Rust",
+        "setup Rust",
+        "set up Rust",
+        "configure Rust",
+        "Rust toolchain",
+        "rustup",
+        "rust-analyzer",
+        "CARGO_HOME",
+        "cargo home",
+        "Cargo setup",
+        "install cargo",
+        "configure cargo",
+        "setup cargo",
+        "rust-skills install",
+        "rust-skill install",
+        "rust skills install",
+        "configure rust-skills",
+        "verify rust-skills",
+        "安装 Rust",
+        "配置 Rust",
+        "安装 cargo",
+        "配置 cargo",
+        "安装 rustup",
+        "配置 rustup",
+        "安装 rust-skills",
+        "配置 rust-skills",
+        "command not found",
+        "未安装",
+        "没装",
+        "环境怎么",
+        "工具链"
+      ],
+      "regexes": [
+        "\\brustup\\s+(install|update|default|toolchain|component|target|show)\\b",
+        "\\brust[- ]?skills?\\b.*\\b(install|setup|configure|verify|reinstall|diagnose|runtime|codex|claude)\\b",
+        "\\b(install|setup|configure|verify|reinstall|diagnose)\\b.*\\brust[- ]?skills?\\b",
+        "\\brustskills?\\b.*\\b(install|setup|configure|verify|runtime|codex|claude)\\b",
+        "\\b(install|setup|configure|verify)\\b.*\\brustskills?\\b",
+        "(cargo|rustc|rustup)\\s*:?\\s*(command not found|not recognized|未找到|未安装)"
+      ]
+    },
+    {
+      "id": "rust-error-ownership",
+      "skill": "m01-ownership",
+      "layer": "layer1",
+      "category": "ownership",
+      "priority": 930,
+      "requires_rust_signal": true,
+      "keywords": [
+        "ownership",
+        "borrow",
+        "borrowed",
+        "lifetime",
+        "value moved",
+        "moved value",
+        "moved",
+        "所有权",
+        "借用",
+        "生命周期",
+        "borrowing",
+        "borrows"
+      ],
+      "regexes": [
+        "\\bE(0382|0597|0506|0507|0515|0716|0106)\\b"
+      ]
+    },
+    {
+      "id": "rust-resource",
+      "skill": "m02-resource",
+      "layer": "layer1",
+      "category": "resource",
+      "priority": 900,
+      "requires_rust_signal": true,
+      "keywords": [
+        "Box",
+        "Rc",
+        "Arc",
+        "Weak",
+        "RefCell",
+        "Cell",
+        "smart pointer"
+      ]
+    },
+    {
+      "id": "rust-mutability",
+      "skill": "m03-mutability",
+      "layer": "layer1",
+      "category": "mutability",
+      "priority": 890,
+      "requires_rust_signal": true,
+      "keywords": [
+        "mut",
+        "mutable",
+        "interior mutability",
+        "cannot borrow as mutable",
+        "already borrowed"
+      ],
+      "regexes": [
+        "\\bE(0596|0499|0502)\\b"
+      ]
+    },
+    {
+      "id": "rust-zero-cost",
+      "skill": "m04-zero-cost",
+      "layer": "layer1",
+      "category": "traits",
+      "priority": 880,
+      "requires_rust_signal": true,
+      "keywords": [
+        "trait",
+        "trait object",
+        "object safe",
+        "object safety",
+        "generic method",
+        "generic methods",
+        "generic function",
+        "generic type",
+        "generics",
+        "impl",
+        "dyn",
+        "where clause",
+        "monomorphization"
+      ],
+      "regexes": [
+        "\\bE(0277|0282|0308|0599|0038)\\b"
+      ]
+    },
+    {
+      "id": "rust-type-driven",
+      "skill": "m05-type-driven",
+      "layer": "layer1",
+      "category": "type-driven",
+      "priority": 850,
+      "requires_rust_signal": true,
+      "keywords": [
+        "newtype",
+        "type state",
+        "PhantomData",
+        "marker trait",
+        "builder pattern",
+        "state machine",
+        "state transition",
+        "state transitions"
+      ]
+    },
+    {
+      "id": "rust-error-handling",
+      "skill": "m06-error-handling",
+      "layer": "layer1",
+      "category": "error",
+      "priority": 840,
+      "requires_rust_signal": true,
+      "keywords": [
+        "Result",
+        "Option",
+        "anyhow",
+        "thiserror",
+        "unwrap",
+        "expect",
+        "panic",
+        "error handling",
+        "exit code",
+        "exit status",
+        "exits 0",
+        "non-zero",
+        "catches every error",
+        "catch every error",
+        "错误处理",
+        "typed error",
+        "error enum",
+        "type-erased",
+        "malformed",
+        "malformed input",
+        "reject invalid",
+        "reject empty",
+        "invalid input",
+        "error source",
+        "source chain",
+        "exitCode",
+        "exit_code"
+      ]
+    },
+    {
+      "id": "rust-concurrency",
+      "skill": "m07-concurrency",
+      "layer": "layer1",
+      "category": "concurrency",
+      "priority": 920,
+      "requires_rust_signal": true,
+      "keywords": [
+        "async",
+        "await",
+        "Send",
+        "Sync",
+        "cannot be sent",
+        "cannot be shared",
+        "not Send",
+        "not Sync",
+        "thread",
+        "tokio",
+        "Mutex",
+        "RwLock",
+        "channel",
+        "spawn",
+        "并发",
+        "异步",
+        "loom",
+        "lock-free"
+      ]
+    },
+    {
+      "id": "rust-unsafe",
+      "skill": "unsafe-checker",
+      "layer": "layer1",
+      "category": "unsafe",
+      "priority": 940,
+      "requires_rust_signal": true,
+      "keywords": [
+        "unsafe",
+        "FFI",
+        "extern",
+        "transmute",
+        "raw pointer",
+        "C pointer",
+        "safe wrapper",
+        "SAFETY",
+        "from_raw_parts",
+        "*mut",
+        "*const",
+        "MaybeUninit",
+        "uninitialized",
+        "repr(packed)",
+        "packed",
+        "alignment",
+        "transmutes",
+        "miri",
+        "undefined behavior",
+        "aliasing"
+      ]
+    },
+    {
+      "id": "rust-guidelines",
+      "skill": "coding-guidelines",
+      "layer": "utility",
+      "category": "style",
+      "priority": 700,
+      "requires_rust_signal": true,
+      "keywords": [
+        "style",
+        "naming",
+        "rustfmt",
+        "clippy",
+        "lint",
+        "guidelines",
+        "best practice",
+        "最佳实践",
+        "rustdoc",
+        "doctest",
+        "doctests"
+      ]
+    },
+    {
+      "id": "rust-domain-model",
+      "skill": "m09-domain",
+      "layer": "layer2",
+      "category": "design",
+      "priority": 760,
+      "requires_rust_signal": true,
+      "keywords": [
+        "domain model",
+        "DDD",
+        "entity",
+        "value object",
+        "aggregate",
+        "repository pattern",
+        "仓储模式",
+        "business rule",
+        "invariant",
+        "validation",
+        "领域模型",
+        "repository trait",
+        "repository abstraction",
+        "storage abstraction",
+        "aggregate root"
+      ]
+    },
+    {
+      "id": "rust-performance",
+      "skill": "m10-performance",
+      "layer": "layer2",
+      "category": "performance",
+      "priority": 750,
+      "requires_rust_signal": true,
+      "keywords": [
+        "performance",
+        "benchmark",
+        "profiling",
+        "flamegraph",
+        "allocation",
+        "allocates",
+        "slow",
+        "optimization plan",
+        "criterion",
+        "性能优化",
+        "基准测试"
+      ]
+    },
+    {
+      "id": "rust-ecosystem",
+      "skill": "m11-ecosystem",
+      "layer": "layer2",
+      "category": "ecosystem",
+      "priority": 740,
+      "requires_rust_signal": true,
+      "keywords": [
+        "dependency upgrade",
+        "dependency upgrades",
+        "feature flag",
+        "workspace",
+        "crate selection",
+        "interop",
+        "bindings",
+        "MSRV",
+        "stabilized",
+        "stabilization",
+        "deprecated",
+        "deprecation",
+        "semver",
+        "release notes",
+        "changelog",
+        "crate upgrade",
+        "API evolution",
+        "behavior change",
+        "deprecates"
+      ]
+    },
+    {
+      "id": "rust-lifecycle",
+      "skill": "m12-lifecycle",
+      "layer": "layer2",
+      "category": "lifecycle",
+      "priority": 730,
+      "requires_rust_signal": true,
+      "keywords": [
+        "lifecycle",
+        "Drop",
+        "RAII",
+        "resource lifecycle",
+        "cleanup",
+        "connection pool",
+        "lazy initialization",
+        "OnceLock",
+        "LazyLock",
+        "graceful shutdown",
+        "transaction scope",
+        "资源生命周期",
+        "资源生命周期"
+      ]
+    },
+    {
+      "id": "rust-domain-error",
+      "skill": "m13-domain-error",
+      "layer": "layer2",
+      "category": "domain-error",
+      "priority": 720,
+      "requires_rust_signal": true,
+      "keywords": [
+        "domain error",
+        "retry",
+        "fallback",
+        "recovery strategy",
+        "circuit breaker"
+      ]
+    },
+    {
+      "id": "rust-mental-model",
+      "skill": "m14-mental-model",
+      "layer": "layer2",
+      "category": "learning",
+      "priority": 710,
+      "requires_rust_signal": true,
+      "keywords": [
+        "mental model",
+        "how to think",
+        "learning Rust",
+        "心智模型"
+      ]
+    },
+    {
+      "id": "rust-anti-pattern",
+      "skill": "m15-anti-pattern",
+      "layer": "layer2",
+      "category": "anti-pattern",
+      "priority": 705,
+      "requires_rust_signal": true,
+      "keywords": [
+        "anti-pattern",
+        "pitfall",
+        "code smell",
+        "common mistake",
+        "反模式",
+        "常见错误"
+      ]
+    },
+    {
+      "id": "domain-web",
+      "skill": "domain-web",
+      "layer": "layer3",
+      "category": "web",
+      "priority": 810,
+      "requires_rust_signal": true,
+      "keywords": [
+        "Web API",
+        "web server",
+        "HTTP server",
+        "REST API",
+        "GraphQL",
+        "WebSocket",
+        "axum",
+        "actix",
+        "warp",
+        "rocket",
+        "tower",
+        "hyper",
+        "handler",
+        "middleware"
+      ]
+    },
+    {
+      "id": "domain-fintech",
+      "skill": "domain-fintech",
+      "layer": "layer3",
+      "category": "fintech",
+      "priority": 810,
+      "requires_rust_signal": true,
+      "keywords": [
+        "fintech",
+        "trading",
+        "decimal",
+        "currency",
+        "money",
+        "ledger",
+        "payment",
+        "exchange rate",
+        "金融",
+        "交易",
+        "货币",
+        "支付",
+        "banking",
+        "银行",
+        "转账",
+        "对账",
+        "financial transaction",
+        "交易系统",
+        "撮合",
+        "matching engine",
+        "order book",
+        "订单簿"
+      ]
+    },
+    {
+      "id": "domain-cli",
+      "skill": "domain-cli",
+      "layer": "layer3",
+      "category": "cli",
+      "priority": 800,
+      "requires_rust_signal": true,
+      "keywords": [
+        "CLI",
+        "command line",
+        "clap",
+        "TUI",
+        "ratatui",
+        "crossterm",
+        "命令行",
+        "终端"
+      ]
+    },
+    {
+      "id": "domain-embedded",
+      "skill": "domain-embedded",
+      "layer": "layer3",
+      "category": "embedded",
+      "priority": 800,
+      "requires_rust_signal": true,
+      "keywords": [
+        "embedded",
+        "no_std",
+        "microcontroller",
+        "MCU",
+        "ARM",
+        "RISC-V",
+        "firmware",
+        "HAL",
+        "嵌入式",
+        "单片机",
+        "固件"
+      ]
+    },
+    {
+      "id": "domain-cloud-native",
+      "skill": "domain-cloud-native",
+      "layer": "layer3",
+      "category": "cloud-native",
+      "priority": 800,
+      "requires_rust_signal": true,
+      "keywords": [
+        "kubernetes",
+        "k8s",
+        "docker",
+        "container",
+        "grpc",
+        "tonic",
+        "microservice",
+        "observability",
+        "云原生",
+        "微服务",
+        "容器"
+      ]
+    },
+    {
+      "id": "domain-iot",
+      "skill": "domain-iot",
+      "layer": "layer3",
+      "category": "iot",
+      "priority": 800,
+      "requires_rust_signal": true,
+      "keywords": [
+        "IoT",
+        "sensor",
+        "MQTT",
+        "telemetry",
+        "actuator",
+        "edge computing",
+        "物联网",
+        "传感器"
+      ]
+    },
+    {
+      "id": "domain-ml",
+      "skill": "domain-ml",
+      "layer": "layer3",
+      "category": "ml",
+      "priority": 800,
+      "requires_rust_signal": true,
+      "keywords": [
+        "machine learning",
+        "ML",
+        "AI",
+        "tensor",
+        "model inference",
+        "neural network",
+        "ndarray",
+        "tch",
+        "burn",
+        "机器学习",
+        "模型推理"
+      ]
+    },
+    {
+      "id": "learner-rust-version",
+      "skill": "rust-learner",
+      "layer": "utility",
+      "category": "learner",
+      "priority": 860,
+      "requires_rust_signal": true,
+      "keywords": [
+        "latest Rust",
+        "Rust latest version",
+        "latest version",
+        "Rust version",
+        "stable Rust",
+        "Rust nightly",
+        "nightly Rust",
+        "rust release",
+        "Rust 日报",
+        "Rust 周报",
+        "Rust 新闻"
+      ],
+      "regexes": [
+        "Rust\\s+1\\.[0-9]+"
+      ]
+    },
+    {
+      "id": "learner-crate-info",
+      "skill": "rust-learner",
+      "layer": "utility",
+      "category": "learner",
+      "priority": 850,
+      "requires_rust_signal": true,
+      "keywords": [
+        "crate info",
+        "crates.io",
+        "docs.rs",
+        "tokio version",
+        "serde version",
+        "axum version"
+      ]
+    },
+    {
+      "id": "learner-docs",
+      "skill": "rust-learner",
+      "layer": "utility",
+      "category": "learner",
+      "priority": 845,
+      "requires_rust_signal": true,
+      "keywords": [
+        "API documentation",
+        "docs.rs",
+        "std docs",
+        "standard library docs",
+        "Rust docs",
+        "crate docs",
+        "Rust API 文档",
+        "Rust 标准库文档",
+        "crate 文档",
+        "docs.rs 文档"
+      ]
+    },
+    {
+      "id": "learner-clippy",
+      "skill": "rust-learner",
+      "layer": "utility",
+      "category": "learner",
+      "priority": 840,
+      "requires_rust_signal": false,
+      "keywords": [
+        "clippy lint",
+        "clippy lints",
+        "clippy warning",
+        "cargo clippy",
+        "clippy::"
+      ]
+    },
+    {
+      "id": "rust-daily",
+      "skill": "rust-daily",
+      "layer": "utility",
+      "category": "learner",
+      "priority": 830,
+      "requires_rust_signal": false,
+      "keywords": [
+        "rust news",
+        "rust daily",
+        "rust weekly",
+        "TWIR",
+        "Rust 日报",
+        "Rust 周报",
+        "Rust 动态"
+      ]
+    },
+    {
+      "id": "dynamic-skill-create",
+      "skill": "rust-skill-creator",
+      "layer": "utility",
+      "category": "dynamic-skill",
+      "priority": 820,
+      "requires_rust_signal": true,
+      "keywords": [
+        "create rust skill",
+        "create crate skill",
+        "创建 rust skill",
+        "创建 crate skill"
+      ]
+    },
+    {
+      "id": "dynamic-pack-sync",
+      "skill": "core-dynamic-skills",
+      "layer": "utility",
+      "category": "dynamic-skill",
+      "priority": 810,
+      "requires_rust_signal": true,
+      "keywords": [
+        "sync crate skills",
+        "dynamic skill",
+        "Cargo.toml dependencies",
+        "Cargo.toml sync",
+        "docs pack",
+        "pack sync",
+        "sync docs pack",
+        "crate docs pack",
+        "动态 skill",
+        "同步 Cargo.toml",
+        "同步 docs pack"
+      ]
+    },
+    {
+      "id": "lsp-code-navigator",
+      "skill": "rust-code-navigator",
+      "layer": "utility",
+      "category": "lsp",
+      "priority": 650,
+      "requires_rust_signal": true,
+      "keywords": [
+        "go to definition",
+        "find references",
+        "hover",
+        "LSP navigation"
+      ]
+    },
+    {
+      "id": "lsp-call-graph",
+      "skill": "rust-call-graph",
+      "layer": "utility",
+      "category": "lsp",
+      "priority": 650,
+      "requires_rust_signal": true,
+      "keywords": [
+        "call graph",
+        "incoming calls",
+        "outgoing calls"
+      ]
+    },
+    {
+      "id": "lsp-symbols",
+      "skill": "rust-symbol-analyzer",
+      "layer": "utility",
+      "category": "lsp",
+      "priority": 650,
+      "requires_rust_signal": true,
+      "keywords": [
+        "document symbol",
+        "workspace symbol",
+        "symbol analysis"
+      ]
+    },
+    {
+      "id": "lsp-traits",
+      "skill": "rust-trait-explorer",
+      "layer": "utility",
+      "category": "lsp",
+      "priority": 650,
+      "requires_rust_signal": true,
+      "keywords": [
+        "go to implementation",
+        "trait implementation",
+        "impl lookup"
+      ]
+    },
+    {
+      "id": "lsp-refactor",
+      "skill": "rust-refactor-helper",
+      "layer": "utility",
+      "category": "lsp",
+      "priority": 650,
+      "requires_rust_signal": true,
+      "keywords": [
+        "rename symbol",
+        "safe refactor",
+        "refactoring"
+      ]
+    },
+    {
+      "id": "deps-visualizer",
+      "skill": "rust-deps-visualizer",
+      "layer": "utility",
+      "category": "dependency-graph",
+      "priority": 640,
+      "requires_rust_signal": true,
+      "keywords": [
+        "dependency graph",
+        "cargo tree",
+        "deps visualizer"
+      ]
+    }
+  ]
+}

@@ -13,7 +13,8 @@ use std::ptr::NonNull;
 mod ffi {
     use super::*;
 
-    extern "C" {
+    // Edition 2024: extern blocks must be declared `unsafe extern`.
+    unsafe extern "C" {
         pub fn lib_create(name: *const c_char) -> *mut c_void;
         pub fn lib_destroy(handle: *mut c_void);
         pub fn lib_process(handle: *mut c_void, data: *const u8, len: usize) -> c_int;
@@ -71,38 +72,45 @@ impl Drop for Library {
     }
 }
 
-// Prevent accidental copies
-impl !Clone for Library {}
+// Prevent accidental copies: deliberately do NOT implement Clone or Copy
+// (`impl !Clone` is unstable; omitting the impl is what prevents double-free).
 ```
 
 ## Pattern 2: Callback Registration
 
 ```rust
 use std::os::raw::{c_int, c_void};
-use std::panic::{catch_unwind, AssertUnwindSafe};
+use std::panic::{AssertUnwindSafe, catch_unwind};
 
 type CCallback = extern "C" fn(value: c_int, user_data: *mut c_void) -> c_int;
 
-extern "C" {
+unsafe extern "C" {
     fn register_callback(cb: CCallback, user_data: *mut c_void);
     fn unregister_callback();
 }
 
-/// Safely register a Rust closure as a C callback.
+/// Registers a Rust closure as a C callback; unregisters and frees on Drop.
 pub struct CallbackGuard<F> {
-    _closure: Box<F>,
+    // Store the RAW pointer, not a Box. C retains this pointer while the
+    // callback is registered; holding a live Box alongside it would alias
+    // the allocation (UB under Stacked/Tree Borrows). Reconstruct the Box
+    // only in Drop, after C can no longer call back.
+    closure: *mut F,
 }
 
 impl<F: FnMut(i32) -> i32 + 'static> CallbackGuard<F> {
     pub fn register(closure: F) -> Self {
-        let boxed = Box::new(closure);
-        let user_data = Box::into_raw(boxed) as *mut c_void;
+        let closure = Box::into_raw(Box::new(closure));
 
         extern "C" fn trampoline<F: FnMut(i32) -> i32>(
             value: c_int,
             user_data: *mut c_void,
         ) -> c_int {
+            // Never let a panic unwind across the FFI boundary.
             let result = catch_unwind(AssertUnwindSafe(|| {
+                // SAFETY: user_data is the closure pointer passed to
+                // register_callback below; it stays valid until Drop
+                // calls unregister_callback.
                 let closure = unsafe { &mut *(user_data as *mut F) };
                 closure(value as i32) as c_int
             }));
@@ -110,20 +118,21 @@ impl<F: FnMut(i32) -> i32 + 'static> CallbackGuard<F> {
         }
 
         unsafe {
-            register_callback(trampoline::<F>, user_data);
+            register_callback(trampoline::<F>, closure as *mut c_void);
         }
 
-        Self {
-            // SAFETY: We just created this box and need to keep it alive
-            _closure: unsafe { Box::from_raw(user_data as *mut F) },
-        }
+        Self { closure }
     }
 }
 
 impl<F> Drop for CallbackGuard<F> {
     fn drop(&mut self) {
-        unsafe { unregister_callback(); }
-        // Box in _closure is dropped automatically
+        // SAFETY: unregister first so C cannot invoke the callback again,
+        // then reclaim ownership of the closure allocation exactly once.
+        unsafe {
+            unregister_callback();
+            drop(Box::from_raw(self.closure));
+        }
     }
 }
 
@@ -138,7 +147,10 @@ fn example() {
 ## Pattern 3: Opaque Handle Types
 
 ```rust
+use std::ffi::CString;
 use std::marker::PhantomData;
+use std::os::raw::{c_char, c_int};
+use std::ptr::NonNull;
 
 // Opaque type markers - prevents mixing up handles
 #[repr(C)]
@@ -156,7 +168,7 @@ pub struct ConnectionHandle {
 mod ffi {
     use super::*;
 
-    extern "C" {
+    unsafe extern "C" {
         pub fn db_open(path: *const c_char) -> *mut DatabaseHandle;
         pub fn db_close(db: *mut DatabaseHandle);
         pub fn db_connect(db: *mut DatabaseHandle) -> *mut ConnectionHandle;
@@ -215,7 +227,9 @@ impl Drop for Connection<'_> {
 ## Pattern 4: Error Handling Across FFI
 
 ```rust
-use std::os::raw::c_int;
+use std::ffi::CString;
+use std::os::raw::{c_char, c_int};
+use std::panic::{AssertUnwindSafe, catch_unwind};
 
 // Error codes for C
 pub const SUCCESS: c_int = 0;
@@ -237,7 +251,8 @@ fn set_last_error<E: std::error::Error + 'static>(err: E) {
 }
 
 /// Get the last error message. Caller must free with `free_string`.
-#[no_mangle]
+// Edition 2024: no_mangle must be written as an unsafe attribute.
+#[unsafe(no_mangle)]
 pub extern "C" fn get_last_error() -> *mut c_char {
     LAST_ERROR.with(|e| {
         e.borrow()
@@ -252,7 +267,7 @@ pub extern "C" fn get_last_error() -> *mut c_char {
 }
 
 /// Free a string returned by this library.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn free_string(s: *mut c_char) {
     if !s.is_null() {
         // SAFETY: String was created by CString::into_raw
@@ -261,7 +276,7 @@ pub extern "C" fn free_string(s: *mut c_char) {
 }
 
 /// Example function with proper error handling.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn do_operation(data: *const u8, len: usize) -> c_int {
     let result = catch_unwind(AssertUnwindSafe(|| -> Result<(), c_int> {
         if data.is_null() {

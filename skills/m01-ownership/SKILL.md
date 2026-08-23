@@ -1,6 +1,6 @@
 ---
 name: m01-ownership
-description: "CRITICAL: Use for ownership/borrow/lifetime issues. Triggers: E0382, E0597, E0506, E0507, E0515, E0716, E0106, value moved, borrowed value does not live long enough, cannot move out of, use of moved value, ownership, borrow, lifetime, 'a, 'static, move, clone, Copy, 所有权, 借用, 生命周期"
+description: "Use when: ownership, borrowing, or lifetime issues. Keywords: E0382, E0597, E0506, E0507, E0515, E0716, E0106, value moved, borrowed value does not live long enough, cannot move out of, use of moved value, ownership, borrow, lifetime, 'a, 'static, move, clone, Copy, 所有权, 借用, 生命周期"
 user-invocable: false
 ---
 
@@ -17,19 +17,53 @@ Before fixing ownership errors, understand the data's role:
 - Is it short-lived or long-lived?
 - Is it transformed or just read?
 
+## Design Guidance
+
+- A reference must never outlive the value it points into. When the compiler
+  says a value does not live long enough, find the owner whose scope ends too
+  early instead of reaching for a lifetime annotation first.
+- E0382 in a public API is often a contract issue: did the callee need to
+  consume the value, or should it borrow it?
+- For read-only helpers, prefer borrowed access (`&T`) so the caller keeps
+  ownership for later use.
+- For mutation, choose between exclusive borrow (`&mut T`), ownership transfer,
+  or a redesigned return value instead of reflexive cloning.
+- Clone only when intentional. Avoid clone-everywhere fixes that hide an API
+  contract problem.
+- E0716 (temporary dropped while borrowed, e.g. `&format!(...)`) usually means
+  the data deserves a real owner: bind the temporary to a variable, or store
+  it as an owned `String` when formatted data becomes long-lived state.
+
 ---
 
 ## Error → Design Question
 
-| Error | Don't Just Say | Ask Instead |
-|-------|----------------|-------------|
-| E0382 | "Clone it" | Who should own this data? |
-| E0597 | "Extend lifetime" | Is the scope boundary correct? |
-| E0506 | "End borrow first" | Should mutation happen elsewhere? |
-| E0507 | "Clone before move" | Why are we moving from a reference? |
-| E0515 | "Return owned" | Should caller own the data? |
-| E0716 | "Bind to variable" | Why is this temporary? |
-| E0106 | "Add 'a" | What is the actual lifetime relationship? |
+| Error | Cause | Mechanical Fix | Ask Instead |
+|-------|-------|----------------|-------------|
+| E0382 | Value moved | Clone, borrow | Who should own this data? |
+| E0597 | Reference outlives owner | Extend owner scope | Is the scope boundary correct? |
+| E0506 | Assign while borrowed | End borrow first | Should mutation happen elsewhere? |
+| E0507 | Move out of borrowed | Clone or `mem::take` | Why are we moving from a reference? |
+| E0515 | Return local reference | Return owned value | Should caller own the data? |
+| E0716 | Temporary dropped | Bind to variable | Why is this temporary? |
+| E0106 | Missing lifetime | Add `'a` annotation | What is the actual lifetime relationship? |
+
+## Anti-Patterns
+
+| Anti-Pattern | Why Bad | Better |
+|--------------|---------|--------|
+| `.clone()` everywhere | Hides design issues | Design ownership properly |
+| Fight borrow checker | Increases complexity | Work with the compiler |
+| `'static` for everything | Restricts flexibility | Use appropriate lifetimes |
+| Leak with `Box::leak` | Memory leak | Proper lifetime design |
+
+---
+
+## Deep Dives (load on demand)
+
+- Verified error patterns and fix options per code (E0382/E0597/E0499/E0502/E0507/E0515/E0716): see `patterns/common-errors.md`
+- Lifetime annotation, elision rules, `'static`, HRTB, outlives bounds, variance: see `patterns/lifetime-patterns.md`
+- Ownership-aware API design (borrow vs own, `impl Into<String>`, `AsRef`, `Cow`, builder): see `examples/best-practices.md`
 
 ---
 
@@ -47,7 +81,8 @@ Before fixing an ownership error, ask:
    - Accidental → consider redesign
 
 3. **Fix symptom or redesign?**
-   - If Strike 3 (3rd attempt) → escalate to Layer 2
+   - If the 3rd fix attempt on the same error still fails, stop patching:
+     treat it as a design problem and trace up (m02-resource, m09-domain)
 
 ---
 
@@ -70,23 +105,6 @@ E0382 (moved value)
 
 ---
 
-## Trace Down ↓
-
-From design decisions to implementation:
-
-```
-"Data needs to be shared immutably"
-    ↓ Use: Arc<T> (multi-thread) or Rc<T> (single-thread)
-
-"Data needs exclusive ownership"
-    ↓ Use: move semantics, take ownership
-
-"Data is read-only view"
-    ↓ Use: &T (immutable borrow)
-```
-
----
-
 ## Quick Reference
 
 | Pattern | Ownership | Cost | Use When |
@@ -95,32 +113,7 @@ From design decisions to implementation:
 | `&T` | Borrow | Zero | Read-only access |
 | `&mut T` | Exclusive borrow | Zero | Need to modify |
 | `clone()` | Duplicate | Alloc + copy | Actually need a copy |
-| `Rc<T>` | Shared (single) | Ref count | Single-thread sharing |
-| `Arc<T>` | Shared (multi) | Atomic ref count | Multi-thread sharing |
-| `Cow<T>` | Clone-on-write | Alloc if mutated | Might modify |
-
-## Error Code Reference
-
-| Error | Cause | Quick Fix |
-|-------|-------|-----------|
-| E0382 | Value moved | Clone, reference, or redesign ownership |
-| E0597 | Reference outlives owner | Extend owner scope or restructure |
-| E0506 | Assign while borrowed | End borrow before mutation |
-| E0507 | Move out of borrowed | Clone or use reference |
-| E0515 | Return local reference | Return owned value |
-| E0716 | Temporary dropped | Bind to variable |
-| E0106 | Missing lifetime | Add `'a` annotation |
-
----
-
-## Anti-Patterns
-
-| Anti-Pattern | Why Bad | Better |
-|--------------|---------|--------|
-| `.clone()` everywhere | Hides design issues | Design ownership properly |
-| Fight borrow checker | Increases complexity | Work with the compiler |
-| `'static` for everything | Restricts flexibility | Use appropriate lifetimes |
-| Leak with `Box::leak` | Memory leak | Proper lifetime design |
+| `Rc`/`Arc`/`Cow` | Shared / clone-on-write | Ref count / lazy alloc | Sharing needed → see m02-resource |
 
 ---
 

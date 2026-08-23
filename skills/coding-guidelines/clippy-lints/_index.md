@@ -3,7 +3,7 @@
 | Clippy Lint | Category | Fix |
 |-------------|----------|-----|
 | `unwrap_used` | Error | Use `?` or `expect()` |
-| `needless_clone` | Perf | Use reference |
+| `redundant_clone` | Perf | Use reference |
 | `await_holding_lock` | Async | Scope guard before await |
 | `linkedlist` | Perf | Use Vec/VecDeque |
 | `wildcard_imports` | Style | Explicit imports |

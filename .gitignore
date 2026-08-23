@@ -6,3 +6,14 @@
 !.claude/settings.example.json
 
 # Keep .claude/hooks/ for distribution
+
+# MemPalace per-project files (issue #185)
+mempalace.yaml
+entities.json
+doc/.hook-state.json
+
+# Generated AOM reports and Agent evidence capsules
+tests/results/
+
+# Rust build output
+target/

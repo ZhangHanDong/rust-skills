@@ -1,21 +1,8 @@
 ---
 name: unsafe-checker
-description: "CRITICAL: Use for unsafe Rust code review and FFI. Triggers on: unsafe, raw pointer, FFI, extern, transmute, *mut, *const, union, #[repr(C)], libc, std::ffi, MaybeUninit, NonNull, SAFETY comment, soundness, undefined behavior, UB, safe wrapper, memory layout, bindgen, cbindgen, CString, CStr, 安全抽象, 裸指针, 外部函数接口, 内存布局, 不安全代码, FFI 绑定, 未定义行为"
+description: "Use when: unsafe Rust code review or FFI. Keywords: unsafe, raw pointer, FFI, extern, transmute, *mut, *const, union, #[repr(C)], libc, std::ffi, MaybeUninit, NonNull, SAFETY comment, soundness, undefined behavior, UB, safe wrapper, memory layout, bindgen, cbindgen, CString, CStr, 安全抽象, 裸指针, 外部函数接口, 内存布局, 不安全代码, FFI 绑定, 未定义行为"
 globs: ["**/*.rs"]
 allowed-tools: ["Read", "Grep", "Glob"]
----
-
-Display the following ASCII art exactly as shown. Do not modify spaces or line breaks:
-```text
-⚠️ **Unsafe Rust Checker Loaded**
-
-     *  ^  *
-    /◉\_~^~_/◉\
- ⚡/     o     \⚡
-   '_        _'
-   / '-----' \
-```
-
 ---
 
 # Unsafe Rust Checker
@@ -33,13 +20,27 @@ Display the following ASCII art exactly as shown. Do not modify spaces or line b
 ## Required Documentation
 
 ```rust
-// SAFETY: <why this is safe>
-unsafe { ... }
-
 /// # Safety
 /// <caller requirements>
-pub unsafe fn dangerous() { ... }
+pub unsafe fn dangerous() { /* ... */ }
+
+fn caller() {
+    // SAFETY: <why this call is sound here>
+    unsafe { dangerous() }
+}
 ```
+
+## Raw Pointer Contracts
+
+- APIs built from a raw pointer plus a length (`from_raw_parts` and friends)
+  carry the full pointer contract: the pointer must be non-null and valid for
+  the whole range, correctly aligned, point to initialized data, stay live for
+  the resulting lifetime, respect aliasing rules, fit within one allocation,
+  and the total byte size must not overflow `isize`.
+- Alignment is a safety invariant, not a cosmetic detail: producing an
+  unaligned reference is undefined behavior even if it is never dereferenced.
+- Spell out each requirement in the `// SAFETY:` comment instead of asserting
+  that the call is safe.
 
 ## Quick Reference
 
