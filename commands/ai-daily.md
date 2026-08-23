@@ -1,6 +1,6 @@
 ---
 description: Generate AI daily/weekly news report from Reddit communities
-argument-hint: [day|week|month] [--save [path]]
+argument-hint: "[day|week|month] [--save [path]]"
 ---
 
 # AI Daily Report

@@ -1,6 +1,6 @@
 ---
 description: View coding achievements, stats, and progress
-argument-hint: [list|stats|reset] [--category bug|test|streak|safety|learning]
+argument-hint: "[list|stats|reset] [--category bug|test|streak|safety|learning]"
 ---
 
 # Achievement System
