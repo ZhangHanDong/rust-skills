@@ -7,6 +7,7 @@
 [![Version](https://img.shields.io/badge/version-2.0.9-green.svg)](https://github.com/actionbook/rust-skills/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Plugin-blue)](https://github.com/anthropics/claude-code)
+[![Antigravity](https://img.shields.io/badge/Antigravity-Compatible-ff69b4)](ANTIGRAVITY.md)
 
 ## 什么是 Rust Skills？
 
@@ -173,6 +174,20 @@ EOF
 
 参见 [.claude/settings.example.json](.claude/settings.example.json) 示例。
 
+### 方式五：Antigravity IDE
+
+1. **克隆仓库** 到一个稳定位置 (例如 `/path/to/rust-skills`)。
+
+2. **通过 Rules 配置**：
+   在项目中添加规则（例如在 `.agent/rules.md` 中）以加载 skills：
+
+   ```markdown
+   ## Rust Skills
+   - Always reference the Rust Skills capability suite located at @/path/to/rust-skills.
+   - Read @/path/to/rust-skills/ANTIGRAVITY.md to initialize the protocol and tool mappings.
+   - Resolve all relative paths in that file (e.g. `skills/`) against the @/path/to/rust-skills directory.
+   ```
+
 ### 其他平台
 
 - **OpenCode**: 参见 [.opencode/INSTALL.md](.opencode/INSTALL.md)
@@ -184,8 +199,8 @@ Rust Skills 依赖以下外部工具以获得完整功能：
 
 | 工具 | 说明 | GitHub |
 |------|------|--------|
-| **actionbook** | 网站操作手册 MCP 服务器。用于 agents 获取结构化网页内容（Rust 版本、crate 信息、文档）。 | [actionbook/actionbook](https://github.com/actionbook/actionbook) |
-| **agent-browser** | 浏览器自动化工具，用于获取实时网页数据。作为 actionbook 不可用时的备选方案。 | [vercel-labs/agent-browser](https://github.com/vercel-labs/agent-browser) |
+| **actionbook** | 网站操作手册 MCP 服务器。用于 agents 获取结构化网页内容（Rust 版本、crate 信息、文档）。 <br> **Antigravity**: 映射到原生 `run_command` (CLI 执行)。 | [actionbook/actionbook](https://github.com/actionbook/actionbook) |
+| **agent-browser** | 浏览器自动化工具，用于获取实时网页数据。作为 actionbook 不可用时的备选方案。 <br> **Antigravity**: 映射到原生 `run_command` (CLI 执行)。 | [vercel-labs/agent-browser](https://github.com/vercel-labs/agent-browser) |
 
 ## 元认知框架
 

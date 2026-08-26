@@ -7,6 +7,7 @@
 [![Version](https://img.shields.io/badge/version-2.0.9-green.svg)](https://github.com/actionbook/rust-skills/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Plugin-blue)](https://github.com/anthropics/claude-code)
+[![Antigravity](https://img.shields.io/badge/Antigravity-Compatible-ff69b4)](ANTIGRAVITY.md)
 
 ## What is Rust Skills?
 
@@ -173,6 +174,20 @@ EOF
 
 See [.claude/settings.example.json](.claude/settings.example.json) for reference.
 
+### Method 5: Antigravity IDE
+
+1. **Clone the repository** to a stable location (e.g., `/path/to/rust-skills`).
+
+2. **Configure via Rules**:
+   Add a rule to your project (e.g., in `.agent/rules.md`) to load the skills:
+
+   ```markdown
+   # Rust Skills
+   Always reference the Rust Skills capability suite located at `/path/to/rust-skills`.
+   Read `/path/to/rust-skills/ANTIGRAVITY.md` to initialize the protocol and tool mappings.
+   Resolve all relative paths in that file (e.g. `skills/`) against the `/path/to/rust-skills` directory.
+   ```
+
 ### Other Platforms
 
 - **OpenCode**: See [.opencode/INSTALL.md](.opencode/INSTALL.md)
@@ -184,8 +199,8 @@ Rust Skills relies on these external tools for full functionality:
 
 | Tool | Description | GitHub |
 |------|-------------|--------|
-| **actionbook** | MCP server for website action manuals. Used by agents to fetch structured web content (Rust releases, crate info, documentation). | [actionbook/actionbook](https://github.com/actionbook/actionbook) |
-| **agent-browser** | Browser automation tool for fetching real-time web data. Fallback when actionbook is unavailable. | [vercel-labs/agent-browser](https://github.com/vercel-labs/agent-browser) |
+| **actionbook** | MCP server for website action manuals. Used by agents to fetch structured web content (Rust releases, crate info, documentation). <br> **Antigravity**: Mapped to native `run_command` (CLI execution). | [actionbook/actionbook](https://github.com/actionbook/actionbook) |
+| **agent-browser** | Browser automation tool for fetching real-time web data. Fallback when actionbook is unavailable. <br> **Antigravity**: Mapped to native `run_command` (CLI execution). | [vercel-labs/agent-browser](https://github.com/vercel-labs/agent-browser) |
 
 ## Meta-Cognition Framework
 
