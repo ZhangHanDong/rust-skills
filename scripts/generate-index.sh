@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Generate index files for rust-skills
 # Run this to rebuild indexes after making changes
 

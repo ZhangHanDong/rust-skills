@@ -160,7 +160,7 @@ Hook 触发:
 ### 3. rust-skill-eval-hook.sh (强制脚本)
 
 ```bash
-#!/bin/bash
+#!/usr/bin/env bash
 cat << 'EOF'
 
 === MANDATORY: META-COGNITION ROUTING ===
@@ -518,7 +518,7 @@ for case in test_cases:
 ### .claude/hooks/rust-skill-eval-hook.sh
 
 ```bash
-#!/bin/bash
+#!/usr/bin/env bash
 cat << 'EOF'
 
 === MANDATORY: META-COGNITION ROUTING ===

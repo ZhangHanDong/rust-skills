@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Rust Skills Validation Script
 # Run this to validate skills are properly configured
 

@@ -138,7 +138,7 @@ my-plugin/
 
 **.claude/hooks/inject-rules.sh**:
 ```bash
-#!/bin/bash
+#!/usr/bin/env bash
 cat << 'EOF'
 
 === CODE GENERATION RULES ===
@@ -288,7 +288,7 @@ rust-skills/
 ### 批量创建符号链接
 
 ```bash
-#!/bin/bash
+#!/usr/bin/env bash
 # setup-skill-inheritance.sh
 
 SHARED_DIR="$HOME/.claude/skills/_shared"

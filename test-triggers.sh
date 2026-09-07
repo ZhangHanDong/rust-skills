@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Rust Skills Trigger Test Script
 # Tests if the Forced Eval Hook is working
 #

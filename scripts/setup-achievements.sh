@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Achievement System Quick Setup Script
 # Usage: ./setup-achievements.sh [rust-skills-dir]
 

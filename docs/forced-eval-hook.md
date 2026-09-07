@@ -116,7 +116,7 @@ EVALUATE → ACTIVATE → IMPLEMENT
 ### 2. Hook Script
 
 ```bash
-#!/bin/bash
+#!/usr/bin/env bash
 cat << 'EOF'
 
 === MANDATORY SKILL EVALUATION ===

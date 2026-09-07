@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Rust Skills Meta-Cognition Hook
 # Forces Claude to use meta-cognition routing with mandatory tracing
 

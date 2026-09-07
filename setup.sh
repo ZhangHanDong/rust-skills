@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Rust Skills Setup Script
 
 echo "Setting up Rust Skills for Claude Code..."

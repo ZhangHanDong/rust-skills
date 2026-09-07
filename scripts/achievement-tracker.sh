@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Achievement Tracker Hook for Claude Code
 # Tracks coding behaviors and unlocks achievements
 #
