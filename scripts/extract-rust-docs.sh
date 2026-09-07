@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Extract documentation from Rust source code
 # Usage: ./extract-rust-docs.sh [project_path] [output_file]
 #

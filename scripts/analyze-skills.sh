@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Analyze rust-skills structure and content
 # Provides statistics and insights
 

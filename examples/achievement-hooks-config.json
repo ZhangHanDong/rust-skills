@@ -51,7 +51,7 @@
     "step4_note": "Merge the 'hooks' section above into your settings.json"
   },
 
-  "_quick_setup_script": "#!/bin/bash\n# Quick setup script\nset -e\n\nRUST_SKILLS_DIR=\"${1:-$(pwd)}\"\n\necho \"Setting up Achievement System...\"\n\n# Create directories\nmkdir -p ~/.claude/hooks\nmkdir -p ~/.claude/achievements\n\n# Copy script\ncp \"$RUST_SKILLS_DIR/scripts/achievement-tracker.sh\" ~/.claude/hooks/\nchmod +x ~/.claude/hooks/achievement-tracker.sh\n\necho \"✅ Achievement tracker installed!\"\necho \"\"\necho \"Next steps:\"\necho \"1. Add the hooks configuration to ~/.claude/settings.json\"\necho \"2. Run '/achievement' to view your achievements\"\n",
+  "_quick_setup_script": "#!/usr/bin/env bash\n# Quick setup script\nset -e\n\nRUST_SKILLS_DIR=\"${1:-$(pwd)}\"\n\necho \"Setting up Achievement System...\"\n\n# Create directories\nmkdir -p ~/.claude/hooks\nmkdir -p ~/.claude/achievements\n\n# Copy script\ncp \"$RUST_SKILLS_DIR/scripts/achievement-tracker.sh\" ~/.claude/hooks/\nchmod +x ~/.claude/hooks/achievement-tracker.sh\n\necho \"✅ Achievement tracker installed!\"\necho \"\"\necho \"Next steps:\"\necho \"1. Add the hooks configuration to ~/.claude/settings.json\"\necho \"2. Run '/achievement' to view your achievements\"\n",
 
   "_environment_variables": {
     "CLAUDE_TOOL_NAME": "Name of the tool being used (Edit, Write, Bash, etc.)",

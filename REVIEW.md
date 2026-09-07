@@ -189,7 +189,7 @@ m07-concurrency: E0277 (only for Send/Sync)
 ### Test Script
 
 ```bash
-#!/bin/bash
+#!/usr/bin/env bash
 # test-triggers.sh
 
 queries=(

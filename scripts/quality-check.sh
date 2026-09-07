@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Quality check script for rust-skills
 # Run before releases to ensure consistency
 
